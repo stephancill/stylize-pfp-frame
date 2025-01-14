@@ -73,8 +73,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const session = await signIn({
         ...result,
         challengeId,
-        referrerId:
-          searchParams.get("ref") || searchParams.get("referrer") || undefined,
       });
 
       // Store the session in localStorage
@@ -228,16 +226,14 @@ async function signIn({
   message,
   signature,
   challengeId,
-  referrerId,
 }: {
   message: string;
   signature: string;
   challengeId: string;
-  referrerId?: string;
 }): Promise<Session> {
   const response = await fetch("/api/sign-in", {
     method: "POST",
-    body: JSON.stringify({ message, signature, challengeId, referrerId }),
+    body: JSON.stringify({ message, signature, challengeId }),
   });
 
   if (!response.ok) {

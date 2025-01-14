@@ -1,10 +1,12 @@
 import { withAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserData } from "@/lib/farcaster";
+import { withCache } from "@/lib/redis";
 import { User } from "@/types/user";
-import { sql } from "kysely";
+import { UserDataType } from "@farcaster/core";
+import { getUserDataKey } from "../../../lib/keys";
 
 export const GET = withAuth(async (req, luciaUser) => {
-  // Check if the fid is already registered
   const dbUser = await db
     .selectFrom("users")
     .selectAll()
@@ -15,10 +17,22 @@ export const GET = withAuth(async (req, luciaUser) => {
     return Response.json({ error: "User not found" }, { status: 400 });
   }
 
+  const farcasterUser = await withCache(
+    getUserDataKey(dbUser.fid),
+    async () => {
+      return await getUserData(dbUser.fid);
+    },
+    {
+      ttl: 60 * 60 * 24 * 7, // 1 week
+    }
+  );
+
   const user: User = {
     fid: dbUser.fid,
     id: dbUser.id,
     notificationsEnabled: dbUser.notificationUrl !== null,
+    username: farcasterUser[UserDataType.USERNAME],
+    imageUrl: farcasterUser[UserDataType.PFP],
   };
 
   return Response.json(user);

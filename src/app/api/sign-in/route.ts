@@ -1,6 +1,5 @@
 import { lucia } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getUserData } from "@/lib/farcaster";
 import { redisCache } from "@/lib/redis";
 import { createAppClient, viemConnector } from "@farcaster/auth-client";
 import { NextRequest } from "next/server";
