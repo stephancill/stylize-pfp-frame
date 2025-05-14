@@ -2,7 +2,7 @@ import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter.js";
 import { ExpressAdapter } from "@bull-board/express";
 import express from "express";
-import { notificationsBulkQueue } from "./queue";
+import { notificationsBulkQueue, stylizeImageQueue } from "./queue";
 
 // Add basic auth middleware
 const basicAuth = (
@@ -52,7 +52,10 @@ export function initExpressApp() {
   app.use("/", serverAdapter.getRouter());
 
   createBullBoard({
-    queues: [new BullMQAdapter(notificationsBulkQueue)],
+    queues: [
+      new BullMQAdapter(notificationsBulkQueue),
+      new BullMQAdapter(stylizeImageQueue),
+    ],
     serverAdapter,
   });
 

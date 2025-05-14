@@ -15,7 +15,29 @@ export interface UserSessionRow {
   expiresAt: Date;
 }
 
+export type GeneratedImageStatus =
+  | "pending_payment"
+  | "paid"
+  | "queued"
+  | "generating"
+  | "completed"
+  | "error"
+  | "payment_error";
+
+export type GeneratedImageRow = {
+  id: Generated<string>; // UUID
+  fid: number;
+  quoteId: string;
+  status: GeneratedImageStatus;
+  transactionHash: string | null;
+  imageDataUrl: string | null;
+  promptText: string | null;
+  userPfpUrl: string | null;
+  createdAt: Generated<Date>;
+};
+
 export type Tables = {
   users: UserRow;
   userSession: UserSessionRow;
+  generatedImages: GeneratedImageRow;
 };

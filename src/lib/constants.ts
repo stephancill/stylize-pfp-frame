@@ -4,6 +4,9 @@ export const AUTH_SESSION_COOKIE_NAME = "auth_session";
 // Jobs that send notifications to users in bulk
 export const NOTIFICATIONS_BULK_QUEUE_NAME = "notifications-bulk";
 
+// Jobs that stylize images for users
+export const STYLIZE_IMAGE_QUEUE_NAME = "stylize-image";
+
 export const FRAME_METADATA = {
   version: "next",
   imageUrl: `${process.env.APP_URL}/og.png`,
