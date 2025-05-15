@@ -26,6 +26,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Share2 } from "lucide-react";
 
 // --- Prompt Generation Logic ---
 interface Theme {
@@ -698,13 +699,29 @@ export default function Home() {
                         key={image.id || image.quoteId}
                         className="overflow-hidden flex flex-col"
                       >
-                        <CardContent className="p-0 aspect-square flex-grow">
+                        <CardContent className="p-0 aspect-square flex-grow relative group">
                           {image.imageDataUrl ? (
-                            <img
-                              src={image.imageDataUrl}
-                              alt={image.promptText || "Generated Character"}
-                              className="w-full h-full object-cover"
-                            />
+                            <>
+                              <img
+                                src={image.imageDataUrl}
+                                alt={image.promptText || "Generated Character"}
+                                className="w-full h-full object-cover"
+                              />
+                              <Button
+                                variant="secondary"
+                                className="absolute bottom-2 right-2 flex items-center gap-2"
+                                onClick={() => {
+                                  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/generations/${image.id}`;
+                                  sdk.actions.composeCast({
+                                    text: `Check out my new character! ${shareUrl}`,
+                                    embeds: [shareUrl],
+                                  });
+                                }}
+                              >
+                                <Share2 className="h-4 w-4" />
+                                Share
+                              </Button>
+                            </>
                           ) : (
                             <div className="w-full h-full bg-muted flex items-center justify-center">
                               <p className="text-muted-foreground">

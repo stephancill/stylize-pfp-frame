@@ -19,7 +19,7 @@
     "@farcaster/auth-client": "^0.3.0",
     "@farcaster/core": "^0.15.6",
     "@farcaster/frame-node": "^0.0.10",
-    "@farcaster/frame-sdk": "^0.0.26",
+    "@farcaster/frame-sdk": "^0.0.41",
     "@lucia-auth/adapter-postgresql": "^3.1.2",
     "@neynar/nodejs-sdk": "^2.7.0",
     "@radix-ui/react-avatar": "^1.1.9",
