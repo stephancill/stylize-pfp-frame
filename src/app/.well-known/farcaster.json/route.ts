@@ -10,7 +10,7 @@ export async function GET() {
     frame: {
       version: "1",
       name: "Stylize PFP",
-      iconUrl: `${appUrl}/icon.png`,
+      iconUrl: `${appUrl}/splash.png`,
       homeUrl: appUrl,
       imageUrl: `${appUrl}/og.png`,
       buttonTitle: "Stylize my PFP",
