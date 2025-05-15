@@ -674,31 +674,10 @@ export default function Home() {
                           image.createdAt ||
                           image.imageDataUrl) && (
                           <CardFooter className="p-3 flex flex-col items-start border-t">
-                            {image.promptText && (
-                              <p
-                                className="text-xs text-muted-foreground truncate w-full"
-                                title={image.promptText}
-                              >
-                                {image.promptText}
-                              </p>
-                            )}
                             {image.createdAt && (
                               <p className="text-xs text-muted-foreground/80 mt-1">
                                 {new Date(image.createdAt).toLocaleDateString()}
                               </p>
-                            )}
-                            {image.imageDataUrl && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mt-2 w-full"
-                                onClick={() => {
-                                  console.log("opening", image.imageDataUrl);
-                                  sdk.actions.openUrl(image.imageDataUrl!);
-                                }}
-                              >
-                                Open Image
-                              </Button>
                             )}
                           </CardFooter>
                         )}
