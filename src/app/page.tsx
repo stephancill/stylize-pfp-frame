@@ -25,6 +25,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 // --- Prompt Generation Logic ---
 interface Theme {
@@ -144,32 +145,17 @@ export default function Home() {
   const [selectedThemeId, setSelectedThemeId] = useState<string>(themes[0].id);
   const account = useAccount();
 
+  // State for custom prompt
+  const [customPrompt, setCustomPrompt] = useState<string>("");
+  const [showCustomPromptDialog, setShowCustomPromptDialog] =
+    useState<boolean>(false);
+
   // State for completed images
   const [completedImages, setCompletedImages] = useState<CompletedImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState<boolean>(false);
   const [imagesError, setImagesError] = useState<string | null>(null);
 
   const { switchChainAsync } = useSwitchChain();
-
-  // Add effect to handle chain switching when address changes
-  useEffect(() => {
-    const handleChainSwitch = async () => {
-      if (connectedAddress && account.chainId !== base.id) {
-        try {
-          setApiMessage("Switching to Base network...");
-          await switchChainAsync({ chainId: base.id });
-          setApiMessage("Successfully switched to Base network.");
-        } catch (switchError: any) {
-          console.error("Failed to switch network:", switchError);
-          setApiMessage(
-            `Failed to switch to Base network: ${switchError.message}. Please switch manually.`
-          );
-        }
-      }
-    };
-
-    handleChainSwitch();
-  }, [connectedAddress, account.chainId, switchChainAsync]);
 
   // State for payment flow
   const [quoteId, setQuoteId] = useState<string | null>(null);
@@ -463,6 +449,26 @@ export default function Home() {
     };
   }, [isPolling, pollingQuoteId, user, user?.fid]); // Added user to dependencies for user.fid access
 
+  // Add effect to handle chain switching when address changes
+  useEffect(() => {
+    const handleChainSwitch = async () => {
+      if (connectedAddress && account.chainId !== base.id) {
+        try {
+          setApiMessage("Switching to Base network...");
+          await switchChainAsync({ chainId: base.id });
+          setApiMessage("Successfully switched to Base network.");
+        } catch (switchError: any) {
+          console.error("Failed to switch network:", switchError);
+          setApiMessage(
+            `Failed to switch to Base network: ${switchError.message}. Please switch manually.`
+          );
+        }
+      }
+    };
+
+    handleChainSwitch();
+  }, [connectedAddress, account.chainId, switchChainAsync]);
+
   const handleRequestQuote = () => {
     if (!user || !user.fid) {
       setApiMessage("User data not available.");
@@ -475,9 +481,16 @@ export default function Home() {
     }
     setApiMessage("Requesting generation quote...");
     setGenerationStep("quote_requested");
+    const promptToUse = customPrompt || generatedPrompt;
+    if (!promptToUse) {
+      setApiMessage(
+        "Prompt not available. Please select a theme or enter a custom prompt."
+      );
+      return;
+    }
     quoteMutation.mutate({
       fid: user.fid,
-      prompt: generatedPrompt,
+      prompt: promptToUse,
       userPfpUrl: user.pfpUrl,
     });
   };
@@ -549,7 +562,7 @@ export default function Home() {
           {/* Theme Selector Buttons */}
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Theme:
+              Select Theme or Enter Custom Prompt:
             </label>
             <div className="flex space-x-2 mb-4">
               {themes.map((theme) => (
@@ -563,6 +576,19 @@ export default function Home() {
                 </Button>
               ))}
             </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowCustomPromptDialog(true)}
+              className="w-full mb-4"
+            >
+              Enter Custom Prompt
+            </Button>
+            {customPrompt && (
+              <div className="p-2 mb-4 border border-blue-300 rounded-md bg-blue-50 text-blue-700 text-sm">
+                <p className="font-semibold">Using Custom Prompt:</p>
+                <p className="truncate">{customPrompt}</p>
+              </div>
+            )}
           </div>
 
           {/* Warning if no PFP */}
@@ -717,6 +743,55 @@ export default function Home() {
               </DialogContent>
             </Dialog>
           )}
+
+          {/* Custom Prompt Dialog */}
+          <Dialog
+            open={showCustomPromptDialog}
+            onOpenChange={setShowCustomPromptDialog}
+          >
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Enter Custom Prompt</DialogTitle>
+                <DialogDescription>
+                  Type your desired prompt below. This will override the
+                  selected theme.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <Input
+                  id="customPromptInput"
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="e.g., A cat wearing a wizard hat"
+                  className="w-full"
+                />
+              </div>
+              <DialogFooter className="sm:justify-end">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    // Optionally, you could validate the prompt here
+                    setShowCustomPromptDialog(false);
+                  }}
+                >
+                  Save Prompt
+                </Button>
+                <DialogClose asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      // If canceling, consider whether to clear customPrompt or not
+                      // setCustomPrompt(""); // Uncomment to clear on cancel
+                      setShowCustomPromptDialog(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       ) : (
         <p className="text-center py-10">
