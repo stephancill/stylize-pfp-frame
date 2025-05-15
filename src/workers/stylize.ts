@@ -96,13 +96,20 @@ Ensure the final image is suitable as a profile picture.`;
         .where("quoteId", "=", quoteId)
         .execute();
 
-      // Notify the user that the image has been edited
-      await sendFrameNotification({
-        fid,
-        title: "Stylize complete",
-        body: "Your profile picture has been stylized",
-        targetUrl: process.env.APP_URL,
-      });
+      try {
+        // Notify the user that the image has been edited
+        await sendFrameNotification({
+          fid,
+          title: "Stylize complete",
+          body: "Your profile picture has been stylized",
+          targetUrl: process.env.APP_URL,
+        });
+      } catch (error) {
+        console.error(
+          `Job ID ${job.id} for quoteId ${quoteId}: Failed to notify user -`,
+          error
+        );
+      }
 
       console.log(
         `Job ID ${job.id} for quoteId ${quoteId} completed. Image saved to DB.`
