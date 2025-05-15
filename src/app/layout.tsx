@@ -5,8 +5,8 @@ import { FRAME_METADATA } from "../lib/constants";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Frame",
-    description: "This is an example frame.",
+    title: "Stylize Me",
+    description: "Stylize your profile picture",
     other: {
       "fc:frame": JSON.stringify(FRAME_METADATA),
     },
