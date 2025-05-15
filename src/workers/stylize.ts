@@ -3,6 +3,7 @@ import { STYLIZE_IMAGE_QUEUE_NAME } from "../lib/constants";
 import { redisQueue } from "../lib/redis";
 import { StylizeImageJobData } from "../types/jobs";
 import OpenAI, { toFile } from "openai"; // Using the official OpenAI SDK
+import { db } from "@/lib/db";
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error(
@@ -21,15 +22,27 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
       fid,
       prompt: basePrompt,
       userPfpUrl,
+      quoteId,
       n = 1,
       size = "256x256",
     } = job.data;
 
     if (!userPfpUrl) {
       console.error(
-        `Job ID ${job.id} for fid ${fid}: Missing userPfpUrl. Cannot use image edit without an input image.`
+        `Job ID ${job.id} for fid ${fid}, quoteId ${quoteId}: Missing userPfpUrl. Cannot use image edit without an input image.`
       );
+      await db
+        .updateTable("generatedImages")
+        .set({ status: "error", imageDataUrl: "Missing userPfpUrl for worker" })
+        .where("quoteId", "=", quoteId)
+        .execute();
       throw new Error("userPfpUrl is required for image editing.");
+    }
+    if (!quoteId) {
+      console.error(
+        `Job ID ${job.id} for fid ${fid}: Missing quoteId. Cannot update database record.`
+      );
+      throw new Error("quoteId is required to update the database.");
     }
 
     // Construct the detailed prompt for DALL-E 2 edit operation
@@ -44,12 +57,11 @@ Instructions for the edit:
 Ensure the final image is suitable as a profile picture.`;
 
     console.log(
-      `Processing DALL-E 2 image edit job for fid: ${fid} with base prompt: "${basePrompt}" and PFP URL: ${userPfpUrl}`
+      `Processing DALL-E 2 image edit job for fid: ${fid}, quoteId: ${quoteId} with base prompt: "${basePrompt}" and PFP URL: ${userPfpUrl}`
     );
     console.log(`Generated DALL-E 2 Edit Prompt: ${editPrompt}`);
 
     try {
-      // 1. Fetch the user's PFP
       const imageResponse = await fetch(userPfpUrl);
       if (!imageResponse.ok) {
         throw new Error(
@@ -57,7 +69,6 @@ Ensure the final image is suitable as a profile picture.`;
         );
       }
       const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-
       const imageFile = await toFile(imageBuffer, "profile.png", {
         type: imageResponse.headers.get("content-type") || "image/png",
       });
@@ -69,37 +80,54 @@ Ensure the final image is suitable as a profile picture.`;
         n: n, // Number of images to generate
       });
 
-      // Check if response.data exists
-      if (!response.data) {
-        throw new Error("No image data received from OpenAI API after edit.");
+      if (
+        !response.data ||
+        response.data.length === 0 ||
+        !response.data[0].b64_json
+      ) {
+        throw new Error(
+          "No b64_json data received from OpenAI API after edit."
+        );
       }
 
-      const jsons = response.data.map((img) => img.b64_json);
+      const firstImageB64Json = response.data[0].b64_json;
 
-      console.log("done");
-
-      // Decode the base64 json
-      const images = jsons.map((json) => {
-        const image = Buffer.from(json!, "base64");
-        return image;
-      });
+      await db
+        .updateTable("generatedImages")
+        .set({
+          status: "completed",
+          imageDataUrl: `data:image/png;base64,${firstImageB64Json}`,
+        })
+        .where("quoteId", "=", quoteId)
+        .execute();
 
       console.log(
-        "generated",
-        images.map((image) => Object.keys(image))
+        `Job ID ${job.id} for quoteId ${quoteId} completed. Image saved to DB.`
       );
-
-      // TODO: What to do with the generated images? (Save URLs, notify user, etc.)
-      return { jsons };
+      return { b64JsonImage: firstImageB64Json };
     } catch (error) {
       console.error(
-        `Job ID ${job.id} for fid ${fid}: Error during DALL-E 2 image edit -`,
+        `Job ID ${job.id} for fid ${fid}, quoteId ${quoteId}: Error during DALL-E 2 image edit -`,
         error
       );
       let errorMessage = "Image editing failed.";
       if (error instanceof Error) errorMessage = error.message;
-      // Check for OpenAI specific API errors if possible
-      // if (error.response) { console.error(error.response.data); }
+
+      try {
+        await db
+          .updateTable("generatedImages")
+          .set({
+            status: "error",
+            imageDataUrl: errorMessage.substring(0, 1000),
+          })
+          .where("quoteId", "=", quoteId)
+          .execute();
+      } catch (dbError) {
+        console.error(
+          `Job ID ${job.id} for quoteId ${quoteId}: Failed to update DB status to error -`,
+          dbError
+        );
+      }
       throw new Error(errorMessage);
     }
   },
@@ -109,5 +137,5 @@ Ensure the final image is suitable as a profile picture.`;
 );
 
 console.log(
-  `Stylize image worker (using DALL-E 2 edit) listening to queue: ${STYLIZE_IMAGE_QUEUE_NAME}`
+  `Stylize image worker (using DALL-E) listening to queue: ${STYLIZE_IMAGE_QUEUE_NAME}`
 );

@@ -9,8 +9,11 @@ import {
   useSendTransaction,
   useAccount,
   useWaitForTransactionReceipt,
+  useConnect,
+  useSwitchChain,
 } from "wagmi";
 import { parseEther, toHex } from "viem";
+import { base } from "wagmi/chains";
 
 interface GenerationRequestPayload {
   fid: number;
@@ -72,10 +75,34 @@ const submitPaymentAPI = async (
 };
 
 export default function Home() {
+  const { connect, connectors } = useConnect();
   const { user, isLoading: isUserLoading } = useUser();
   const { address: connectedAddress } = useAccount();
   const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
+  const account = useAccount();
+
+  const { switchChainAsync } = useSwitchChain();
+
+  // Add effect to handle chain switching when address changes
+  useEffect(() => {
+    const handleChainSwitch = async () => {
+      if (connectedAddress && account.chainId !== base.id) {
+        try {
+          setApiMessage("Switching to Base network...");
+          await switchChainAsync({ chainId: base.id });
+          setApiMessage("Successfully switched to Base network.");
+        } catch (switchError: any) {
+          console.error("Failed to switch network:", switchError);
+          setApiMessage(
+            `Failed to switch to Base network: ${switchError.message}. Please switch manually.`
+          );
+        }
+      }
+    };
+
+    handleChainSwitch();
+  }, [connectedAddress, account.chainId, switchChainAsync]);
 
   // State for payment flow
   const [quoteId, setQuoteId] = useState<string | null>(null);
@@ -93,6 +120,8 @@ export default function Home() {
   const [currentTxHash, setCurrentTxHash] = useState<`0x${string}` | undefined>(
     undefined
   );
+  // Add flag to prevent duplicate submissions
+  const [isPaymentSubmitted, setIsPaymentSubmitted] = useState<boolean>(false);
 
   const {
     data: sendTxData,
@@ -107,6 +136,7 @@ export default function Home() {
     error: confirmationError,
   } = useWaitForTransactionReceipt({
     hash: sendTxData,
+    confirmations: 1,
   });
 
   // Mutation for getting a quote
@@ -116,13 +146,35 @@ export default function Home() {
     GenerationRequestPayload
   >({
     mutationFn: getGenerationQuoteAPI,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log("Quote received:", data);
       setQuoteId(data.quoteId);
       setPaymentAddress(data.paymentAddress);
       setAmountDue(data.amountDue);
-      setApiMessage(data.message);
-      setGenerationStep("awaiting_payment");
+      setApiMessage("Quote received, preparing transaction...");
+
+      if (!connectedAddress) {
+        setApiMessage("Please connect your wallet to proceed with payment.");
+        setGenerationStep("awaiting_payment");
+        return;
+      }
+
+      try {
+        const value = parseEther(data.amountDue);
+        const txData = toHex(data.quoteId);
+
+        sendTransaction({
+          to: data.paymentAddress as `0x${string}`,
+          value: value,
+          data: txData,
+          chainId: base.id,
+        });
+        setGenerationStep("payment_processing");
+      } catch (e: any) {
+        console.error("Transaction preparation error:", e);
+        setApiMessage(`Error: ${e.message}`);
+        setGenerationStep("awaiting_payment");
+      }
     },
     onError: (error) => {
       console.error("Error getting quote:", error);
@@ -142,7 +194,7 @@ export default function Home() {
       console.log("Payment submission successful:", data);
       setApiMessage(data.message || "Payment verified and job queued!");
       setGenerationStep("job_queued");
-      // Reset quote details after successful submission
+      // Reset state for next generation
       setQuoteId(null);
       setPaymentAddress(null);
       setAmountDue(null);
@@ -151,40 +203,50 @@ export default function Home() {
     onError: (error) => {
       console.error("Error submitting payment:", error);
       setApiMessage(`Payment Submission Error: ${error.message}`);
-      setGenerationStep("error"); // Or back to "awaiting_payment" to allow retry?
+      setGenerationStep("error");
+      setIsPaymentSubmitted(false); // Allow retry on error
     },
   });
 
   useEffect(() => {
     if (isUserLoading || !user) return;
-    // Set the generated prompt once user data is available
     const defaultPrompt = `Stylized version of ${
       user.displayName || user.username || "my"
     } Farcaster PFP, cinematic lighting, high detail, epic, fantasy art`;
     setGeneratedPrompt(defaultPrompt);
-    console.log("Generated prompt for user:", defaultPrompt);
   }, [user, isUserLoading]);
 
+  // Consolidate transaction confirmation handling into a single effect
   useEffect(() => {
-    if (isConfirmed && currentTxHash && quoteId) {
-      setApiMessage(
-        `Transaction confirmed! Hash: ${currentTxHash}. Submitting for verification...`
-      );
-      paymentSubmissionMutation.mutate({
-        quoteId,
-        transactionHash: currentTxHash,
-      });
-      setGenerationStep("payment_submitted");
-    }
-  }, [isConfirmed, currentTxHash, quoteId, paymentSubmissionMutation]);
+    const handleTransactionConfirmation = async () => {
+      if (isConfirmed && currentTxHash && !isPaymentSubmitted) {
+        setIsPaymentSubmitted(true); // Prevent duplicate submissions
+        setApiMessage(
+          `Transaction ${currentTxHash} confirmed on-chain. Submitting to backend for processing...`
+        );
+        setGenerationStep("payment_submitted");
+
+        try {
+          await paymentSubmissionMutation.mutateAsync({
+            quoteId: quoteId!,
+            transactionHash: currentTxHash,
+          });
+        } catch (error) {
+          // Error handling is already done in the mutation's onError
+          setIsPaymentSubmitted(false); // Reset flag if submission fails
+        }
+      }
+    };
+
+    handleTransactionConfirmation();
+  }, [isConfirmed, currentTxHash, isPaymentSubmitted]);
 
   useEffect(() => {
     if (sendTxData) {
       setCurrentTxHash(sendTxData);
       setApiMessage(
-        `Transaction submitted! Waiting for confirmation... Hash: ${sendTxData}`
+        `Transaction ${sendTxData} submitted to network. Waiting for on-chain confirmation...`
       );
-      setGenerationStep("payment_processing");
     }
   }, [sendTxData]);
 
@@ -192,12 +254,21 @@ export default function Home() {
     if (sendTxError) {
       setApiMessage(`Transaction Error: ${sendTxError.message}`);
       setGenerationStep("awaiting_payment");
+      setIsPaymentSubmitted(false); // Reset flag on error
     }
     if (confirmationError) {
       setApiMessage(`Confirmation Error: ${confirmationError.message}`);
       setGenerationStep("awaiting_payment");
+      setIsPaymentSubmitted(false); // Reset flag on error
     }
   }, [sendTxError, confirmationError]);
+
+  // Reset payment submitted flag when starting a new quote request
+  useEffect(() => {
+    if (generationStep === "quote_requested") {
+      setIsPaymentSubmitted(false);
+    }
+  }, [generationStep]);
 
   const handleRequestQuote = () => {
     if (!user || !user.fid) {
@@ -216,31 +287,6 @@ export default function Home() {
       prompt: generatedPrompt,
       userPfpUrl: user.pfpUrl,
     });
-  };
-
-  const handlePayAndGenerate = async () => {
-    if (!paymentAddress || !amountDue || !quoteId || !connectedAddress) {
-      setApiMessage("Payment details not available or wallet not connected.");
-      setGenerationStep("error");
-      return;
-    }
-
-    setApiMessage("Preparing transaction...");
-    try {
-      const value = parseEther(amountDue); // Assumes amountDue is in ETH
-      const data = toHex(quoteId); // Encode quoteId as hex data
-
-      sendTransaction({
-        to: paymentAddress as `0x${string}`,
-        value: value,
-        data: data,
-      });
-      // The useEffect for sendTxData will handle next steps
-    } catch (e: any) {
-      console.error("Transaction preparation error:", e);
-      setApiMessage(`Error: ${e.message}`);
-      setGenerationStep("awaiting_payment"); // Revert to allow retry
-    }
   };
 
   if (isUserLoading)
@@ -287,6 +333,11 @@ export default function Home() {
               {user.displayName || `@${user.username}`}
             </p>
             <p className="text-sm text-gray-500">FID: {user.fid}</p>
+            {account.address && (
+              <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                Wallet: {account.address}
+              </p>
+            )}
           </div>
 
           <div className="w-full p-3 border rounded-md bg-gray-50 my-4">
@@ -298,8 +349,7 @@ export default function Home() {
             </p>
           </div>
 
-          {generationStep !== "awaiting_payment" &&
-            generationStep !== "payment_processing" &&
+          {generationStep !== "payment_processing" &&
             generationStep !== "payment_submitted" &&
             generationStep !== "job_queued" && (
               <Button
@@ -308,57 +358,9 @@ export default function Home() {
                 disabled={isActionDisabled}
               >
                 {quoteMutation.isPending
-                  ? "Getting Quote..."
-                  : "1. Get Generation Quote"}
+                  ? "Processing..."
+                  : "Generate Character"}
               </Button>
-            )}
-
-          {generationStep === "awaiting_payment" &&
-            paymentAddress &&
-            amountDue &&
-            quoteId && (
-              <div className="w-full p-4 border rounded-md bg-yellow-50 space-y-3 text-center">
-                <h2 className="text-xl font-semibold">Payment Required</h2>
-                <p>To generate your image, please send:</p>
-                <p>
-                  <strong className="text-lg">{amountDue} ETH</strong>
-                </p>
-                <p>
-                  To address:{" "}
-                  <code className="text-sm bg-gray-200 p-1 rounded">
-                    {paymentAddress}
-                  </code>
-                </p>
-                <p>
-                  You <strong className="text-red-500">MUST</strong> include the
-                  following in the transaction's data/hex data field:
-                </p>
-                <p>
-                  <code className="text-sm bg-gray-200 p-1 rounded">
-                    {quoteId}
-                  </code>
-                </p>
-                <p className="text-xs text-gray-500">
-                  This Quote ID links your payment to your request.
-                </p>
-
-                {!connectedAddress && (
-                  <p className="text-red-500 font-semibold">
-                    Please connect your wallet to pay.
-                  </p>
-                )}
-                <Button
-                  onClick={handlePayAndGenerate}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg"
-                  disabled={isActionDisabled || !connectedAddress}
-                >
-                  {isSendingTx
-                    ? "Processing Tx..."
-                    : isConfirming
-                    ? "Confirming Tx..."
-                    : "2. Pay with Wallet"}
-                </Button>
-              </div>
             )}
 
           {apiMessage && (

@@ -21,6 +21,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
+    console.log("body", body);
+
     if (body.quoteId && body.transactionHash) {
       // --- PAYMENT SUBMISSION FLOW ---
       const { quoteId, transactionHash } = body as {
@@ -159,12 +161,13 @@ export async function POST(request: Request) {
       }
 
       const jobData: StylizeImageJobData = {
-        fid: generationRequest.fid, // Ensure fid is number
-        prompt: generationRequest.promptText, // This should be the main prompt for generation
-        userPfpUrl: generationRequest.userPfpUrl, // Use the stored userPfpUrl
-        // Potentially include other details if they were stored with the quote:
-        // n: generationRequest.n,
-        // size: generationRequest.size,
+        fid: generationRequest.fid,
+        prompt: generationRequest.promptText,
+        userPfpUrl:
+          generationRequest.userPfpUrl === null
+            ? undefined
+            : generationRequest.userPfpUrl, // Convert null to undefined
+        quoteId: generationRequest.quoteId, // Add quoteId to job data
       };
 
       const job = await stylizeImageQueue.add("stylizeImage", jobData);
