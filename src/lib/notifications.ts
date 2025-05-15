@@ -131,12 +131,18 @@ export async function setUserNotificationDetails(
 ): Promise<void> {
   // Update user notification details
   await db
-    .updateTable("users")
-    .set({
+    .insertInto("users")
+    .values({
+      fid,
       notificationUrl: notificationDetails.url,
       notificationToken: notificationDetails.token,
     })
-    .where("fid", "=", fid)
+    .onConflict((b) =>
+      b.columns(["fid"]).doUpdateSet({
+        notificationUrl: notificationDetails.url,
+        notificationToken: notificationDetails.token,
+      })
+    )
     .execute();
 }
 

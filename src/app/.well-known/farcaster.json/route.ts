@@ -9,11 +9,11 @@ export async function GET() {
     accountAssociation: accountAssociations[appUrl],
     frame: {
       version: "1",
-      name: "Frame",
+      name: "Stylize PFP",
       iconUrl: `${appUrl}/icon.png`,
       homeUrl: appUrl,
       imageUrl: `${appUrl}/og.png`,
-      buttonTitle: "launch",
+      buttonTitle: "Stylize my PFP",
       splashImageUrl: `${appUrl}/splash.png`,
       splashBackgroundColor: "#f7f7f7",
       webhookUrl: `${appUrl}/api/webhooks/farcaster`,
