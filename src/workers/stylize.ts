@@ -1,11 +1,11 @@
+import { db } from "@/lib/db";
+import { sendFrameNotification } from "@/lib/notifications";
 import { Worker } from "bullmq";
+import OpenAI, { toFile } from "openai"; // Using the official OpenAI SDK
+import sharp from "sharp"; // Import sharp
 import { STYLIZE_IMAGE_QUEUE_NAME } from "../lib/constants";
 import { redisQueue } from "../lib/redis";
 import { StylizeImageJobData } from "../types/jobs";
-import OpenAI, { toFile } from "openai"; // Using the official OpenAI SDK
-import { db } from "@/lib/db";
-import { notifyUsers, sendFrameNotification } from "@/lib/notifications";
-import sharp from "sharp"; // Import sharp
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error(
