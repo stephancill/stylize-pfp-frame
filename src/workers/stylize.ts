@@ -72,7 +72,7 @@ Ensure the final image is suitable as a profile picture.`;
         image: imageFile,
         prompt: editPrompt,
         n: n, // Number of images to generate
-        size: "256x256",
+        size: "1024x1024",
       });
 
       if (
