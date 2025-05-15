@@ -10,6 +10,7 @@ export const STYLIZE_IMAGE_QUEUE_NAME = "stylize-image";
 export const FRAME_METADATA = {
   version: "next",
   imageUrl: `${process.env.APP_URL}/og.png`,
+  iconUrl: `${process.env.APP_URL}/splash.png`,
   button: {
     title: "Stylize Me",
     action: {
