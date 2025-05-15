@@ -34,15 +34,11 @@ interface Theme {
 }
 
 const generateHigherBuddyPrompt = (baseTheme: string): string => {
-  return `Edit the provided profile picture based on the theme: "${baseTheme}".
+  return `come up with an animal or creature (not too obscure) that is representative of the character or vibe of the image.
 
-Instructions for the edit:
-1. Main Subject: The subject is the animal or creature already in the provided image. Adapt it to be representative of the character or vibe suggested by the theme.
-2. Depiction: Modify the existing animal/creature. If it was wearing clothes, try to match the new style closely. Otherwise, give the animal a minimalist outfit suitable for the new theme.
-3. Visual Style: The image must be transformed to have a high grain effect, 90s disposable camera style with chromatic aberration, a slight yellow tint, and be a hyper-realistic photograph with detailed elements. It should be captured in a harsh flash photography style, evoking a vintage paparazzi feel.
-4. Color Preservation: If possible, try to preserve prominent colors from the original image while applying the new style.
+then generate a profile picture of the animal. include as many defining characteristics as possible. if the character is wearing clothes, try to match it as closely as possible - otherwise give the character a minimalist outfit.
 
-Ensure the final image is suitable as a profile picture.`;
+image characteristics: high grain effect, 90s disposable camera style with chromatic aberration, slight yellow tint, and hyper-realistic photography with detailed elements, captured in harsh flash photography style, vintage paparazzi feel. preserve the prominent colors in the original image`;
 };
 
 const generateCinematicFantasyPrompt = (baseTheme: string): string => {
