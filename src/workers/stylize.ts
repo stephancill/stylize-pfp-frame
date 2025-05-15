@@ -5,6 +5,7 @@ import { StylizeImageJobData } from "../types/jobs";
 import OpenAI, { toFile } from "openai"; // Using the official OpenAI SDK
 import { db } from "@/lib/db";
 import { notifyUsers, sendFrameNotification } from "@/lib/notifications";
+import sharp from "sharp"; // Import sharp
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error(
@@ -87,11 +88,23 @@ Ensure the final image is suitable as a profile picture.`;
 
       const firstImageB64Json = response.data[0].b64_json;
 
+      // Convert base64 to buffer
+      const generatedImageBuffer = Buffer.from(firstImageB64Json, "base64");
+
+      // Resize image
+      const resizedImageBuffer = await sharp(generatedImageBuffer)
+        .resize(250, 250)
+        .png()
+        .toBuffer();
+
+      // Convert resized buffer back to base64
+      const resizedImageB64Json = resizedImageBuffer.toString("base64");
+
       await db
         .updateTable("generatedImages")
         .set({
           status: "completed",
-          imageDataUrl: `data:image/png;base64,${firstImageB64Json}`,
+          imageDataUrl: `data:image/png;base64,${resizedImageB64Json}`, // Save resized image
         })
         .where("quoteId", "=", quoteId)
         .execute();
@@ -114,7 +127,7 @@ Ensure the final image is suitable as a profile picture.`;
       console.log(
         `Job ID ${job.id} for quoteId ${quoteId} completed. Image saved to DB.`
       );
-      return { b64JsonImage: firstImageB64Json };
+      return { b64JsonImage: resizedImageB64Json }; // Return resized image
     } catch (error) {
       console.error(
         `Job ID ${job.id} for fid ${fid}, quoteId ${quoteId}: Error during DALL-E 2 image edit -`,
