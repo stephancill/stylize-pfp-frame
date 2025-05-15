@@ -14,6 +14,17 @@ import {
 } from "wagmi";
 import { parseEther, toHex } from "viem";
 import { base } from "wagmi/chains";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import sdk from "@farcaster/frame-sdk";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 interface GenerationRequestPayload {
   fid: number;
@@ -36,6 +47,15 @@ interface SubmitPaymentPayload {
 interface SubmitPaymentResponse {
   message: string;
   jobId?: string; // If job is queued immediately
+}
+
+// Define a type for the completed images we expect from the new API
+interface CompletedImage {
+  id: string;
+  imageDataUrl: string | null;
+  promptText: string | null;
+  createdAt: string; // Or Date, depending on API response formatting
+  quoteId: string;
 }
 
 // API function to get a quote
@@ -82,6 +102,11 @@ export default function Home() {
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
   const account = useAccount();
 
+  // State for completed images
+  const [completedImages, setCompletedImages] = useState<CompletedImage[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState<boolean>(false);
+  const [imagesError, setImagesError] = useState<string | null>(null);
+
   const { switchChainAsync } = useSwitchChain();
 
   // Add effect to handle chain switching when address changes
@@ -106,8 +131,6 @@ export default function Home() {
 
   // State for payment flow
   const [quoteId, setQuoteId] = useState<string | null>(null);
-  const [paymentAddress, setPaymentAddress] = useState<string | null>(null);
-  const [amountDue, setAmountDue] = useState<string | null>(null);
   const [generationStep, setGenerationStep] = useState<
     | "initial"
     | "quote_requested"
@@ -122,6 +145,12 @@ export default function Home() {
   );
   // Add flag to prevent duplicate submissions
   const [isPaymentSubmitted, setIsPaymentSubmitted] = useState<boolean>(false);
+  // State for polling
+  const [isPolling, setIsPolling] = useState<boolean>(false);
+  const [pollingQuoteId, setPollingQuoteId] = useState<string | null>(null);
+  // State for Frame Prompt Dialog
+  const [showFramePromptDialog, setShowFramePromptDialog] =
+    useState<boolean>(false);
 
   const {
     data: sendTxData,
@@ -149,8 +178,6 @@ export default function Home() {
     onSuccess: async (data) => {
       console.log("Quote received:", data);
       setQuoteId(data.quoteId);
-      setPaymentAddress(data.paymentAddress);
-      setAmountDue(data.amountDue);
       setApiMessage("Quote received, preparing transaction...");
 
       if (!connectedAddress) {
@@ -192,19 +219,24 @@ export default function Home() {
     mutationFn: submitPaymentAPI,
     onSuccess: (data) => {
       console.log("Payment submission successful:", data);
-      setApiMessage(data.message || "Payment verified and job queued!");
+      setPollingQuoteId(quoteId);
+      setIsPolling(true);
+      setShowFramePromptDialog(true);
+
+      setApiMessage(
+        data.message ||
+          "Payment verified! Waiting for image generation... (Add our frame for updates!)"
+      );
       setGenerationStep("job_queued");
-      // Reset state for next generation
+
       setQuoteId(null);
-      setPaymentAddress(null);
-      setAmountDue(null);
       setCurrentTxHash(undefined);
     },
     onError: (error) => {
       console.error("Error submitting payment:", error);
       setApiMessage(`Payment Submission Error: ${error.message}`);
       setGenerationStep("error");
-      setIsPaymentSubmitted(false); // Allow retry on error
+      setIsPaymentSubmitted(false); // Reset flag if submission fails
     },
   });
 
@@ -270,6 +302,107 @@ export default function Home() {
     }
   }, [generationStep]);
 
+  // Effect to fetch completed images when user.fid is available
+  useEffect(() => {
+    const fetchCompletedImages = async () => {
+      if (user && user.fid) {
+        setIsLoadingImages(true);
+        setImagesError(null);
+        try {
+          const response = await fetch(`/api/user/${user.fid}/images`);
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to fetch images");
+          }
+          const data = await response.json();
+          setCompletedImages(data.images || []);
+          if (data.images && data.images.length === 0) {
+            // Optional: set a specific message if no images, or handle in render
+          }
+        } catch (error: any) {
+          console.error("Error fetching completed images:", error);
+          setImagesError(error.message);
+        } finally {
+          setIsLoadingImages(false);
+        }
+      }
+    };
+
+    fetchCompletedImages();
+  }, [user, user?.fid]); // Depend on user object and fid specifically
+
+  // Effect for polling for the newly generated image
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    let pollTimeoutId: NodeJS.Timeout | null = null;
+
+    const POLLING_INTERVAL = 5000; // 5 seconds
+    const MAX_POLLING_DURATION = 120000; // 2 minutes
+
+    const fetchAndCheck = async () => {
+      if (!user?.fid || !pollingQuoteId) {
+        setIsPolling(false);
+        setGenerationStep("initial");
+        return;
+      }
+      try {
+        const response = await fetch(`/api/user/${user.fid}/images`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || "Failed to fetch images during polling"
+          );
+        }
+        const data = await response.json();
+        const allImages: CompletedImage[] = data.images || [];
+        setCompletedImages(allImages); // Update with the latest list
+
+        const foundImage = allImages.find(
+          (img) => img.quoteId === pollingQuoteId && img.imageDataUrl
+        );
+
+        if (foundImage) {
+          setApiMessage("Your new character has been generated!");
+          setIsPolling(false);
+          setPollingQuoteId(null);
+          setGenerationStep("initial");
+        }
+      } catch (error: any) {
+        console.error("Polling error:", error);
+        setApiMessage(
+          `Error checking for new image: ${error.message}. Please refresh or try again.`
+        );
+        setIsPolling(false);
+        setPollingQuoteId(null);
+        setGenerationStep("initial");
+      }
+    };
+
+    if (isPolling && pollingQuoteId && user?.fid) {
+      // Initial check before starting interval
+      fetchAndCheck();
+
+      intervalId = setInterval(fetchAndCheck, POLLING_INTERVAL);
+
+      pollTimeoutId = setTimeout(() => {
+        if (isPolling) {
+          // Check if still polling
+          setApiMessage(
+            "Image generation is taking longer than expected. It will appear in 'Your Creations' when ready. You can start a new generation."
+          );
+          setIsPolling(false);
+          setPollingQuoteId(null);
+          setGenerationStep("initial");
+        }
+      }, MAX_POLLING_DURATION);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (pollTimeoutId) clearTimeout(pollTimeoutId);
+    };
+  }, [isPolling, pollingQuoteId, user, user?.fid]); // Added user to dependencies for user.fid access
+
   const handleRequestQuote = () => {
     if (!user || !user.fid) {
       setApiMessage("User data not available.");
@@ -313,6 +446,8 @@ export default function Home() {
     generationStep === "payment_processing" ||
     !generatedPrompt;
 
+  const YOUR_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://example.com"; // Replace with your actual app URL
+
   return (
     <div className="container mx-auto p-4 flex flex-col items-center space-y-6 max-w-lg">
       <h1 className="text-3xl font-bold text-center">AI Character Generator</h1>
@@ -333,10 +468,20 @@ export default function Home() {
               {user.displayName || `@${user.username}`}
             </p>
             <p className="text-sm text-gray-500">FID: {user.fid}</p>
-            {account.address && (
+            {account.address ? (
               <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                 Wallet: {account.address}
               </p>
+            ) : (
+              connectors.map((connector) => {
+                return (
+                  <div>
+                    <Button onClick={() => connect({ connector })}>
+                      {connector.name}
+                    </Button>
+                  </div>
+                );
+              })
             )}
           </div>
 
@@ -393,6 +538,124 @@ export default function Home() {
                 </a>
               </div>
             )}
+
+          {/* Section to display completed images */}
+          {user && user.fid && (
+            <div className="w-full mt-10 pt-6 border-t">
+              <h2 className="text-2xl font-semibold text-center mb-6">
+                Your Creations
+              </h2>
+              {isLoadingImages && (
+                <p className="text-center py-4">Loading your images...</p>
+              )}
+              {imagesError && (
+                <p className="text-center text-red-500 py-4">
+                  Error loading images: {imagesError}
+                </p>
+              )}
+              {!isLoadingImages &&
+                !imagesError &&
+                completedImages.length === 0 && (
+                  <p className="text-center text-gray-500 py-4">
+                    You haven't generated any characters yet.
+                  </p>
+                )}
+              {!isLoadingImages &&
+                !imagesError &&
+                completedImages.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {completedImages.map((image) => (
+                      <Card
+                        key={image.id || image.quoteId}
+                        className="overflow-hidden flex flex-col"
+                      >
+                        <CardContent className="p-0 aspect-square flex-grow">
+                          {image.imageDataUrl ? (
+                            <img
+                              src={image.imageDataUrl}
+                              alt={image.promptText || "Generated Character"}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center">
+                              <p className="text-muted-foreground">
+                                Image not available
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                        {(image.promptText ||
+                          image.createdAt ||
+                          image.imageDataUrl) && (
+                          <CardFooter className="p-3 flex flex-col items-start border-t">
+                            {image.promptText && (
+                              <p
+                                className="text-xs text-muted-foreground truncate w-full"
+                                title={image.promptText}
+                              >
+                                {image.promptText}
+                              </p>
+                            )}
+                            {image.createdAt && (
+                              <p className="text-xs text-muted-foreground/80 mt-1">
+                                {new Date(image.createdAt).toLocaleDateString()}
+                              </p>
+                            )}
+                            {image.imageDataUrl && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 w-full"
+                                onClick={() => {
+                                  console.log("opening", image.imageDataUrl);
+                                  sdk.actions.openUrl(image.imageDataUrl!);
+                                }}
+                              >
+                                Open Image
+                              </Button>
+                            )}
+                          </CardFooter>
+                        )}
+                      </Card>
+                    ))}
+                  </div>
+                )}
+            </div>
+          )}
+
+          {/* Frame Prompt Dialog */}
+          {pollingQuoteId && (
+            <Dialog
+              open={showFramePromptDialog}
+              onOpenChange={setShowFramePromptDialog}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Get Notified via Farcaster Frame</DialogTitle>
+                  <DialogDescription>
+                    Add our Farcaster frame to your feed to get notified when
+                    your character is ready!
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="sm:justify-start mt-4">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      sdk.actions.addFrame();
+                      setShowFramePromptDialog(false);
+                    }}
+                  >
+                    Add Frame to Farcaster
+                  </Button>
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                      Dismiss
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </>
       ) : (
         <p className="text-center py-10">

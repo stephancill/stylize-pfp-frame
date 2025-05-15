@@ -4,6 +4,7 @@ import { redisQueue } from "../lib/redis";
 import { StylizeImageJobData } from "../types/jobs";
 import OpenAI, { toFile } from "openai"; // Using the official OpenAI SDK
 import { db } from "@/lib/db";
+import { notifyUsers, sendFrameNotification } from "@/lib/notifications";
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error(
@@ -18,14 +19,7 @@ const openaiClient = new OpenAI({
 export const stylizeImageWorker = new Worker<StylizeImageJobData>(
   STYLIZE_IMAGE_QUEUE_NAME,
   async (job) => {
-    const {
-      fid,
-      prompt: basePrompt,
-      userPfpUrl,
-      quoteId,
-      n = 1,
-      size = "256x256",
-    } = job.data;
+    const { fid, prompt: basePrompt, userPfpUrl, quoteId, n = 1 } = job.data;
 
     if (!userPfpUrl) {
       console.error(
@@ -78,6 +72,7 @@ Ensure the final image is suitable as a profile picture.`;
         image: imageFile,
         prompt: editPrompt,
         n: n, // Number of images to generate
+        size: "256x256",
       });
 
       if (
@@ -100,6 +95,14 @@ Ensure the final image is suitable as a profile picture.`;
         })
         .where("quoteId", "=", quoteId)
         .execute();
+
+      // Notify the user that the image has been edited
+      await sendFrameNotification({
+        fid,
+        title: "Stylize complete",
+        body: "Your profile picture has been stylized",
+        targetUrl: process.env.APP_URL,
+      });
 
       console.log(
         `Job ID ${job.id} for quoteId ${quoteId} completed. Image saved to DB.`

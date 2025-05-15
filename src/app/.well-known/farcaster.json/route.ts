@@ -32,4 +32,11 @@ const accountAssociations = {
     signature:
       "MHhmOWJkZGQ1MDA4Njc3NjZlYmI1ZmNjODk1NThjZWIxMTc5NjAwNjRlZmFkZWZjZmY4NGZhMzdiMjYxZjU1ZmYzMmZiMDg5NmY4NWU0MmM1YjM4MjQxN2NlMjFhOTBlYmM4YTIzOWFkNjE0YzA2ODM0ZDQ1ODk5NDI3YjE5ZjNkYTFi",
   },
+  "https://stylize.steer.fun": {
+    header:
+      "eyJmaWQiOjE2ODksInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgyNzM4QjIxY0I5NTIwMzM4RjlBMzc1YzNiOTcxQjE3NzhhZTEwMDRhIn0",
+    payload: "eyJkb21haW4iOiJzdHlsaXplLnN0ZWVyLmZ1biJ9",
+    signature:
+      "MHgzMzU4MzFkZTM3MjllNmVjZDM3MTdiODc1NzhkNWI1NGZiNmQyODE2NzIxYjE2ODlhMTMwNDlkYTAwNDRhOGEzMGE5NTU1MTRhNTQ3NzQ5YmNhMzJhMTlmYTQ0OTVlNDI3Y2ZiOGVjOTA0MjJlYTZlZDRkYmI3NjBjY2QwNzFmNzFj",
+  },
 };
