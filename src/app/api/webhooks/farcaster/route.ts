@@ -7,16 +7,16 @@ import {
   createVerifyAppKeyWithHub,
   ParseWebhookEvent,
   parseWebhookEvent,
+  verifyAppKeyWithNeynar,
 } from "@farcaster/frame-node";
 import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
   const requestJson = await request.json();
-  const verifier = createVerifyAppKeyWithHub(process.env.HUB_URL!);
 
   let data;
   try {
-    data = await parseWebhookEvent(requestJson, verifier);
+    data = await parseWebhookEvent(requestJson, verifyAppKeyWithNeynar);
   } catch (e: unknown) {
     const error = e as ParseWebhookEvent.ErrorType;
 

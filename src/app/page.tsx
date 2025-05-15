@@ -569,17 +569,6 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="w-full p-3 border rounded-md bg-gray-50 my-4">
-            <h3 className="text-md font-semibold text-gray-700 mb-1">
-              Selected Style:
-            </h3>
-            <p className="text-sm text-gray-600 italic">
-              {themes.find((t) => t.id === selectedThemeId)?.name ||
-                "Default Style"}{" "}
-              for {user.displayName || `@${user.username}`}
-            </p>
-          </div>
-
           {/* Warning if no PFP */}
           {user && !user.pfpUrl && (
             <div className="w-full p-3 my-4 border border-orange-300 rounded-md bg-orange-50 text-orange-700 text-sm">
