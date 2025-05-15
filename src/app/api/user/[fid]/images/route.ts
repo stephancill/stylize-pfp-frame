@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { GeneratedImageRow } from "@/types/db"; // Assuming GeneratedImageRow includes all needed fields
+import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: { fid: string } }
+  args: { params: Promise<{ fid: string }> }
 ) {
+  const params = await args.params;
   try {
     const fidString = params.fid;
     if (!fidString) {
