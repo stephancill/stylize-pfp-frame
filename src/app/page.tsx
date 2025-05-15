@@ -54,6 +54,18 @@ Key elements for the transformation:
 Ensure the result is a captivating, profile picture-worthy artwork.`;
 };
 
+const generateStudioGhibliPrompt = (baseTheme: string): string => {
+  return `Reimagine the provided profile picture in the iconic Studio Ghibli style, based on the theme: "${baseTheme}".
+
+Key elements for the transformation:
+1. Subject Adaptation: Transform the animal/creature into a gentle, whimsical character typical of Studio Ghibli films. It should evoke a sense of wonder or nostalgia.
+2. Artistic Style: The image must emulate the classic hand-drawn animation style of Studio Ghibli. This includes soft, rich color palettes, detailed and lush natural backgrounds (or cozy, detailed interiors), and expressive, emotive character design.
+3. Atmosphere: Create an enchanting and heartwarming atmosphere. Consider elements like soft lighting, a gentle breeze, or a scene that tells a small, peaceful story.
+4. Details: Incorporate iconic Ghibli-esque details like small, cute companion creatures, magical elements subtly woven into nature, or a focus on food or simple, beautiful moments if appropriate for the subject.
+
+Ensure the final image is a charming profile picture that captures the Studio Ghibli spirit.`;
+};
+
 const themes: Theme[] = [
   {
     id: "higherBuddy",
@@ -64,6 +76,11 @@ const themes: Theme[] = [
     id: "cinematicFantasy",
     name: "Cinematic Fantasy",
     generatePrompt: generateCinematicFantasyPrompt,
+  },
+  {
+    id: "studioGhibli",
+    name: "Studio Ghibli",
+    generatePrompt: generateStudioGhibliPrompt,
   },
 ];
 // --- End Prompt Generation Logic ---
@@ -284,6 +301,10 @@ export default function Home() {
       baseThemeForPrompt = `a cinematic, fantasy art version of ${
         user.displayName || user.username || "my"
       } Farcaster PFP, with epic lighting and high detail`;
+    } else if (selectedTheme.id === "studioGhibli") {
+      baseThemeForPrompt = `a Studio Ghibli style version of ${
+        user.displayName || user.username || "my"
+      } Farcaster PFP, capturing the essence of Japanese animation with whimsical charm and soft, nostalgic visuals`;
     } else {
       // Generic fallback
       baseThemeForPrompt = `a stylized version of ${
