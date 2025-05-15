@@ -26,6 +26,51 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
+// --- Prompt Generation Logic ---
+interface Theme {
+  id: string;
+  name: string;
+  generatePrompt: (baseTheme: string) => string;
+}
+
+const generateHigherBuddyPrompt = (baseTheme: string): string => {
+  return `Edit the provided profile picture based on the theme: "${baseTheme}".
+
+Instructions for the edit:
+1. Main Subject: The subject is the animal or creature already in the provided image. Adapt it to be representative of the character or vibe suggested by the theme.
+2. Depiction: Modify the existing animal/creature. If it was wearing clothes, try to match the new style closely. Otherwise, give the animal a minimalist outfit suitable for the new theme.
+3. Visual Style: The image must be transformed to have a high grain effect, 90s disposable camera style with chromatic aberration, a slight yellow tint, and be a hyper-realistic photograph with detailed elements. It should be captured in a harsh flash photography style, evoking a vintage paparazzi feel.
+4. Color Preservation: If possible, try to preserve prominent colors from the original image while applying the new style.
+
+Ensure the final image is suitable as a profile picture.`;
+};
+
+const generateCinematicFantasyPrompt = (baseTheme: string): string => {
+  return `Transform the provided profile picture with the theme: "${baseTheme}".
+
+Key elements for the transformation:
+1. Subject Adaptation: Reimagine the animal/creature in the image as a mythical or fantasy version, fitting the "${baseTheme}" concept.
+2. Attire/Features: Adorn the subject with fantasy-themed attire or features (e.g., mystical armor, glowing runes, ethereal wings) suitable for its form.
+3. Atmosphere: Create a dramatic and cinematic atmosphere with dynamic lighting (e.g., god rays, magical glows, contrasting shadows) and a rich, detailed background suggesting an epic fantasy world.
+4. Artistic Style: The final image should look like a piece of high-detail digital fantasy art, emphasizing realism within the fantasy context.
+
+Ensure the result is a captivating, profile picture-worthy artwork.`;
+};
+
+const themes: Theme[] = [
+  {
+    id: "higherBuddy",
+    name: "Higher Buddy",
+    generatePrompt: generateHigherBuddyPrompt,
+  },
+  {
+    id: "cinematicFantasy",
+    name: "Cinematic Fantasy",
+    generatePrompt: generateCinematicFantasyPrompt,
+  },
+];
+// --- End Prompt Generation Logic ---
+
 interface GenerationRequestPayload {
   fid: number;
   prompt: string;
@@ -100,6 +145,7 @@ export default function Home() {
   const { address: connectedAddress } = useAccount();
   const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
+  const [selectedThemeId, setSelectedThemeId] = useState<string>(themes[0].id);
   const account = useAccount();
 
   // State for completed images
@@ -242,11 +288,29 @@ export default function Home() {
 
   useEffect(() => {
     if (isUserLoading || !user) return;
-    const defaultPrompt = `Stylized version of ${
-      user.displayName || user.username || "my"
-    } Farcaster PFP, cinematic lighting, high detail, epic, fantasy art`;
-    setGeneratedPrompt(defaultPrompt);
-  }, [user, isUserLoading]);
+
+    const selectedTheme =
+      themes.find((t) => t.id === selectedThemeId) || themes[0];
+    let baseThemeForPrompt = "";
+
+    // Construct a base description based on the theme's nature
+    if (selectedTheme.id === "higherBuddy") {
+      baseThemeForPrompt = `a "Higher Buddy" version of ${
+        user.displayName || user.username || "my"
+      } Farcaster PFP, embodying a cool, slightly edgy, and photorealistic aesthetic`;
+    } else if (selectedTheme.id === "cinematicFantasy") {
+      baseThemeForPrompt = `a cinematic, fantasy art version of ${
+        user.displayName || user.username || "my"
+      } Farcaster PFP, with epic lighting and high detail`;
+    } else {
+      // Generic fallback
+      baseThemeForPrompt = `a stylized version of ${
+        user.displayName || user.username || "my"
+      } Farcaster PFP, in the style of ${selectedTheme.name}`;
+    }
+
+    setGeneratedPrompt(selectedTheme.generatePrompt(baseThemeForPrompt));
+  }, [user, isUserLoading, selectedThemeId]);
 
   // Consolidate transaction confirmation handling into a single effect
   useEffect(() => {
@@ -444,7 +508,8 @@ export default function Home() {
     isSendingTx ||
     isConfirming ||
     generationStep === "payment_processing" ||
-    !generatedPrompt;
+    !generatedPrompt ||
+    !user?.pfpUrl; // Disable if no PFP URL
 
   const YOUR_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://example.com"; // Replace with your actual app URL
 
@@ -485,14 +550,46 @@ export default function Home() {
             )}
           </div>
 
+          {/* Theme Selector Buttons */}
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Theme:
+            </label>
+            <div className="flex space-x-2 mb-4">
+              {themes.map((theme) => (
+                <Button
+                  key={theme.id}
+                  variant={selectedThemeId === theme.id ? "default" : "outline"} // Highlight active theme
+                  onClick={() => setSelectedThemeId(theme.id)}
+                  className="flex-grow"
+                >
+                  {theme.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <div className="w-full p-3 border rounded-md bg-gray-50 my-4">
             <h3 className="text-md font-semibold text-gray-700 mb-1">
-              Generated Prompt:
+              Selected Style:
             </h3>
             <p className="text-sm text-gray-600 italic">
-              {generatedPrompt || "Generating prompt based on your profile..."}
+              {themes.find((t) => t.id === selectedThemeId)?.name ||
+                "Default Style"}{" "}
+              for {user.displayName || `@${user.username}`}
             </p>
           </div>
+
+          {/* Warning if no PFP */}
+          {user && !user.pfpUrl && (
+            <div className="w-full p-3 my-4 border border-orange-300 rounded-md bg-orange-50 text-orange-700 text-sm">
+              <p className="font-semibold">Profile Picture Required</p>
+              <p>
+                To generate a character, please ensure you have a profile
+                picture uploaded to your Farcaster account.
+              </p>
+            </div>
+          )}
 
           {generationStep !== "payment_processing" &&
             generationStep !== "payment_submitted" &&

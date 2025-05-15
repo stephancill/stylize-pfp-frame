@@ -20,7 +20,7 @@ const openaiClient = new OpenAI({
 export const stylizeImageWorker = new Worker<StylizeImageJobData>(
   STYLIZE_IMAGE_QUEUE_NAME,
   async (job) => {
-    const { fid, prompt: basePrompt, userPfpUrl, quoteId, n = 1 } = job.data;
+    const { fid, prompt, userPfpUrl, quoteId, n = 1 } = job.data;
 
     if (!userPfpUrl) {
       console.error(
@@ -40,21 +40,9 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
       throw new Error("quoteId is required to update the database.");
     }
 
-    // Construct the detailed prompt for DALL-E 2 edit operation
-    const editPrompt = `Edit the provided profile picture based on the theme: "${basePrompt}".
-
-Instructions for the edit:
-1. Main Subject: The subject is the animal or creature already in the provided image. Adapt it to be representative of the character or vibe suggested by the theme.
-2. Depiction: Modify the existing animal/creature. If it was wearing clothes, try to match the new style closely. Otherwise, give the animal a minimalist outfit suitable for the new theme.
-3. Visual Style: The image must be transformed to have a high grain effect, 90s disposable camera style with chromatic aberration, a slight yellow tint, and be a hyper-realistic photograph with detailed elements. It should be captured in a harsh flash photography style, evoking a vintage paparazzi feel.
-4. Color Preservation: If possible, try to preserve prominent colors from the original image while applying the new style.
-
-Ensure the final image is suitable as a profile picture.`;
-
     console.log(
-      `Processing DALL-E 2 image edit job for fid: ${fid}, quoteId: ${quoteId} with base prompt: "${basePrompt}" and PFP URL: ${userPfpUrl}`
+      `Processing image model image edit job for fid: ${fid}, quoteId: ${quoteId} with prompt: "${prompt}" and PFP URL: ${userPfpUrl}`
     );
-    console.log(`Generated DALL-E 2 Edit Prompt: ${editPrompt}`);
 
     try {
       const imageResponse = await fetch(userPfpUrl);
@@ -71,7 +59,7 @@ Ensure the final image is suitable as a profile picture.`;
       const response = await openaiClient.images.edit({
         model: "gpt-image-1",
         image: imageFile,
-        prompt: editPrompt,
+        prompt: prompt,
         n: n, // Number of images to generate
         size: "1024x1024",
       });
@@ -130,7 +118,7 @@ Ensure the final image is suitable as a profile picture.`;
       return { b64JsonImage: resizedImageB64Json }; // Return resized image
     } catch (error) {
       console.error(
-        `Job ID ${job.id} for fid ${fid}, quoteId ${quoteId}: Error during DALL-E 2 image edit -`,
+        `Job ID ${job.id} for fid ${fid}, quoteId ${quoteId}: Error during image model image edit -`,
         error
       );
       let errorMessage = "Image editing failed.";
@@ -160,5 +148,5 @@ Ensure the final image is suitable as a profile picture.`;
 );
 
 console.log(
-  `Stylize image worker (using DALL-E) listening to queue: ${STYLIZE_IMAGE_QUEUE_NAME}`
+  `Stylize image worker listening to queue: ${STYLIZE_IMAGE_QUEUE_NAME}`
 );
