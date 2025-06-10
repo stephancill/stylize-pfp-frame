@@ -17,15 +17,23 @@ export const GET = withAuth(async (req, luciaUser) => {
     return Response.json({ error: "User not found" }, { status: 400 });
   }
 
-  const farcasterUser = await withCache(
-    getUserDataKey(dbUser.fid),
-    async () => {
-      return await getUserData(dbUser.fid);
-    },
-    {
-      ttl: 60 * 60 * 24 * 7, // 1 week
-    }
-  );
+  let farcasterUser: Record<UserDataType, string | undefined> = {} as Record<
+    UserDataType,
+    string | undefined
+  >;
+
+  // Only fetch Farcaster data if user has an FID (not wallet-only)
+  if (dbUser.fid) {
+    farcasterUser = await withCache(
+      getUserDataKey(dbUser.fid),
+      async () => {
+        return await getUserData(dbUser.fid!);
+      },
+      {
+        ttl: 60 * 60 * 24 * 7, // 1 week
+      }
+    );
+  }
 
   const user: User = {
     fid: dbUser.fid,

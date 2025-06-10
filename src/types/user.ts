@@ -1,6 +1,6 @@
 export type User = {
   id: string;
-  fid: number;
+  fid: number | null;
   notificationsEnabled: boolean;
   username?: string;
   imageUrl?: string;
