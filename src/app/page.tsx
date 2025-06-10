@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Share2 } from "lucide-react";
+import Image from "next/image";
 
 // --- Prompt Generation Logic ---
 interface Theme {
@@ -546,7 +547,16 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-4 flex flex-col items-center space-y-6 max-w-lg">
-      <h1 className="text-3xl font-bold text-center">AI Character Generator</h1>
+      <div className="flex flex-col items-center space-y-4">
+        <Image
+          src="/splash.png"
+          alt="Stylize Me Logo"
+          width={80}
+          height={80}
+          className="object-contain"
+        />
+        <h1 className="text-3xl font-bold text-center">Stylize Me</h1>
+      </div>
 
       {user ? (
         <>
