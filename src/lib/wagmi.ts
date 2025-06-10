@@ -6,7 +6,7 @@ export const config = createConfig({
   connectors: [
     coinbaseWallet({
       appName: "Stylize Me",
-      appLogoUrl: "https://stylizeme.xyz/splash.png",
+      appLogoUrl: "https://stylize.steer.fun/splash.png",
     }),
   ],
   chains: [base as any],
