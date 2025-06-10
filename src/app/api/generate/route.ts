@@ -5,6 +5,7 @@ import { StylizeImageJobData } from "@/types/jobs";
 import { randomUUID } from "crypto";
 import { createPublicClient, http, parseEther, Hex, toHex } from "viem";
 import { base } from "viem/chains"; // Assuming Ethereum Mainnet. Change if using a different chain.
+import { verifyPaymentTransaction } from "@/lib/transactions";
 
 // Environment variables for payment
 const PAYMENT_ADDRESS = process.env.PAYMENT_ADDRESS! as Hex;
@@ -70,49 +71,18 @@ export async function POST(request: Request) {
           `Verifying transaction: ${transactionHash} for quoteId: ${quoteId}`
         );
 
-        // 1. Wait for transaction receipt and check status
-        const receipt = await publicClient.waitForTransactionReceipt({
-          hash: transactionHash,
-          confirmations: 1, // Number of block confirmations to wait for
+        const publicClient = createPublicClient({
+          chain: base,
+          transport: http(),
         });
 
-        if (receipt.status !== "success") {
-          verificationError = `Transaction ${transactionHash} failed or was reverted. Status: ${receipt.status}`;
-          // No need to proceed further if transaction itself failed
-        } else {
-          // 2. Fetch the full transaction details for more checks
-          const transaction = await publicClient.getTransaction({
-            hash: transactionHash,
-          });
-
-          if (!transaction) {
-            verificationError = `Transaction ${transactionHash} not found on chain after receipt.`;
-          } else {
-            // 3. Verify recipient address
-            if (
-              !transaction.to ||
-              transaction.to.toLowerCase() !== PAYMENT_ADDRESS.toLowerCase()
-            ) {
-              verificationError = `Transaction recipient does not match PAYMENT_ADDRESS. Expected: ${PAYMENT_ADDRESS}, Got: ${transaction.to}`;
-            }
-            // 4. Verify sent value
-            else if (transaction.value !== EXPECTED_VALUE_WEI) {
-              verificationError = `Transaction value does not match expected amount. Expected: ${EXPECTED_VALUE_WEI} Wei, Got: ${transaction.value} Wei`;
-            }
-            // 5. Verify transaction data (input) matches the hex-encoded quoteId
-            // The frontend sends toHex(quoteId), so the input data should match that.
-            else if (transaction.input !== toHex(generationRequest.quoteId)) {
-              verificationError = `Transaction data (input) does not match the required quoteId. Expected input: ${toHex(
-                generationRequest.quoteId
-              )}, Got: ${transaction.input}`;
-            } else {
-              isPaymentVerified = true;
-              console.log(
-                `Transaction ${transactionHash} successfully verified for quoteId: ${quoteId}`
-              );
-            }
-          }
-        }
+        isPaymentVerified = await verifyPaymentTransaction({
+          transactionHash,
+          quoteId,
+          publicClient,
+          paymentAddress: PAYMENT_ADDRESS,
+          expectedValueWei: EXPECTED_VALUE_WEI,
+        });
       } catch (e: any) {
         console.error(
           `Error during on-chain verification for ${transactionHash}:`,
@@ -232,6 +202,7 @@ export async function POST(request: Request) {
         quoteId: newQuoteId,
         paymentAddress: PAYMENT_ADDRESS,
         amountDue: AMOUNT_DUE_ETH_STRING, // Send the string representation for display
+        calldata: toHex(newQuoteId),
       });
     }
   } catch (error) {

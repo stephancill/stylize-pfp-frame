@@ -11,8 +11,9 @@ import {
   useWaitForTransactionReceipt,
   useConnect,
   useSwitchChain,
+  useDisconnect,
 } from "wagmi";
-import { parseEther, toHex } from "viem";
+import { Hex, parseEther, toHex } from "viem";
 import { base } from "wagmi/chains";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import sdk from "@farcaster/frame-sdk";
@@ -98,6 +99,7 @@ interface GenerationRequestResponse {
   quoteId: string;
   paymentAddress: string;
   amountDue: string;
+  calldata: Hex;
 }
 
 interface SubmitPaymentPayload {
@@ -157,6 +159,7 @@ const submitPaymentAPI = async (
 
 export default function Home() {
   const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
   const { user, isLoading: isUserLoading } = useUser();
   const { address: connectedAddress } = useAccount();
   const [apiMessage, setApiMessage] = useState<string | null>(null);
@@ -240,7 +243,7 @@ export default function Home() {
 
       try {
         const value = parseEther(data.amountDue);
-        const txData = toHex(data.quoteId);
+        const txData = data.calldata;
 
         sendTransaction({
           to: data.paymentAddress as `0x${string}`,
@@ -648,9 +651,19 @@ export default function Home() {
         <>
           <div className="flex flex-col items-center space-y-2">
             {account.address ? (
-              <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                Wallet: {account.address}
-              </p>
+              <div className="flex items-center space-x-2">
+                <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  Wallet: {account.address}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => disconnect()}
+                  className="h-6 w-6 p-0 hover:bg-red-100"
+                >
+                  <X className="h-3 w-3 text-gray-500 hover:text-red-500" />
+                </Button>
+              </div>
             ) : (
               connectors.map((connector) => {
                 return (
@@ -1035,9 +1048,19 @@ export default function Home() {
         <>
           {/* Wallet-only user interface */}
           <div className="flex flex-col items-center space-y-2">
-            <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              Wallet: {connectedAddress}
-            </p>
+            <div className="flex items-center space-x-2">
+              <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                Wallet: {connectedAddress}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => disconnect()}
+                className="h-6 w-6 p-0 hover:bg-red-100"
+              >
+                <X className="h-3 w-3 text-gray-500 hover:text-red-500" />
+              </Button>
+            </div>
             <p className="text-sm text-gray-600">
               Wallet connected - you can generate characters by uploading images
             </p>
