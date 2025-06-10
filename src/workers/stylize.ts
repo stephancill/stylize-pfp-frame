@@ -41,19 +41,48 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
     }
 
     console.log(
-      `Processing image model image edit job for fid: ${fid}, quoteId: ${quoteId} with prompt: "${prompt}" and PFP URL: ${userPfpUrl}`
+      `Processing image model image edit job for fid: ${fid}, quoteId: ${quoteId} with prompt: "${prompt}" and PFP URL: ${userPfpUrl.substring(
+        0,
+        50
+      )}...`
     );
 
     try {
-      const imageResponse = await fetch(userPfpUrl);
-      if (!imageResponse.ok) {
-        throw new Error(
-          `Failed to fetch image from ${userPfpUrl}: ${imageResponse.statusText}`
-        );
+      let imageBuffer: Buffer;
+      let contentType: string;
+
+      // Check if userPfpUrl is a data URL or regular URL
+      if (userPfpUrl.startsWith("data:")) {
+        // Handle data URL case
+        console.log(`Processing uploaded image data URL for job ${job.id}`);
+
+        const [mimeInfo, base64Data] = userPfpUrl.split(",");
+        if (!base64Data) {
+          throw new Error("Invalid data URL format: missing base64 data");
+        }
+
+        // Extract content type from data URL
+        const mimeMatch = mimeInfo.match(/data:([^;]+)/);
+        contentType = mimeMatch ? mimeMatch[1] : "image/png";
+
+        // Convert base64 to buffer
+        imageBuffer = Buffer.from(base64Data, "base64");
+      } else {
+        // Handle regular URL case
+        console.log(`Fetching image from URL for job ${job.id}: ${userPfpUrl}`);
+
+        const imageResponse = await fetch(userPfpUrl);
+        if (!imageResponse.ok) {
+          throw new Error(
+            `Failed to fetch image from ${userPfpUrl}: ${imageResponse.statusText}`
+          );
+        }
+        imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+        contentType = imageResponse.headers.get("content-type") || "image/png";
       }
-      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+
       const imageFile = await toFile(imageBuffer, "profile.png", {
-        type: imageResponse.headers.get("content-type") || "image/png",
+        type: contentType,
       });
 
       const response = await openaiClient.images.edit({

@@ -4,7 +4,7 @@ import { useUser } from "../providers/UserContextProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   useSendTransaction,
   useAccount,
@@ -26,7 +26,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Share2 } from "lucide-react";
+import { Share2, Upload, X } from "lucide-react";
 import Image from "next/image";
 
 // --- Prompt Generation Logic ---
@@ -168,6 +168,11 @@ export default function Home() {
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [showCustomPromptDialog, setShowCustomPromptDialog] =
     useState<boolean>(false);
+
+  // State for image upload
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [useUploadedImage, setUseUploadedImage] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State for completed images
   const [completedImages, setCompletedImages] = useState<CompletedImage[]>([]);
@@ -492,6 +497,32 @@ export default function Home() {
     handleChainSwitch();
   }, [connectedAddress, account.chainId, switchChainAsync]);
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setApiMessage("Image file size must be less than 5MB");
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith("image/")) {
+      setApiMessage("Please select a valid image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setUploadedImage(dataUrl);
+      setUseUploadedImage(true);
+      setApiMessage(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleRequestQuote = () => {
     if (!user || !user.fid) {
       setApiMessage("User data not available.");
@@ -502,6 +533,18 @@ export default function Home() {
       setApiMessage("Prompt not generated yet. Please wait a moment.");
       return;
     }
+
+    // Determine which image to use
+    const imageToUse =
+      useUploadedImage && uploadedImage ? uploadedImage : user.pfpUrl;
+
+    if (!imageToUse) {
+      setApiMessage(
+        "Please upload an image or ensure you have a profile picture set."
+      );
+      return;
+    }
+
     setApiMessage("Requesting generation quote...");
     setGenerationStep("quote_requested");
     const promptToUse = customPrompt || generatedPrompt;
@@ -514,7 +557,7 @@ export default function Home() {
     quoteMutation.mutate({
       fid: user.fid,
       prompt: promptToUse,
-      userPfpUrl: user.pfpUrl,
+      userPfpUrl: imageToUse,
     });
   };
 
@@ -541,7 +584,8 @@ export default function Home() {
     isConfirming ||
     generationStep === "payment_processing" ||
     !generatedPrompt ||
-    !user?.pfpUrl; // Disable if no PFP URL
+    (!useUploadedImage && !user?.pfpUrl) ||
+    (useUploadedImage && !uploadedImage);
 
   const YOUR_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://example.com"; // Replace with your actual app URL
 
@@ -555,25 +599,11 @@ export default function Home() {
           height={80}
           className="object-contain"
         />
-        <h1 className="text-3xl font-bold text-center">Stylize Me</h1>
       </div>
 
       {user ? (
         <>
           <div className="flex flex-col items-center space-y-2">
-            <Avatar className="w-24 h-24 border-2 border-purple-500">
-              <AvatarImage
-                src={user.pfpUrl}
-                alt={user.displayName || user.username || "User avatar"}
-              />
-              <AvatarFallback className="text-2xl">
-                {getInitials(user.displayName, user.username)}
-              </AvatarFallback>
-            </Avatar>
-            <p className="font-semibold text-lg">
-              {user.displayName || `@${user.username}`}
-            </p>
-            <p className="text-sm text-gray-500">FID: {user.fid}</p>
             {account.address ? (
               <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                 Wallet: {account.address}
@@ -581,13 +611,110 @@ export default function Home() {
             ) : (
               connectors.map((connector) => {
                 return (
-                  <div>
+                  <div key={connector.id}>
                     <Button onClick={() => connect({ connector })}>
                       {connector.name}
                     </Button>
                   </div>
                 );
               })
+            )}
+          </div>
+
+          {/* Image Selection Section */}
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Choose Image to Stylize:
+            </label>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* Profile Picture Option */}
+              <Card
+                className={`cursor-pointer transition-all ${
+                  !useUploadedImage
+                    ? "ring-2 ring-purple-500 bg-purple-50"
+                    : "hover:bg-gray-50"
+                }`}
+                onClick={() => setUseUploadedImage(false)}
+              >
+                <CardContent className="p-4 text-center">
+                  <Avatar className="w-16 h-16 mx-auto mb-2">
+                    <AvatarImage src={user.pfpUrl} alt="Profile" />
+                    <AvatarFallback>
+                      {getInitials(user.displayName, user.username)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm font-medium">Use Profile Picture</p>
+                </CardContent>
+              </Card>
+
+              {/* Upload Option */}
+              <Card
+                className={`cursor-pointer transition-all ${
+                  useUploadedImage
+                    ? "ring-2 ring-purple-500 bg-purple-50"
+                    : "hover:bg-gray-50"
+                }`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <CardContent className="p-4 text-center">
+                  {uploadedImage ? (
+                    <div className="relative">
+                      <img
+                        src={uploadedImage}
+                        alt="Uploaded"
+                        className="w-16 h-16 mx-auto mb-2 rounded-full object-cover"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUploadedImage(null);
+                          setUseUploadedImage(false);
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = "";
+                          }
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-gray-400" />
+                    </div>
+                  )}
+                  <p className="text-sm font-medium">
+                    {uploadedImage ? "Change Image" : "Upload Image"}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+
+            {useUploadedImage && uploadedImage && (
+              <div className="p-3 mb-4 border border-green-300 rounded-md bg-green-50 text-green-700 text-sm">
+                <p className="font-semibold">Using Uploaded Image</p>
+                <p>Your custom image will be used for stylization</p>
+              </div>
+            )}
+
+            {!useUploadedImage && user.pfpUrl && (
+              <div className="p-3 mb-4 border border-blue-300 rounded-md bg-blue-50 text-blue-700 text-sm">
+                <p className="font-semibold">Using Profile Picture</p>
+                <p>
+                  Your Farcaster profile picture will be used for stylization
+                </p>
+              </div>
             )}
           </div>
 
@@ -623,14 +750,21 @@ export default function Home() {
             )}
           </div>
 
-          {/* Warning if no PFP */}
-          {user && !user.pfpUrl && (
+          {/* Warning if no image selected */}
+          {!useUploadedImage && !user.pfpUrl && (
             <div className="w-full p-3 my-4 border border-orange-300 rounded-md bg-orange-50 text-orange-700 text-sm">
-              <p className="font-semibold">Profile Picture Required</p>
+              <p className="font-semibold">Image Required</p>
               <p>
-                To generate a character, please ensure you have a profile
-                picture uploaded to your Farcaster account.
+                Please upload an image or ensure you have a profile picture set
+                to generate a character.
               </p>
+            </div>
+          )}
+
+          {useUploadedImage && !uploadedImage && (
+            <div className="w-full p-3 my-4 border border-orange-300 rounded-md bg-orange-50 text-orange-700 text-sm">
+              <p className="font-semibold">Upload Image</p>
+              <p>Please upload an image to stylize.</p>
             </div>
           )}
 
