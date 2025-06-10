@@ -138,10 +138,10 @@ export async function POST(request: Request) {
         .execute();
 
       // Construct jobData from the stored request
-      // Assuming promptText, fid are stored. Others like userPfpUrl might also be stored or passed differently.
+      // Assuming promptText, userId are stored. Others like userPfpUrl might also be stored or passed differently.
       if (
         !generationRequest.promptText ||
-        typeof generationRequest.fid !== "number" ||
+        typeof generationRequest.userId !== "string" ||
         generationRequest.userPfpUrl === undefined
       ) {
         console.error(
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
       }
 
       const jobData: StylizeImageJobData = {
-        fid: generationRequest.fid,
+        userId: generationRequest.userId,
         prompt: generationRequest.promptText,
         userPfpUrl:
           generationRequest.userPfpUrl === null
@@ -183,20 +183,20 @@ export async function POST(request: Request) {
     } else {
       // --- INITIAL QUOTE REQUEST FLOW ---
       const {
-        fid,
+        userId,
         prompt,
         userPfpUrl, // Now expecting this from the client
       } = body as Partial<
         StylizeImageJobData & {
           prompt: string;
-          fid: number;
+          userId: string;
           userPfpUrl?: string;
         }
       >;
 
-      if (!fid || typeof fid !== "number") {
+      if (!userId || typeof userId !== "string") {
         return NextResponse.json(
-          { error: "Valid FID (number) is required for a quote" },
+          { error: "Valid userId (string) is required for a quote" },
           { status: 400 }
         );
       }
@@ -219,7 +219,7 @@ export async function POST(request: Request) {
       await db
         .insertInto("generatedImages")
         .values({
-          fid: fid,
+          userId: userId,
           promptText: prompt,
           quoteId: newQuoteId,
           status: "pending_payment",

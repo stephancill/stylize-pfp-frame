@@ -26,7 +26,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Share2, Upload, X } from "lucide-react";
+import { Share2, Upload, X, Download } from "lucide-react";
 import Image from "next/image";
 
 // --- Prompt Generation Logic ---
@@ -88,7 +88,7 @@ const themes: Theme[] = [
 // --- End Prompt Generation Logic ---
 
 interface GenerationRequestPayload {
-  fid: number;
+  userId: string;
   prompt: string;
   userPfpUrl?: string;
 }
@@ -273,14 +273,22 @@ export default function Home() {
       console.log("Payment submission successful:", data);
       setPollingQuoteId(quoteId);
       setIsPolling(true);
-      setShowFramePromptDialog(true);
 
-      setApiMessage(
-        data.message ||
-          "Payment verified! Waiting for image generation... (Add our frame for updates!)"
-      );
+      // Only show frame dialog for Farcaster users
+      if (user?.fid) {
+        setShowFramePromptDialog(true);
+        setApiMessage(
+          data.message ||
+            "Payment verified! Waiting for image generation... (Add our frame for updates!)"
+        );
+      } else {
+        // Wallet-only users get different message
+        setApiMessage(
+          "Payment successful! Your character is being generated. Please check back in a few minutes - it will appear in 'Your Creations' when ready."
+        );
+      }
+
       setGenerationStep("job_queued");
-
       setQuoteId(null);
       setCurrentTxHash(undefined);
     },
@@ -293,7 +301,11 @@ export default function Home() {
   });
 
   useEffect(() => {
-    if (isUserLoading || !user) return;
+    // Skip if still loading user data, but allow generation for wallet-only users
+    if (isUserLoading) return;
+
+    // Only generate prompt if we have some form of authentication
+    if (!user && !connectedAddress) return;
 
     const selectedTheme =
       themes.find((t) => t.id === selectedThemeId) || themes[0];
@@ -302,25 +314,25 @@ export default function Home() {
     // Construct a base description based on the theme's nature
     if (selectedTheme.id === "higherBuddy") {
       baseThemeForPrompt = `a "Higher Buddy" version of ${
-        user.displayName || user.username || "my"
-      } Farcaster PFP, embodying a cool, slightly edgy, and photorealistic aesthetic`;
+        user?.displayName || user?.username || "your uploaded"
+      } image, embodying a cool, slightly edgy, and photorealistic aesthetic`;
     } else if (selectedTheme.id === "cinematicFantasy") {
       baseThemeForPrompt = `a cinematic, fantasy art version of ${
-        user.displayName || user.username || "my"
-      } Farcaster PFP, with epic lighting and high detail`;
+        user?.displayName || user?.username || "your uploaded"
+      } image, with epic lighting and high detail`;
     } else if (selectedTheme.id === "studioGhibli") {
       baseThemeForPrompt = `a Studio Ghibli style version of ${
-        user.displayName || user.username || "my"
-      } Farcaster PFP, capturing the essence of Japanese animation with whimsical charm and soft, nostalgic visuals`;
+        user?.displayName || user?.username || "your uploaded"
+      } image, capturing the essence of Japanese animation with whimsical charm and soft, nostalgic visuals`;
     } else {
       // Generic fallback
       baseThemeForPrompt = `a stylized version of ${
-        user.displayName || user.username || "my"
-      } Farcaster PFP, in the style of ${selectedTheme.name}`;
+        user?.displayName || user?.username || "your uploaded"
+      } image, in the style of ${selectedTheme.name}`;
     }
 
     setGeneratedPrompt(selectedTheme.generatePrompt(baseThemeForPrompt));
-  }, [user, isUserLoading, selectedThemeId]);
+  }, [user, isUserLoading, selectedThemeId, connectedAddress]);
 
   // Consolidate transaction confirmation handling into a single effect
   useEffect(() => {
@@ -376,14 +388,23 @@ export default function Home() {
     }
   }, [generationStep]);
 
-  // Effect to fetch completed images when user.fid is available
+  // Determine current user identifier for API calls
+  const currentUserId = user?.fid ? user.fid.toString() : connectedAddress;
+
+  // Check if user has any valid authentication
+  const hasValidAuth = user?.fid || connectedAddress;
+
+  // Check if user has a valid image to use
+  const hasValidImage = uploadedImage || user?.pfpUrl;
+
+  // Effect to fetch completed images when currentUserId is available
   useEffect(() => {
     const fetchCompletedImages = async () => {
-      if (user && user.fid) {
+      if (currentUserId) {
         setIsLoadingImages(true);
         setImagesError(null);
         try {
-          const response = await fetch(`/api/user/${user.fid}/images`);
+          const response = await fetch(`/api/user/${currentUserId}/images`);
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || "Failed to fetch images");
@@ -403,7 +424,7 @@ export default function Home() {
     };
 
     fetchCompletedImages();
-  }, [user, user?.fid]); // Depend on user object and fid specifically
+  }, [currentUserId]); // Updated dependency
 
   // Effect for polling for the newly generated image
   useEffect(() => {
@@ -414,13 +435,13 @@ export default function Home() {
     const MAX_POLLING_DURATION = 120000; // 2 minutes
 
     const fetchAndCheck = async () => {
-      if (!user?.fid || !pollingQuoteId) {
+      if (!currentUserId || !pollingQuoteId) {
         setIsPolling(false);
         setGenerationStep("initial");
         return;
       }
       try {
-        const response = await fetch(`/api/user/${user.fid}/images`);
+        const response = await fetch(`/api/user/${currentUserId}/images`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(
@@ -452,7 +473,7 @@ export default function Home() {
       }
     };
 
-    if (isPolling && pollingQuoteId && user?.fid) {
+    if (isPolling && pollingQuoteId && currentUserId) {
       // Initial check before starting interval
       fetchAndCheck();
 
@@ -475,7 +496,7 @@ export default function Home() {
       if (intervalId) clearInterval(intervalId);
       if (pollTimeoutId) clearTimeout(pollTimeoutId);
     };
-  }, [isPolling, pollingQuoteId, user, user?.fid]); // Added user to dependencies for user.fid access
+  }, [isPolling, pollingQuoteId, currentUserId]); // Updated dependency
 
   // Add effect to handle chain switching when address changes
   useEffect(() => {
@@ -524,11 +545,20 @@ export default function Home() {
   };
 
   const handleRequestQuote = () => {
-    if (!user || !user.fid) {
-      setApiMessage("User data not available.");
+    // Determine userId - either FID or wallet address
+    let userId: string;
+    if (user && user.fid) {
+      userId = user.fid.toString();
+    } else if (connectedAddress) {
+      userId = connectedAddress;
+    } else {
+      setApiMessage(
+        "Please connect your wallet or sign in with Farcaster to continue."
+      );
       setGenerationStep("error");
       return;
     }
+
     if (!generatedPrompt) {
       setApiMessage("Prompt not generated yet. Please wait a moment.");
       return;
@@ -536,12 +566,10 @@ export default function Home() {
 
     // Determine which image to use
     const imageToUse =
-      useUploadedImage && uploadedImage ? uploadedImage : user.pfpUrl;
+      useUploadedImage && uploadedImage ? uploadedImage : user?.pfpUrl;
 
     if (!imageToUse) {
-      setApiMessage(
-        "Please upload an image or ensure you have a profile picture set."
-      );
+      setApiMessage("Please upload an image to stylize.");
       return;
     }
 
@@ -555,10 +583,25 @@ export default function Home() {
       return;
     }
     quoteMutation.mutate({
-      fid: user.fid,
+      userId: userId,
       prompt: promptToUse,
       userPfpUrl: imageToUse,
     });
+  };
+
+  const handleDownloadImage = (imageDataUrl: string, imageId: string) => {
+    try {
+      // Create a temporary anchor element for download
+      const link = document.createElement("a");
+      link.href = imageDataUrl;
+      link.download = `stylized-character-${imageId}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading image:", error);
+      setApiMessage("Failed to download image. Please try again.");
+    }
   };
 
   if (isUserLoading)
@@ -584,8 +627,8 @@ export default function Home() {
     isConfirming ||
     generationStep === "payment_processing" ||
     !generatedPrompt ||
-    (!useUploadedImage && !user?.pfpUrl) ||
-    (useUploadedImage && !uploadedImage);
+    !hasValidAuth ||
+    !hasValidImage;
 
   const YOUR_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://example.com"; // Replace with your actual app URL
 
@@ -628,33 +671,35 @@ export default function Home() {
             </label>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
-              {/* Profile Picture Option */}
-              <Card
-                className={`cursor-pointer transition-all ${
-                  !useUploadedImage
-                    ? "ring-2 ring-purple-500 bg-purple-50"
-                    : "hover:bg-gray-50"
-                }`}
-                onClick={() => setUseUploadedImage(false)}
-              >
-                <CardContent className="p-4 text-center">
-                  <Avatar className="w-16 h-16 mx-auto mb-2">
-                    <AvatarImage src={user.pfpUrl} alt="Profile" />
-                    <AvatarFallback>
-                      {getInitials(user.displayName, user.username)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <p className="text-sm font-medium">Use Profile Picture</p>
-                </CardContent>
-              </Card>
+              {/* Profile Picture Option - only show if user has pfpUrl */}
+              {user.pfpUrl && (
+                <Card
+                  className={`cursor-pointer transition-all ${
+                    !useUploadedImage
+                      ? "ring-2 ring-purple-500 bg-purple-50"
+                      : "hover:bg-gray-50"
+                  }`}
+                  onClick={() => setUseUploadedImage(false)}
+                >
+                  <CardContent className="p-4 text-center">
+                    <Avatar className="w-16 h-16 mx-auto mb-2">
+                      <AvatarImage src={user.pfpUrl} alt="Profile" />
+                      <AvatarFallback>
+                        {getInitials(user.displayName, user.username)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm font-medium">Use Profile Picture</p>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Upload Option */}
               <Card
                 className={`cursor-pointer transition-all ${
-                  useUploadedImage
+                  useUploadedImage || !user.pfpUrl
                     ? "ring-2 ring-purple-500 bg-purple-50"
                     : "hover:bg-gray-50"
-                }`}
+                } ${!user.pfpUrl ? "col-span-2" : ""}`}
                 onClick={() => fileInputRef.current?.click()}
               >
                 <CardContent className="p-4 text-center">
@@ -751,13 +796,10 @@ export default function Home() {
           </div>
 
           {/* Warning if no image selected */}
-          {!useUploadedImage && !user.pfpUrl && (
+          {!useUploadedImage && !user.pfpUrl && !uploadedImage && (
             <div className="w-full p-3 my-4 border border-orange-300 rounded-md bg-orange-50 text-orange-700 text-sm">
               <p className="font-semibold">Image Required</p>
-              <p>
-                Please upload an image or ensure you have a profile picture set
-                to generate a character.
-              </p>
+              <p>Please upload an image to generate a character.</p>
             </div>
           )}
 
@@ -865,6 +907,20 @@ export default function Home() {
                                 <Share2 className="h-4 w-4" />
                                 Share
                               </Button>
+                              <Button
+                                variant="secondary"
+                                className="absolute bottom-2 left-2 flex items-center gap-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadImage(
+                                    image.imageDataUrl!,
+                                    image.id
+                                  );
+                                }}
+                              >
+                                <Download className="h-4 w-4" />
+                                Download
+                              </Button>
                             </>
                           ) : (
                             <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -892,8 +948,8 @@ export default function Home() {
             </div>
           )}
 
-          {/* Frame Prompt Dialog */}
-          {pollingQuoteId && (
+          {/* Frame Prompt Dialog - only for Farcaster users */}
+          {pollingQuoteId && user?.fid && (
             <Dialog
               open={showFramePromptDialog}
               onOpenChange={setShowFramePromptDialog}
@@ -975,11 +1031,364 @@ export default function Home() {
             </DialogContent>
           </Dialog>
         </>
+      ) : !user && connectedAddress ? (
+        <>
+          {/* Wallet-only user interface */}
+          <div className="flex flex-col items-center space-y-2">
+            <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              Wallet: {connectedAddress}
+            </p>
+            <p className="text-sm text-gray-600">
+              Wallet connected - you can generate characters by uploading images
+            </p>
+          </div>
+
+          {/* Image Selection Section - Upload only for wallet users */}
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Upload Image to Stylize:
+            </label>
+
+            <Card
+              className={`cursor-pointer transition-all ${
+                uploadedImage
+                  ? "ring-2 ring-purple-500 bg-purple-50"
+                  : "hover:bg-gray-50"
+              }`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <CardContent className="p-6 text-center">
+                {uploadedImage ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={uploadedImage}
+                      alt="Uploaded"
+                      className="w-20 h-20 mx-auto mb-3 rounded-full object-cover"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setUploadedImage(null);
+                        setUseUploadedImage(false);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = "";
+                        }
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 mx-auto mb-3 bg-gray-200 rounded-full flex items-center justify-center">
+                    <Upload className="h-8 w-8 text-gray-400" />
+                  </div>
+                )}
+                <p className="text-lg font-medium">
+                  {uploadedImage ? "Change Image" : "Upload Your Image"}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Click to select an image to stylize
+                </p>
+              </CardContent>
+            </Card>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+
+            {uploadedImage && (
+              <div className="p-3 mt-4 border border-green-300 rounded-md bg-green-50 text-green-700 text-sm">
+                <p className="font-semibold">Image Ready</p>
+                <p>Your uploaded image will be used for stylization</p>
+              </div>
+            )}
+          </div>
+
+          {/* Theme Selector for wallet users */}
+          {uploadedImage && (
+            <>
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Theme or Enter Custom Prompt:
+                </label>
+                <div className="flex space-x-2 mb-4">
+                  {themes.map((theme) => (
+                    <Button
+                      key={theme.id}
+                      variant={
+                        selectedThemeId === theme.id ? "default" : "outline"
+                      }
+                      onClick={() => setSelectedThemeId(theme.id)}
+                      className="flex-grow"
+                    >
+                      {theme.name}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCustomPromptDialog(true)}
+                  className="w-full mb-4"
+                >
+                  Enter Custom Prompt
+                </Button>
+                {customPrompt && (
+                  <div className="p-2 mb-4 border border-blue-300 rounded-md bg-blue-50 text-blue-700 text-sm">
+                    <p className="font-semibold">Using Custom Prompt:</p>
+                    <p className="truncate">{customPrompt}</p>
+                  </div>
+                )}
+              </div>
+
+              {generationStep !== "payment_processing" &&
+                generationStep !== "payment_submitted" &&
+                generationStep !== "job_queued" && (
+                  <Button
+                    onClick={handleRequestQuote}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 text-lg"
+                    disabled={isActionDisabled}
+                  >
+                    {quoteMutation.isPending
+                      ? "Processing..."
+                      : "Generate Character"}
+                  </Button>
+                )}
+            </>
+          )}
+        </>
       ) : (
-        <p className="text-center py-10">
-          No user data found. Please connect to Farcaster.
-        </p>
+        <>
+          {/* No user and no wallet - show connection options */}
+          <div className="text-center space-y-4">
+            <p className="text-lg text-gray-700 mb-4">
+              Connect your wallet to start generating characters
+            </p>
+            <div className="space-y-2">
+              {connectors.map((connector) => (
+                <Button
+                  key={connector.id}
+                  onClick={() => connect({ connector })}
+                  className="w-full"
+                >
+                  Connect with {connector.name}
+                </Button>
+              ))}
+            </div>
+            <p className="text-sm text-gray-500 mt-4">
+              You can also sign in with Farcaster for additional features
+            </p>
+          </div>
+        </>
       )}
+
+      {/* API Messages and Transaction Status - show for all users */}
+      {apiMessage && (
+        <div
+          className={`p-3 rounded-md text-sm ${
+            generationStep === "error"
+              ? "bg-red-100 text-red-700"
+              : generationStep === "job_queued"
+              ? "bg-green-100 text-green-700"
+              : "bg-blue-100 text-blue-700"
+          }`}
+        >
+          {apiMessage}
+        </div>
+      )}
+
+      {(isSendingTx ||
+        isConfirming ||
+        generationStep === "payment_processing" ||
+        generationStep === "payment_submitted") &&
+        currentTxHash && (
+          <div className="text-sm text-gray-600">
+            Transaction Hash:{" "}
+            <a
+              href={`https://etherscan.io/tx/${currentTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              {currentTxHash}
+            </a>
+          </div>
+        )}
+
+      {/* Section to display completed images - show for any authenticated user */}
+      {currentUserId && (
+        <div className="w-full mt-10 pt-6 border-t">
+          <h2 className="text-2xl font-semibold text-center mb-6">
+            Your Creations
+          </h2>
+          {isLoadingImages && (
+            <p className="text-center py-4">Loading your images...</p>
+          )}
+          {imagesError && (
+            <p className="text-center text-red-500 py-4">
+              Error loading images: {imagesError}
+            </p>
+          )}
+          {!isLoadingImages && !imagesError && completedImages.length === 0 && (
+            <p className="text-center text-gray-500 py-4">
+              You haven't generated any characters yet.
+            </p>
+          )}
+          {!isLoadingImages && !imagesError && completedImages.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {completedImages.map((image) => (
+                <Card
+                  key={image.id || image.quoteId}
+                  className="overflow-hidden flex flex-col"
+                >
+                  <CardContent className="p-0 aspect-square flex-grow relative group">
+                    {image.imageDataUrl ? (
+                      <>
+                        <img
+                          src={image.imageDataUrl}
+                          alt={image.promptText || "Generated Character"}
+                          className="w-full h-full object-cover"
+                        />
+                        <Button
+                          variant="secondary"
+                          className="absolute bottom-2 right-2 flex items-center gap-2"
+                          onClick={() => {
+                            const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/generations/${image.id}`;
+                            sdk.actions.composeCast({
+                              text: `Check out my new character! ${shareUrl}`,
+                              embeds: [shareUrl],
+                            });
+                          }}
+                        >
+                          <Share2 className="h-4 w-4" />
+                          Share
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          className="absolute bottom-2 left-2 flex items-center gap-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadImage(image.imageDataUrl!, image.id);
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                          Download
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <p className="text-muted-foreground">
+                          Image not available
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                  {(image.promptText ||
+                    image.createdAt ||
+                    image.imageDataUrl) && (
+                    <CardFooter className="p-3 flex flex-col items-start border-t">
+                      {image.createdAt && (
+                        <p className="text-xs text-muted-foreground/80 mt-1">
+                          {new Date(image.createdAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </CardFooter>
+                  )}
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Frame Prompt Dialog - only for Farcaster users */}
+      {pollingQuoteId && user?.fid && (
+        <Dialog
+          open={showFramePromptDialog}
+          onOpenChange={setShowFramePromptDialog}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Get Notified via Farcaster Frame</DialogTitle>
+              <DialogDescription>
+                Add our Farcaster frame to your feed to get notified when your
+                character is ready!
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="sm:justify-start mt-4">
+              <Button
+                type="button"
+                onClick={() => {
+                  sdk.actions.addFrame();
+                  setShowFramePromptDialog(false);
+                }}
+              >
+                Add Frame to Farcaster
+              </Button>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Dismiss
+                </Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Custom Prompt Dialog */}
+      <Dialog
+        open={showCustomPromptDialog}
+        onOpenChange={setShowCustomPromptDialog}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enter Custom Prompt</DialogTitle>
+            <DialogDescription>
+              Type your desired prompt below. This will override the selected
+              theme.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              id="customPromptInput"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              placeholder="e.g., A cat wearing a wizard hat"
+              className="w-full"
+            />
+          </div>
+          <DialogFooter className="sm:justify-end">
+            <Button
+              type="button"
+              onClick={() => {
+                // Optionally, you could validate the prompt here
+                setShowCustomPromptDialog(false);
+              }}
+            >
+              Save Prompt
+            </Button>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  // If canceling, consider whether to clear customPrompt or not
+                  // setCustomPrompt(""); // Uncomment to clear on cancel
+                  setShowCustomPromptDialog(false);
+                }}
+              >
+                Cancel
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

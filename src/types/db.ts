@@ -2,7 +2,8 @@ import { Generated } from "kysely";
 
 export type UserRow = {
   id: Generated<string>;
-  fid: number;
+  fid: number | null;
+  walletAddress: string | null;
   createdAt: Generated<Date>;
   updatedAt: Generated<Date>;
   notificationUrl: string | null;
@@ -26,7 +27,7 @@ export type GeneratedImageStatus =
 
 export type GeneratedImageRow = {
   id: Generated<string>; // UUID
-  fid: number;
+  userId: string; // Changed from fid to userId - can be FID or wallet address
   quoteId: string;
   status: GeneratedImageStatus;
   transactionHash: string | null;

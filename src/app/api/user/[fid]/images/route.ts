@@ -7,21 +7,16 @@ export async function GET(
 ) {
   const params = await args.params;
   try {
-    const fidString = params.fid;
-    if (!fidString) {
+    const userIdString = params.fid; // Keep the route parameter name for backward compatibility
+    if (!userIdString) {
       return NextResponse.json(
-        { error: "FID parameter is required." },
+        { error: "userId parameter is required." },
         { status: 400 }
       );
     }
 
-    const fid = parseInt(fidString, 10);
-    if (isNaN(fid)) {
-      return NextResponse.json(
-        { error: "Invalid FID parameter. Must be a number." },
-        { status: 400 }
-      );
-    }
+    // userId can be either a numeric FID or a wallet address
+    const userId = userIdString;
 
     // Kysely automatically converts camelCase to snake_case for column names
     // if a CamelCasePlugin is used, otherwise ensure your column names match the DB.
@@ -36,7 +31,7 @@ export async function GET(
         "status", // good for debugging, or if UI wants to re-verify
         "quoteId",
       ])
-      .where("fid", "=", fid)
+      .where("userId", "=", userId)
       .where("status", "=", "completed")
       .orderBy("createdAt", "desc")
       .execute();
@@ -51,7 +46,7 @@ export async function GET(
     return NextResponse.json({ images: completedImages });
   } catch (error) {
     console.error(
-      `Error fetching completed images for FID ${params.fid}:`,
+      `Error fetching completed images for userId ${params.fid}:`,
       error
     );
     let errorMessage = "Internal Server Error";

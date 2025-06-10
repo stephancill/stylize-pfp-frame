@@ -20,11 +20,11 @@ const openaiClient = new OpenAI({
 export const stylizeImageWorker = new Worker<StylizeImageJobData>(
   STYLIZE_IMAGE_QUEUE_NAME,
   async (job) => {
-    const { fid, prompt, userPfpUrl, quoteId, n = 1 } = job.data;
+    const { userId, prompt, userPfpUrl, quoteId, n = 1 } = job.data;
 
     if (!userPfpUrl) {
       console.error(
-        `Job ID ${job.id} for fid ${fid}, quoteId ${quoteId}: Missing userPfpUrl. Cannot use image edit without an input image.`
+        `Job ID ${job.id} for userId ${userId}, quoteId ${quoteId}: Missing userPfpUrl. Cannot use image edit without an input image.`
       );
       await db
         .updateTable("generatedImages")
@@ -35,13 +35,13 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
     }
     if (!quoteId) {
       console.error(
-        `Job ID ${job.id} for fid ${fid}: Missing quoteId. Cannot update database record.`
+        `Job ID ${job.id} for userId ${userId}: Missing quoteId. Cannot update database record.`
       );
       throw new Error("quoteId is required to update the database.");
     }
 
     console.log(
-      `Processing image model image edit job for fid: ${fid}, quoteId: ${quoteId} with prompt: "${prompt}" and PFP URL: ${userPfpUrl.substring(
+      `Processing image model image edit job for userId: ${userId}, quoteId: ${quoteId} with prompt: "${prompt}" and PFP URL: ${userPfpUrl.substring(
         0,
         50
       )}...`
@@ -127,13 +127,18 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
         .execute();
 
       try {
-        // Notify the user that the image has been edited
-        await sendFrameNotification({
-          fid,
-          title: "Stylize complete",
-          body: "Your profile picture has been stylized",
-          targetUrl: process.env.APP_URL,
-        });
+        // Only notify if userId is a numeric FID (Farcaster user)
+        const parsedUserId = parseInt(userId);
+        if (!isNaN(parsedUserId)) {
+          await sendFrameNotification({
+            fid: parsedUserId,
+            title: "Stylize complete",
+            body: "Your profile picture has been stylized",
+            targetUrl: process.env.APP_URL,
+          });
+        } else {
+          console.log(`Skipping notification for wallet-only user: ${userId}`);
+        }
       } catch (error) {
         console.error(
           `Job ID ${job.id} for quoteId ${quoteId}: Failed to notify user -`,
@@ -147,7 +152,7 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
       return { b64JsonImage: resizedImageB64Json }; // Return resized image
     } catch (error) {
       console.error(
-        `Job ID ${job.id} for fid ${fid}, quoteId ${quoteId}: Error during image model image edit -`,
+        `Job ID ${job.id} for userId ${userId}, quoteId ${quoteId}: Error during image model image edit -`,
         error
       );
       let errorMessage = "Image editing failed.";

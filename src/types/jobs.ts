@@ -11,7 +11,7 @@ export type NotificationsBulkJobData = {
 };
 
 export type StylizeImageJobData = {
-  fid: number; // Assuming fid is the user identifier
+  userId: string; // Changed from fid - can be FID or wallet address
   prompt: string; // This will be the base prompt/theme from the user
   userPfpUrl?: string; // URL of the user's current profile picture OR base64 data URL of uploaded image
   quoteId: string; // Added to link back to the original request
