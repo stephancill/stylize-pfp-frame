@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { withSiweAuth, SiweUserRouteHandler } from "@/lib/siwe-auth";
 
-export async function GET(
-  request: Request,
-  args: { params: Promise<{ fid: string }> }
-) {
+const handler: SiweUserRouteHandler<{
+  params: Promise<{ fid: string }>;
+}> = async (request, user, args) => {
   const params = await args.params;
   try {
     const userIdString = params.fid; // Keep the route parameter name for backward compatibility
@@ -16,7 +16,10 @@ export async function GET(
     }
 
     // userId can be either a numeric FID or a wallet address
-    const userId = userIdString;
+    // Since we're using SIWE, we now have the authenticated user's address
+    // We can either use the route parameter or the authenticated user's address
+    // For security, let's use the authenticated user's address if no specific userId is requested
+    const userId = userIdString === "me" ? user.address : userIdString;
 
     // Kysely automatically converts camelCase to snake_case for column names
     // if a CamelCasePlugin is used, otherwise ensure your column names match the DB.
@@ -38,12 +41,19 @@ export async function GET(
 
     if (!completedImages || completedImages.length === 0) {
       return NextResponse.json(
-        { message: "No completed images found for this user.", images: [] },
+        {
+          message: "No completed images found for this user.",
+          images: [],
+          authenticatedUser: user.address, // Include for debugging
+        },
         { status: 200 } // 200 or 404 depends on desired behavior for "no results"
       );
     }
 
-    return NextResponse.json({ images: completedImages });
+    return NextResponse.json({
+      images: completedImages,
+      authenticatedUser: user.address, // Include for debugging
+    });
   } catch (error) {
     console.error(
       `Error fetching completed images for userId ${params.fid}:`,
@@ -55,4 +65,6 @@ export async function GET(
     }
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-}
+};
+
+export const GET = withSiweAuth(handler);

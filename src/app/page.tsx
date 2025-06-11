@@ -24,6 +24,8 @@ import { FramePromptDialog } from "@/components/FramePromptDialog";
 import { createUnifiedUser, type UnifiedUser } from "@/types/user";
 import { truncateAddress } from "../lib/utils";
 import { resizeImage, checkIfResizeNeeded } from "@/lib/image-utils";
+import { useSiweAuth } from "@/hooks/useSiweAuth";
+import { SiweAuthButton } from "@/components/SiweAuthButton";
 
 interface GenerationRequestPayload {
   userId: string;
@@ -105,9 +107,28 @@ export default function Home() {
   const { address: connectedAddress } = useAccount();
   const account = useAccount();
 
+  // SIWE Authentication
+  const {
+    isAuthenticated: isSiweAuthenticated,
+    user: siweUser,
+    isLoading: isSiweLoading,
+    error: siweError,
+  } = useSiweAuth();
+
   // Create unified user
   const unifiedUser = createUnifiedUser(farcasterUser, connectedAddress);
-  const hasAuth = !!unifiedUser;
+
+  // For now, we focus on SIWE auth for wallet users (FID auth to be implemented later)
+  // User has valid authentication if they have either:
+  // 1. Farcaster user (existing functionality), OR
+  // 2. Wallet connected AND SIWE authenticated
+  const hasValidAuth =
+    !!unifiedUser &&
+    (!!farcasterUser || (!!connectedAddress && isSiweAuthenticated));
+
+  // User needs SIWE auth if they have wallet connected but no Farcaster and no SIWE auth
+  const needsSiweAuth =
+    !!connectedAddress && !farcasterUser && !isSiweAuthenticated;
 
   // State management
   const [apiMessage, setApiMessage] = useState<string | null>(null);
@@ -172,7 +193,7 @@ export default function Home() {
       const data = await response.json();
       return data.images || [];
     },
-    enabled: !!unifiedUser?.id,
+    enabled: hasValidAuth && !!unifiedUser?.id,
   });
 
   const { data: inProgressJobs = [], refetch: refetchJobs } = useQuery<
@@ -188,7 +209,7 @@ export default function Home() {
       const data = await response.json();
       return data.jobs || [];
     },
-    enabled: !!unifiedUser?.id,
+    enabled: hasValidAuth && !!unifiedUser?.id,
   });
 
   // Mutations
@@ -499,10 +520,8 @@ export default function Home() {
   };
 
   const handleRequestQuote = () => {
-    if (!unifiedUser) {
-      setApiMessage(
-        "Please connect your wallet or sign in with Farcaster to continue."
-      );
+    if (!hasValidAuth) {
+      setApiMessage("Please authenticate to continue.");
       setGenerationStep("error");
       return;
     }
@@ -526,8 +545,11 @@ export default function Home() {
     setApiMessage("Requesting generation quote...");
     setGenerationStep("quote_requested");
 
+    // Use the appropriate user ID - SIWE user address or unified user ID
+    const userIdToUse = siweUser?.address || unifiedUser!.id;
+
     quoteMutation.mutate({
-      userId: unifiedUser.id,
+      userId: userIdToUse,
       prompt: promptToUse,
       userPfpUrl: imageToUse,
     });
@@ -554,7 +576,7 @@ export default function Home() {
     isConfirming ||
     generationStep === "payment_processing" ||
     !getSelectedPrompt() ||
-    !hasAuth ||
+    !hasValidAuth ||
     !getImageToUse();
 
   const hasValidImage = getImageToUse();
@@ -563,7 +585,7 @@ export default function Home() {
     noUploadedImage: useUploadedImage && !uploadedImage,
   };
 
-  if (isUserLoading) {
+  if (isUserLoading || isSiweLoading) {
     return <div className="text-center py-10">Loading user data...</div>;
   }
 
@@ -583,12 +605,37 @@ export default function Home() {
       {/* Connection Interface */}
       <ConnectionInterface
         connectedAddress={connectedAddress}
-        hasAuth={hasAuth}
+        hasAuth={hasValidAuth}
       />
 
-      {/* Main Interface - only show if user has authentication */}
-      {hasAuth && unifiedUser && (
+      {/* SIWE Authentication Required */}
+      {needsSiweAuth && (
+        <div className="w-full border-2 border-blue-200 rounded-lg p-6 bg-blue-50 text-center">
+          <h3 className="text-lg font-semibold text-blue-800 mb-2">
+            Authentication Required
+          </h3>
+          <p className="text-blue-600 mb-4">
+            To access your creations and generate new characters, please sign in
+            with Ethereum.
+          </p>
+          <SiweAuthButton />
+          {siweError && (
+            <p className="text-red-600 text-sm mt-2">{siweError}</p>
+          )}
+        </div>
+      )}
+
+      {/* Main Interface - only show if user has valid authentication */}
+      {hasValidAuth && unifiedUser && (
         <>
+          {/* User Info - show SIWE address if authenticated via wallet */}
+          {siweUser && !farcasterUser && (
+            <div className="w-full text-center text-sm text-gray-600 bg-green-50 border border-green-200 rounded-lg p-3">
+              ✅ Authenticated with: {siweUser.address.slice(0, 6)}...
+              {siweUser.address.slice(-4)}
+            </div>
+          )}
+
           {/* Image Selection */}
           <ImageSelector
             profileImageUrl={unifiedUser.profileImage}
@@ -641,8 +688,8 @@ export default function Home() {
         showWarnings={showWarnings}
       />
 
-      {/* Jobs Section */}
-      {hasAuth && unifiedUser && (
+      {/* Jobs Section - only for authenticated users */}
+      {hasValidAuth && unifiedUser && (
         <JobsSection
           jobs={inProgressJobs}
           userProfileImage={unifiedUser.profileImage}
@@ -650,11 +697,11 @@ export default function Home() {
         />
       )}
 
-      {/* Creations Gallery */}
-      {hasAuth && unifiedUser && (
+      {/* My Creations Gallery - SIWE Authentication Required for Wallet Users */}
+      {hasValidAuth && unifiedUser && (
         <div className="w-full mt-10 pt-6 border-t">
           <h2 className="text-2xl font-semibold text-center mb-6">
-            Your Creations
+            My Creations
           </h2>
           <CreationsGallery
             images={completedImages}
