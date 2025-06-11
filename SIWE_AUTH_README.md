@@ -147,6 +147,13 @@ export const SIWE_JWT_EXPIRES_IN = "7d";
 - Single-use only (deleted immediately after validation)
 - Prevents replay attacks
 
+### Domain & Origin Validation
+
+- **Domain Verification**: SIWE message domain must match APP_URL domain
+- **URI Validation**: Message URI must start with expected origin
+- **Anti-Spoofing**: Prevents malicious sites from creating valid-looking messages
+- **Cross-Domain Protection**: Blocks authentication attempts from unauthorized domains
+
 ### JWT Security
 
 - HTTP-only cookies prevent XSS attacks
@@ -158,8 +165,10 @@ export const SIWE_JWT_EXPIRES_IN = "7d";
 
 - Uses viem's `validateSiweMessage()` for structure validation
 - Signature verification with viem's `verifyMessage()`
-- Domain and URI validation
+- **Domain validation**: Passed to viem's `verifySiweMessage()` for automatic validation
+- **Nonce validation**: Passed to viem's verification along with Redis validation
 - Timestamp validation for message freshness
+- **Anti-spoofing protection**: Prevents cross-domain attacks
 
 ## Technical Details
 
