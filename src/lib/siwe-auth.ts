@@ -189,6 +189,10 @@ export async function verifySiweMessage(
     // Parse the SIWE message first to get the nonce
     const parsedMessage = parseSiweMessage(message);
 
+    // Get expected domain from APP_URL
+    const appUrl = process.env.APP_URL!;
+    const expectedDomain = new URL(appUrl).host;
+
     // First validate the nonce exists in Redis and consume it
     if (
       !parsedMessage.nonce ||
@@ -197,10 +201,12 @@ export async function verifySiweMessage(
       throw new AuthError("Invalid or expired nonce");
     }
 
-    // Use viem's built-in verifySiweMessage function
+    // Use viem's built-in verifySiweMessage function with domain and nonce validation
     const isValid = await publicClient.verifySiweMessage({
       message,
       signature: signature as `0x${string}`,
+      domain: expectedDomain,
+      nonce: parsedMessage.nonce,
     });
 
     if (!isValid) {
