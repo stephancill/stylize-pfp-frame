@@ -110,7 +110,7 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
 
       // Resize image
       const resizedImageBuffer = await sharp(generatedImageBuffer)
-        .resize(250, 250)
+        .resize(512, 512)
         .png()
         .toBuffer();
 

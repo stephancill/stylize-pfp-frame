@@ -23,6 +23,7 @@ import { JobsSection } from "@/components/JobsSection";
 import { FramePromptDialog } from "@/components/FramePromptDialog";
 import { createUnifiedUser, type UnifiedUser } from "@/types/user";
 import { truncateAddress } from "../lib/utils";
+import { resizeImage, checkIfResizeNeeded } from "@/lib/image-utils";
 
 interface GenerationRequestPayload {
   userId: string;
@@ -436,18 +437,60 @@ export default function Home() {
     return undefined;
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
+    try {
+      // Check if the image needs to be resized
+      const needsResize = await checkIfResizeNeeded(file, 1024, 1024);
+
+      let dataUrl: string;
+
+      if (needsResize) {
+        // Show a message that we're processing the image
+        setApiMessage("Processing large image...");
+
+        // Resize the image while maintaining aspect ratio
+        dataUrl = await resizeImage(file, {
+          maxWidth: 1024,
+          maxHeight: 1024,
+          quality: 0.9,
+        });
+
+        setApiMessage("Image resized to optimize for processing.");
+      } else {
+        // For smaller images, read directly as data URL
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const result = e.target?.result as string;
+            resolve(result);
+          };
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsDataURL(file);
+        });
+      }
+
       setUploadedImage(dataUrl);
       setUseUploadedImage(true);
-      setApiMessage(null);
-    };
-    reader.readAsDataURL(file);
+
+      // Clear the processing message after a short delay if it was shown
+      if (needsResize) {
+        setTimeout(() => {
+          setApiMessage(null);
+        }, 2000);
+      } else {
+        setApiMessage(null);
+      }
+    } catch (error) {
+      console.error("Error processing image:", error);
+      setApiMessage(
+        error instanceof Error ? error.message : "Failed to process image"
+      );
+    }
   };
 
   const handleClearUploadedImage = () => {

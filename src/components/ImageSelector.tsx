@@ -12,7 +12,7 @@ interface ImageSelectorProps {
   username?: string;
   uploadedImage: string | null;
   useUploadedImage: boolean;
-  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   onUseUploadedImageChange: (useUploaded: boolean) => void;
   onClearUploadedImage: () => void;
   onError: (message: string) => void;
@@ -44,7 +44,9 @@ export function ImageSelector({
 }: ImageSelectorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -60,7 +62,14 @@ export function ImageSelector({
       return;
     }
 
-    onImageUpload(event);
+    try {
+      await onImageUpload(event);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      onError(
+        error instanceof Error ? error.message : "Failed to upload image"
+      );
+    }
   };
 
   const handleClearImage = (e: React.MouseEvent) => {
@@ -165,7 +174,8 @@ export function ImageSelector({
             </p>
             {!showBothOptions && (
               <p className="text-sm text-gray-500 mt-1">
-                Click to select an image to stylize
+                Click to select an image to stylize. Large images will be
+                automatically resized.
               </p>
             )}
           </CardContent>
@@ -185,6 +195,10 @@ export function ImageSelector({
         <div className="p-3 mb-4 border border-green-300 rounded-md bg-green-50 text-green-700 text-sm">
           <p className="font-semibold">Using Uploaded Image</p>
           <p>Your custom image will be used for stylization</p>
+          <p className="text-xs mt-1 opacity-80">
+            Large images are automatically resized to 1024x1024 while
+            maintaining aspect ratio for optimal processing.
+          </p>
         </div>
       )}
 
@@ -199,6 +213,10 @@ export function ImageSelector({
         <div className="p-3 mt-4 border border-green-300 rounded-md bg-green-50 text-green-700 text-sm">
           <p className="font-semibold">Image Ready</p>
           <p>Your uploaded image will be used for stylization</p>
+          <p className="text-xs mt-1 opacity-80">
+            Large images are automatically resized to 1024x1024 while
+            maintaining aspect ratio for optimal processing.
+          </p>
         </div>
       )}
     </div>
