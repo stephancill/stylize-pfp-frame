@@ -3,7 +3,7 @@
 import { useUser } from "../providers/UserContextProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import {
   useSendTransaction,
@@ -29,6 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Share2, Upload, X, Download } from "lucide-react";
 import Image from "next/image";
+import type { GeneratedImageStatus } from "@/types/db";
 
 // --- Prompt Generation Logic ---
 interface Theme {
@@ -121,6 +122,15 @@ interface CompletedImage {
   quoteId: string;
 }
 
+interface InProgressJob {
+  id: string;
+  promptText: string | null;
+  createdAt: string;
+  status: GeneratedImageStatus;
+  quoteId: string;
+  transactionHash: string | null;
+}
+
 // API function to get a quote
 const getGenerationQuoteAPI = async (
   payload: GenerationRequestPayload
@@ -177,10 +187,48 @@ export default function Home() {
   const [useUploadedImage, setUseUploadedImage] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // State for completed images
-  const [completedImages, setCompletedImages] = useState<CompletedImage[]>([]);
-  const [isLoadingImages, setIsLoadingImages] = useState<boolean>(false);
-  const [imagesError, setImagesError] = useState<string | null>(null);
+  // React Query is provided in the layout
+
+  // Determine current user identifier for API calls
+  const currentUserId = user?.fid ? user.fid.toString() : connectedAddress;
+
+  // Query for completed images
+  const {
+    data: completedImages = [],
+    isLoading: isLoadingImages,
+    error: imagesError,
+    refetch: refetchImages,
+  } = useQuery<CompletedImage[]>({
+    queryKey: ["completedImages", currentUserId],
+    queryFn: async () => {
+      const response = await fetch(`/api/user/${currentUserId}/images`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch images");
+      }
+      const data = await response.json();
+      return data.images || [];
+    },
+    enabled: !!currentUserId,
+  });
+
+  // Query for in-progress jobs
+  const {
+    data: inProgressJobs = [],
+    refetch: refetchJobs,
+  } = useQuery<InProgressJob[]>({
+    queryKey: ["inProgressJobs", currentUserId],
+    queryFn: async () => {
+      const response = await fetch(`/api/user/${currentUserId}/jobs`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch jobs");
+      }
+      const data = await response.json();
+      return data.jobs || [];
+    },
+    enabled: !!currentUserId,
+  });
 
   const { switchChainAsync } = useSwitchChain();
 
@@ -391,43 +439,13 @@ export default function Home() {
     }
   }, [generationStep]);
 
-  // Determine current user identifier for API calls
-  const currentUserId = user?.fid ? user.fid.toString() : connectedAddress;
-
   // Check if user has any valid authentication
   const hasValidAuth = user?.fid || connectedAddress;
 
   // Check if user has a valid image to use
   const hasValidImage = uploadedImage || user?.pfpUrl;
 
-  // Effect to fetch completed images when currentUserId is available
-  useEffect(() => {
-    const fetchCompletedImages = async () => {
-      if (currentUserId) {
-        setIsLoadingImages(true);
-        setImagesError(null);
-        try {
-          const response = await fetch(`/api/user/${currentUserId}/images`);
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to fetch images");
-          }
-          const data = await response.json();
-          setCompletedImages(data.images || []);
-          if (data.images && data.images.length === 0) {
-            // Optional: set a specific message if no images, or handle in render
-          }
-        } catch (error: any) {
-          console.error("Error fetching completed images:", error);
-          setImagesError(error.message);
-        } finally {
-          setIsLoadingImages(false);
-        }
-      }
-    };
-
-    fetchCompletedImages();
-  }, [currentUserId]); // Updated dependency
+  // Queries handle fetching completed images and in-progress jobs
 
   // Effect for polling for the newly generated image
   useEffect(() => {
@@ -444,16 +462,8 @@ export default function Home() {
         return;
       }
       try {
-        const response = await fetch(`/api/user/${currentUserId}/images`);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.error || "Failed to fetch images during polling"
-          );
-        }
-        const data = await response.json();
-        const allImages: CompletedImage[] = data.images || [];
-        setCompletedImages(allImages); // Update with the latest list
+        const { data: allImages = [] } = await refetchImages();
+        await refetchJobs();
 
         const foundImage = allImages.find(
           (img) => img.quoteId === pollingQuoteId && img.imageDataUrl
@@ -879,7 +889,10 @@ export default function Home() {
               )}
               {imagesError && (
                 <p className="text-center text-red-500 py-4">
-                  Error loading images: {imagesError}
+                  Error loading images:{" "}
+                  {imagesError instanceof Error
+                    ? imagesError.message
+                    : String(imagesError)}
                 </p>
               )}
               {!isLoadingImages &&
@@ -1244,6 +1257,40 @@ export default function Home() {
           </div>
         )}
 
+      {/* Section to display in-progress jobs - show for any authenticated user */}
+      {currentUserId && (
+        <div className="w-full mt-10 pt-6 border-t">
+          <h2 className="text-2xl font-semibold text-center mb-6">In-Progress Jobs</h2>
+          {inProgressJobs.length === 0 ? (
+            <p className="text-center text-gray-500 py-4">
+              You have no jobs in progress.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {inProgressJobs.map((job) => (
+                <div key={job.id} className="border rounded-md p-3">
+                  <p className="text-sm">Prompt: {job.promptText ?? "N/A"}</p>
+                  <p className="text-sm text-gray-500">Status: {job.status}</p>
+                  {job.transactionHash && (
+                    <p className="text-sm text-gray-500">
+                      Tx:{" "}
+                      <a
+                        href={`https://etherscan.io/tx/${job.transactionHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline"
+                      >
+                        {job.transactionHash}
+                      </a>
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Section to display completed images - show for any authenticated user */}
       {currentUserId && (
         <div className="w-full mt-10 pt-6 border-t">
@@ -1255,7 +1302,10 @@ export default function Home() {
           )}
           {imagesError && (
             <p className="text-center text-red-500 py-4">
-              Error loading images: {imagesError}
+              Error loading images:{" "}
+              {imagesError instanceof Error
+                ? imagesError.message
+                : String(imagesError)}
             </p>
           )}
           {!isLoadingImages && !imagesError && completedImages.length === 0 && (
