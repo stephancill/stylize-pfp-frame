@@ -87,6 +87,12 @@ export function CreationsGallery({
                             text: `Check out my new character! ${shareUrl}`,
                             embeds: [shareUrl],
                           });
+                        } else {
+                          // Share to twitter
+                          window.open(
+                            `https://x.com/intent/tweet?text=Check%20out%20my%20new%20character!%20${shareUrl}`,
+                            "_blank"
+                          );
                         }
                       });
                     }}
