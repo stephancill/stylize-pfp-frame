@@ -189,36 +189,6 @@ export function ImageSelector({
         onChange={handleImageUpload}
         className="hidden"
       />
-
-      {/* Status Messages */}
-      {useUploadedImage && uploadedImage && (
-        <div className="p-3 mb-4 border border-green-300 rounded-md bg-green-50 text-green-700 text-sm">
-          <p className="font-semibold">Using Uploaded Image</p>
-          <p>Your custom image will be used for stylization</p>
-          <p className="text-xs mt-1 opacity-80">
-            Large images are automatically resized to 1024x1024 while
-            maintaining aspect ratio for optimal processing.
-          </p>
-        </div>
-      )}
-
-      {!useUploadedImage && hasProfileImage && (
-        <div className="p-3 mb-4 border border-blue-300 rounded-md bg-blue-50 text-blue-700 text-sm">
-          <p className="font-semibold">Using Profile Picture</p>
-          <p>Your profile picture will be used for stylization</p>
-        </div>
-      )}
-
-      {uploadedImage && !showBothOptions && (
-        <div className="p-3 mt-4 border border-green-300 rounded-md bg-green-50 text-green-700 text-sm">
-          <p className="font-semibold">Image Ready</p>
-          <p>Your uploaded image will be used for stylization</p>
-          <p className="text-xs mt-1 opacity-80">
-            Large images are automatically resized to 1024x1024 while
-            maintaining aspect ratio for optimal processing.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

@@ -12,19 +12,15 @@ interface InProgressJob {
   status: GeneratedImageStatus;
   quoteId: string;
   transactionHash: string | null;
+  userPfpUrl: string | null;
 }
 
 interface JobsSectionProps {
   jobs: InProgressJob[];
   userProfileImage?: string;
-  uploadedImage?: string | null;
 }
 
-export function JobsSection({
-  jobs,
-  userProfileImage,
-  uploadedImage,
-}: JobsSectionProps) {
+export function JobsSection({ jobs }: JobsSectionProps) {
   if (jobs.length === 0) {
     return null;
   }
@@ -45,9 +41,7 @@ export function JobsSection({
                 {/* Input Image Preview */}
                 <div className="w-24 h-24 flex-shrink-0">
                   <img
-                    src={
-                      userProfileImage || uploadedImage || "/placeholder.png"
-                    }
+                    src={job.userPfpUrl || "/placeholder.png"}
                     alt="Input"
                     className="w-full h-full object-cover rounded-md"
                   />

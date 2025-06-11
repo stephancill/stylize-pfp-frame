@@ -9,37 +9,48 @@ import {
 } from "./constants";
 import { redisCache } from "./redis";
 import {
-  createSiweMessage,
   generateSiweNonce,
   parseSiweMessage,
   type SiweMessage,
 } from "viem/siwe";
 import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
-
-// JWT Configuration
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "your-super-secret-jwt-key-change-this-in-production";
-
-export interface SiweAuthUser {
-  address: string;
-  chainId: number;
-  nonce?: string;
-  issuedAt?: string;
-  expirationTime?: string;
-}
-
-export interface JwtPayload extends SiweAuthUser {
-  iat: number;
-  exp: number;
-}
+import { createAppClient, viemConnector } from "@farcaster/auth-client";
 
 // Create a public client for SIWE verification
 const publicClient = createPublicClient({
   chain: base,
   transport: http(),
 });
+
+// Create Farcaster app client for verification
+const farcasterAppClient = createAppClient({
+  ethereum: viemConnector(),
+});
+
+// JWT Configuration
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  "your-super-secret-jwt-key-change-this-in-production";
+
+// Updated auth user interface to support both SIWE and Farcaster
+export interface AuthUser {
+  // SIWE fields
+  address?: string;
+  chainId?: number;
+  // Farcaster fields
+  fid?: number;
+  // Common fields
+  authType: "siwe" | "farcaster";
+  nonce?: string;
+  issuedAt?: string;
+  expirationTime?: string;
+}
+
+export interface JwtPayload extends AuthUser {
+  iat: number;
+  exp: number;
+}
 
 // Generate a nonce for SIWE message and store it in Redis
 export async function generateNonce(): Promise<string> {
@@ -72,8 +83,9 @@ export async function validateAndConsumeNonce(nonce: string): Promise<boolean> {
 
 // Create JWT token from SIWE message
 export function createJwtToken(siweMessage: SiweMessage): string {
-  const payload: SiweAuthUser = {
-    address: siweMessage.address,
+  const payload: AuthUser = {
+    authType: "siwe",
+    address: siweMessage.address.toLowerCase(),
     chainId: siweMessage.chainId,
     nonce: siweMessage.nonce,
     issuedAt: siweMessage.issuedAt?.toISOString(),
@@ -85,13 +97,29 @@ export function createJwtToken(siweMessage: SiweMessage): string {
   });
 }
 
+// Create JWT token from Farcaster auth
+export function createFarcasterJwtToken(fid: number, nonce: string): string {
+  const payload: AuthUser = {
+    authType: "farcaster",
+    fid,
+    nonce,
+    issuedAt: new Date().toISOString(),
+  };
+
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: SIWE_JWT_EXPIRES_IN,
+  });
+}
+
 // Verify JWT token and return user data
-export function verifyJwtToken(token: string): SiweAuthUser {
+export function verifyJwtToken(token: string): AuthUser {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     return {
+      authType: decoded.authType,
       address: decoded.address,
       chainId: decoded.chainId,
+      fid: decoded.fid,
       nonce: decoded.nonce,
       issuedAt: decoded.issuedAt,
       expirationTime: decoded.expirationTime,
@@ -101,15 +129,15 @@ export function verifyJwtToken(token: string): SiweAuthUser {
   }
 }
 
-// Extract JWT token from cookies or Authorization header
+// Extract JWT token from Authorization header (prioritized) or cookies (fallback)
 export function extractToken(request: NextRequest): string | null {
-  // First try Authorization header
+  // First try Authorization header (Bearer token)
   const authHeader = request.headers.get("Authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
     return authHeader.substring(7);
   }
 
-  // Then try cookie
+  // Fallback to cookie for backward compatibility
   const cookieHeader = request.headers.get("Cookie");
   if (cookieHeader) {
     const cookies = Object.fromEntries(
@@ -139,16 +167,16 @@ export function createClearAuthCookie(): string {
 }
 
 // Types for the route handler with authenticated user
-type NextContext = { params: Promise<{}> };
+type NextContext = { params: Promise<Record<string, string | string[]>> };
 
-export type SiweUserRouteHandler<
+export type AuthUserRouteHandler<
   T extends Record<string, object | string> = NextContext
-> = (req: NextRequest, user: SiweAuthUser, context: T) => Promise<Response>;
+> = (req: NextRequest, user: AuthUser, context: T) => Promise<Response>;
 
-// withAuth decorator for protecting routes
-export function withSiweAuth<
+// withAuth decorator for protecting routes (supports both auth types)
+export function withAuth<
   T extends Record<string, object | string> = NextContext
->(handler: SiweUserRouteHandler<T>) {
+>(handler: AuthUserRouteHandler<T>) {
   return async (req: NextRequest, context: T): Promise<Response> => {
     try {
       const token = extractToken(req);
@@ -171,7 +199,7 @@ export function withSiweAuth<
         return NextResponse.json({ error: error.message }, { status: 401 });
       }
 
-      console.error("Unexpected error in withSiweAuth:", error);
+      console.error("Unexpected error in withAuth:", error);
       return NextResponse.json(
         { error: "Internal server error" },
         { status: 500 }
@@ -247,5 +275,61 @@ export async function verifySiweMessage(
     }
     console.error("SIWE verification error:", error);
     throw new AuthError("Failed to verify SIWE message");
+  }
+}
+
+// Utility function to verify Farcaster message and signature with nonce validation
+export async function verifyFarcasterMessage(
+  message: string,
+  signature: string,
+  challengeId: string
+): Promise<{ fid: number; nonce: string }> {
+  try {
+    // Parse the SIWE message first to get the nonce
+    const parsedMessage = parseSiweMessage(message);
+
+    // Get expected domain from APP_URL
+    const appUrl = process.env.APP_URL!;
+    const expectedDomain = new URL(appUrl).host;
+
+    // First validate the nonce exists in Redis and consume it
+    if (
+      !parsedMessage.nonce ||
+      !(await validateAndConsumeNonce(parsedMessage.nonce))
+    ) {
+      throw new AuthError("Invalid or expired nonce");
+    }
+
+    // Verify the Farcaster sign-in message
+    const verifyResponse = await farcasterAppClient.verifySignInMessage({
+      message,
+      signature: signature as `0x${string}`,
+      domain: expectedDomain,
+      nonce: parsedMessage.nonce,
+      acceptAuthAddress: true,
+    });
+
+    if (!verifyResponse.success) {
+      console.log("verifyResponse", verifyResponse);
+      throw new AuthError("Invalid Farcaster signature");
+    }
+
+    if (!verifyResponse.fid) {
+      throw new AuthError("No FID found in verification response");
+    }
+
+    // Delete challenge immediately after validation (single use)
+    await redisCache.del(`${SIWE_NONCE_REDIS_PREFIX}${challengeId}`);
+
+    return {
+      fid: verifyResponse.fid,
+      nonce: parsedMessage.nonce,
+    };
+  } catch (error) {
+    if (error instanceof AuthError) {
+      throw error;
+    }
+    console.error("Farcaster verification error:", error);
+    throw new AuthError("Failed to verify Farcaster message");
   }
 }

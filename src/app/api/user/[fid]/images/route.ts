@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { withSiweAuth, SiweUserRouteHandler } from "@/lib/siwe-auth";
+import { withAuth, AuthUserRouteHandler } from "@/lib/siwe-auth";
 
-const handler: SiweUserRouteHandler<{
+const handler: AuthUserRouteHandler<{
   params: Promise<{ fid: string }>;
 }> = async (request, user, args) => {
   const params = await args.params;
@@ -19,7 +19,11 @@ const handler: SiweUserRouteHandler<{
     // Since we're using SIWE, we now have the authenticated user's address
     // We can either use the route parameter or the authenticated user's address
     // For security, let's use the authenticated user's address if no specific userId is requested
-    const userId = userIdString === "me" ? user.address : userIdString;
+    const userId = user.authType === "siwe" ? user.address : user.fid;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Invalid user" }, { status: 400 });
+    }
 
     // Kysely automatically converts camelCase to snake_case for column names
     // if a CamelCasePlugin is used, otherwise ensure your column names match the DB.
@@ -34,7 +38,7 @@ const handler: SiweUserRouteHandler<{
         "status", // good for debugging, or if UI wants to re-verify
         "quoteId",
       ])
-      .where("userId", "=", userId)
+      .where("userId", "=", userId.toString())
       .where("status", "=", "completed")
       .orderBy("createdAt", "desc")
       .execute();
@@ -67,4 +71,4 @@ const handler: SiweUserRouteHandler<{
   }
 };
 
-export const GET = withSiweAuth(handler);
+export const GET = withAuth(handler);
