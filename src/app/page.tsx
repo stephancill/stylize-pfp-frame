@@ -30,61 +30,47 @@ import { Input } from "@/components/ui/input";
 import { Share2, Upload, X, Download } from "lucide-react";
 import Image from "next/image";
 import type { GeneratedImageStatus } from "@/types/db";
+import { CreationsGallery } from "@/components/CreationsGallery";
+
+const truncateAddress = (address: string): string => {
+  if (!address) return "";
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
 
 // --- Prompt Generation Logic ---
 interface Theme {
   id: string;
   name: string;
-  generatePrompt: (baseTheme: string) => string;
+  prompt: string;
 }
-
-const generateHigherBuddyPrompt = (baseTheme: string): string => {
-  return `come up with an animal or creature (not too obscure) that is representative of the character or vibe of the image.
-
-then generate a profile picture of the animal. include as many defining characteristics as possible. if the character is wearing clothes, try to match it as closely as possible - otherwise give the character a minimalist outfit.
-
-image characteristics: high grain effect, 90s disposable camera style with chromatic aberration, slight yellow tint, and hyper-realistic photography with detailed elements, captured in harsh flash photography style, vintage paparazzi feel. preserve the prominent colors in the original image`;
-};
-
-const generateCinematicFantasyPrompt = (baseTheme: string): string => {
-  return `Transform the provided profile picture with the theme: "${baseTheme}".
-
-Key elements for the transformation:
-1. Subject Adaptation: Reimagine the animal/creature in the image as a mythical or fantasy version, fitting the "${baseTheme}" concept.
-2. Attire/Features: Adorn the subject with fantasy-themed attire or features (e.g., mystical armor, glowing runes, ethereal wings) suitable for its form.
-3. Atmosphere: Create a dramatic and cinematic atmosphere with dynamic lighting (e.g., god rays, magical glows, contrasting shadows) and a rich, detailed background suggesting an epic fantasy world.
-4. Artistic Style: The final image should look like a piece of high-detail digital fantasy art, emphasizing realism within the fantasy context.
-
-Ensure the result is a captivating, profile picture-worthy artwork.`;
-};
-
-const generateStudioGhibliPrompt = (baseTheme: string): string => {
-  return `Reimagine the provided profile picture in the iconic Studio Ghibli style, based on the theme: "${baseTheme}".
-
-Key elements for the transformation:
-1. Subject Adaptation: Transform the animal/creature into a gentle, whimsical character typical of Studio Ghibli films. It should evoke a sense of wonder or nostalgia.
-2. Artistic Style: The image must emulate the classic hand-drawn animation style of Studio Ghibli. This includes soft, rich color palettes, detailed and lush natural backgrounds (or cozy, detailed interiors), and expressive, emotive character design.
-3. Atmosphere: Create an enchanting and heartwarming atmosphere. Consider elements like soft lighting, a gentle breeze, or a scene that tells a small, peaceful story.
-4. Details: Incorporate iconic Ghibli-esque details like small, cute companion creatures, magical elements subtly woven into nature, or a focus on food or simple, beautiful moments if appropriate for the subject.
-
-Ensure the final image is a charming profile picture that captures the Studio Ghibli spirit.`;
-};
 
 const themes: Theme[] = [
   {
     id: "higherBuddy",
     name: "Higher Buddy",
-    generatePrompt: generateHigherBuddyPrompt,
+    prompt: `come up with an animal or creature (not too obscure) that is representative of the character or vibe of the image.
+
+then generate a profile picture of the animal. include as many defining characteristics as possible. if the character is wearing clothes, try to match it as closely as possible - otherwise give the character a minimalist outfit.
+
+image characteristics: high grain effect, 90s disposable camera style with chromatic aberration, slight yellow tint, and hyper-realistic photography with detailed elements, captured in harsh flash photography style, vintage paparazzi feel. preserve the prominent colors in the original image`,
   },
   {
     id: "cinematicFantasy",
     name: "Cinematic Fantasy",
-    generatePrompt: generateCinematicFantasyPrompt,
+    prompt: `Transform the provided profile picture into a mythical or fantasy version.
+
+Key elements for the transformation:
+1. Subject Adaptation: Reimagine the animal/creature in the image as a mythical or fantasy version.
+2. Attire/Features: Adorn the subject with fantasy-themed attire or features (e.g., mystical armor, glowing runes, ethereal wings) suitable for its form.
+3. Atmosphere: Create a dramatic and cinematic atmosphere with dynamic lighting (e.g., god rays, magical glows, contrasting shadows) and a rich, detailed background suggesting an epic fantasy world.
+4. Artistic Style: The final image should look like a piece of high-detail digital fantasy art, emphasizing realism within the fantasy context.
+
+Ensure the result is a captivating, profile picture-worthy artwork.`,
   },
   {
     id: "studioGhibli",
     name: "Studio Ghibli",
-    generatePrompt: generateStudioGhibliPrompt,
+    prompt: `Reimagine the provided image in the iconic Studio Ghibli style.`,
   },
 ];
 // --- End Prompt Generation Logic ---
@@ -110,15 +96,14 @@ interface SubmitPaymentPayload {
 
 interface SubmitPaymentResponse {
   message: string;
-  jobId?: string; // If job is queued immediately
+  jobId?: string;
 }
 
-// Define a type for the completed images we expect from the new API
 interface CompletedImage {
   id: string;
   imageDataUrl: string | null;
   promptText: string | null;
-  createdAt: string; // Or Date, depending on API response formatting
+  createdAt: string;
   quoteId: string;
 }
 
@@ -131,7 +116,6 @@ interface InProgressJob {
   transactionHash: string | null;
 }
 
-// API function to get a quote
 const getGenerationQuoteAPI = async (
   payload: GenerationRequestPayload
 ): Promise<GenerationRequestResponse> => {
@@ -212,11 +196,9 @@ export default function Home() {
     enabled: !!currentUserId,
   });
 
-  // Query for in-progress jobs
-  const {
-    data: inProgressJobs = [],
-    refetch: refetchJobs,
-  } = useQuery<InProgressJob[]>({
+  const { data: inProgressJobs = [], refetch: refetchJobs } = useQuery<
+    InProgressJob[]
+  >({
     queryKey: ["inProgressJobs", currentUserId],
     queryFn: async () => {
       const response = await fetch(`/api/user/${currentUserId}/jobs`);
@@ -232,7 +214,6 @@ export default function Home() {
 
   const { switchChainAsync } = useSwitchChain();
 
-  // State for payment flow
   const [quoteId, setQuoteId] = useState<string | null>(null);
   const [generationStep, setGenerationStep] = useState<
     | "initial"
@@ -246,12 +227,9 @@ export default function Home() {
   const [currentTxHash, setCurrentTxHash] = useState<`0x${string}` | undefined>(
     undefined
   );
-  // Add flag to prevent duplicate submissions
   const [isPaymentSubmitted, setIsPaymentSubmitted] = useState<boolean>(false);
-  // State for polling
   const [isPolling, setIsPolling] = useState<boolean>(false);
   const [pollingQuoteId, setPollingQuoteId] = useState<string | null>(null);
-  // State for Frame Prompt Dialog
   const [showFramePromptDialog, setShowFramePromptDialog] =
     useState<boolean>(false);
 
@@ -271,7 +249,6 @@ export default function Home() {
     confirmations: 1,
   });
 
-  // Mutation for getting a quote
   const quoteMutation = useMutation<
     GenerationRequestResponse,
     Error,
@@ -313,7 +290,6 @@ export default function Home() {
     },
   });
 
-  // Mutation for submitting payment proof
   const paymentSubmissionMutation = useMutation<
     SubmitPaymentResponse,
     Error,
@@ -325,7 +301,6 @@ export default function Home() {
       setPollingQuoteId(quoteId);
       setIsPolling(true);
 
-      // Only show frame dialog for Farcaster users
       if (user?.fid) {
         setShowFramePromptDialog(true);
         setApiMessage(
@@ -333,7 +308,6 @@ export default function Home() {
             "Payment verified! Waiting for image generation... (Add our frame for updates!)"
         );
       } else {
-        // Wallet-only users get different message
         setApiMessage(
           "Payment successful! Your character is being generated. Please check back in a few minutes - it will appear in 'Your Creations' when ready."
         );
@@ -352,37 +326,12 @@ export default function Home() {
   });
 
   useEffect(() => {
-    // Skip if still loading user data, but allow generation for wallet-only users
     if (isUserLoading) return;
-
-    // Only generate prompt if we have some form of authentication
     if (!user && !connectedAddress) return;
 
     const selectedTheme =
       themes.find((t) => t.id === selectedThemeId) || themes[0];
-    let baseThemeForPrompt = "";
-
-    // Construct a base description based on the theme's nature
-    if (selectedTheme.id === "higherBuddy") {
-      baseThemeForPrompt = `a "Higher Buddy" version of ${
-        user?.displayName || user?.username || "your uploaded"
-      } image, embodying a cool, slightly edgy, and photorealistic aesthetic`;
-    } else if (selectedTheme.id === "cinematicFantasy") {
-      baseThemeForPrompt = `a cinematic, fantasy art version of ${
-        user?.displayName || user?.username || "your uploaded"
-      } image, with epic lighting and high detail`;
-    } else if (selectedTheme.id === "studioGhibli") {
-      baseThemeForPrompt = `a Studio Ghibli style version of ${
-        user?.displayName || user?.username || "your uploaded"
-      } image, capturing the essence of Japanese animation with whimsical charm and soft, nostalgic visuals`;
-    } else {
-      // Generic fallback
-      baseThemeForPrompt = `a stylized version of ${
-        user?.displayName || user?.username || "your uploaded"
-      } image, in the style of ${selectedTheme.name}`;
-    }
-
-    setGeneratedPrompt(selectedTheme.generatePrompt(baseThemeForPrompt));
+    setGeneratedPrompt(selectedTheme.prompt);
   }, [user, isUserLoading, selectedThemeId, connectedAddress]);
 
   // Consolidate transaction confirmation handling into a single effect
@@ -445,56 +394,62 @@ export default function Home() {
   // Check if user has a valid image to use
   const hasValidImage = uploadedImage || user?.pfpUrl;
 
-  // Queries handle fetching completed images and in-progress jobs
-
-  // Effect for polling for the newly generated image
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-    let pollTimeoutId: NodeJS.Timeout | null = null;
-
-    const POLLING_INTERVAL = 5000; // 5 seconds
-    const MAX_POLLING_DURATION = 120000; // 2 minutes
-
-    const fetchAndCheck = async () => {
+  // Query for polling generated image status
+  const {
+    data: polledImage,
+    isError: isPollingError,
+    error: pollingError,
+  } = useQuery<CompletedImage | null, Error>({
+    queryKey: ["polledImage", pollingQuoteId],
+    queryFn: async () => {
       if (!currentUserId || !pollingQuoteId) {
-        setIsPolling(false);
-        setGenerationStep("initial");
-        return;
+        return null;
       }
-      try {
-        const { data: allImages = [] } = await refetchImages();
-        await refetchJobs();
+      const { data: allImages = [] } = await refetchImages();
+      await refetchJobs();
 
-        const foundImage = allImages.find(
-          (img) => img.quoteId === pollingQuoteId && img.imageDataUrl
-        );
+      const foundImage = allImages.find(
+        (img) => img.quoteId === pollingQuoteId && img.imageDataUrl
+      );
 
-        if (foundImage) {
-          setApiMessage("Your new character has been generated!");
-          setIsPolling(false);
-          setPollingQuoteId(null);
-          setGenerationStep("initial");
-        }
-      } catch (error: any) {
-        console.error("Polling error:", error);
-        setApiMessage(
-          `Error checking for new image: ${error.message}. Please refresh or try again.`
-        );
+      if (foundImage) {
+        setApiMessage("Your new character has been generated!");
         setIsPolling(false);
         setPollingQuoteId(null);
         setGenerationStep("initial");
+        return foundImage;
       }
-    };
+      return null;
+    },
+    enabled: isPolling && !!pollingQuoteId && !!currentUserId,
+    refetchInterval: (data) => {
+      if (data) return false;
+      return 5000;
+    },
+    retry: false,
+    gcTime: 0,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+  });
+
+  useEffect(() => {
+    if (isPollingError && pollingError) {
+      console.error("Polling error:", pollingError);
+      setApiMessage(
+        `Error checking for new image: ${pollingError.message}. Please refresh or try again.`
+      );
+      setIsPolling(false);
+      setPollingQuoteId(null);
+      setGenerationStep("initial");
+    }
+  }, [isPollingError, pollingError]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
 
     if (isPolling && pollingQuoteId && currentUserId) {
-      // Initial check before starting interval
-      fetchAndCheck();
-
-      intervalId = setInterval(fetchAndCheck, POLLING_INTERVAL);
-
-      pollTimeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         if (isPolling) {
-          // Check if still polling
           setApiMessage(
             "Image generation is taking longer than expected. It will appear in 'Your Creations' when ready. You can start a new generation."
           );
@@ -502,14 +457,13 @@ export default function Home() {
           setPollingQuoteId(null);
           setGenerationStep("initial");
         }
-      }, MAX_POLLING_DURATION);
+      }, 120000);
     }
 
     return () => {
-      if (intervalId) clearInterval(intervalId);
-      if (pollTimeoutId) clearTimeout(pollTimeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [isPolling, pollingQuoteId, currentUserId]); // Updated dependency
+  }, [isPolling, pollingQuoteId, currentUserId]);
 
   // Add effect to handle chain switching when address changes
   useEffect(() => {
@@ -643,8 +597,6 @@ export default function Home() {
     !hasValidAuth ||
     !hasValidImage;
 
-  const YOUR_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://example.com"; // Replace with your actual app URL
-
   return (
     <div className="container mx-auto p-4 flex flex-col items-center space-y-6 max-w-lg">
       <div className="flex flex-col items-center space-y-4">
@@ -663,7 +615,7 @@ export default function Home() {
             {account.address ? (
               <div className="flex items-center space-x-2">
                 <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                  Wallet: {account.address}
+                  Wallet: {truncateAddress(account.address)}
                 </p>
                 <Button
                   variant="ghost"
@@ -868,12 +820,12 @@ export default function Home() {
               <div className="text-sm text-gray-600">
                 Transaction Hash:{" "}
                 <a
-                  href={`https://etherscan.io/tx/${currentTxHash}`}
+                  href={`https://basescan.org/tx/${currentTxHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:underline"
                 >
-                  {currentTxHash}
+                  {truncateAddress(currentTxHash)}
                 </a>
               </div>
             )}
@@ -884,93 +836,12 @@ export default function Home() {
               <h2 className="text-2xl font-semibold text-center mb-6">
                 Your Creations
               </h2>
-              {isLoadingImages && (
-                <p className="text-center py-4">Loading your images...</p>
-              )}
-              {imagesError && (
-                <p className="text-center text-red-500 py-4">
-                  Error loading images:{" "}
-                  {imagesError instanceof Error
-                    ? imagesError.message
-                    : String(imagesError)}
-                </p>
-              )}
-              {!isLoadingImages &&
-                !imagesError &&
-                completedImages.length === 0 && (
-                  <p className="text-center text-gray-500 py-4">
-                    You haven't generated any characters yet.
-                  </p>
-                )}
-              {!isLoadingImages &&
-                !imagesError &&
-                completedImages.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {completedImages.map((image) => (
-                      <Card
-                        key={image.id || image.quoteId}
-                        className="overflow-hidden flex flex-col"
-                      >
-                        <CardContent className="p-0 aspect-square flex-grow relative group">
-                          {image.imageDataUrl ? (
-                            <>
-                              <img
-                                src={image.imageDataUrl}
-                                alt={image.promptText || "Generated Character"}
-                                className="w-full h-full object-cover"
-                              />
-                              <Button
-                                variant="secondary"
-                                className="absolute bottom-2 right-2 flex items-center gap-2"
-                                onClick={() => {
-                                  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/generations/${image.id}`;
-                                  sdk.actions.composeCast({
-                                    text: `Check out my new character! ${shareUrl}`,
-                                    embeds: [shareUrl],
-                                  });
-                                }}
-                              >
-                                <Share2 className="h-4 w-4" />
-                                Share
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                className="absolute bottom-2 left-2 flex items-center gap-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownloadImage(
-                                    image.imageDataUrl!,
-                                    image.id
-                                  );
-                                }}
-                              >
-                                <Download className="h-4 w-4" />
-                                Download
-                              </Button>
-                            </>
-                          ) : (
-                            <div className="w-full h-full bg-muted flex items-center justify-center">
-                              <p className="text-muted-foreground">
-                                Image not available
-                              </p>
-                            </div>
-                          )}
-                        </CardContent>
-                        {(image.promptText ||
-                          image.createdAt ||
-                          image.imageDataUrl) && (
-                          <CardFooter className="p-3 flex flex-col items-start border-t">
-                            {image.createdAt && (
-                              <p className="text-xs text-muted-foreground/80 mt-1">
-                                {new Date(image.createdAt).toLocaleDateString()}
-                              </p>
-                            )}
-                          </CardFooter>
-                        )}
-                      </Card>
-                    ))}
-                  </div>
-                )}
+              <CreationsGallery
+                images={completedImages}
+                isLoading={isLoadingImages}
+                error={imagesError}
+                onDownload={handleDownloadImage}
+              />
             </div>
           )}
 
@@ -1063,7 +934,7 @@ export default function Home() {
           <div className="flex flex-col items-center space-y-2">
             <div className="flex items-center space-x-2">
               <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                Wallet: {connectedAddress}
+                Wallet: {truncateAddress(connectedAddress)}
               </p>
               <Button
                 variant="ghost"
@@ -1247,47 +1118,90 @@ export default function Home() {
           <div className="text-sm text-gray-600">
             Transaction Hash:{" "}
             <a
-              href={`https://etherscan.io/tx/${currentTxHash}`}
+              href={`https://basescan.org/tx/${currentTxHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 hover:underline"
             >
-              {currentTxHash}
+              {truncateAddress(currentTxHash)}
             </a>
           </div>
         )}
 
       {/* Section to display in-progress jobs - show for any authenticated user */}
-      {currentUserId && (
+      {currentUserId && inProgressJobs.length > 0 && (
         <div className="w-full mt-10 pt-6 border-t">
-          <h2 className="text-2xl font-semibold text-center mb-6">In-Progress Jobs</h2>
-          {inProgressJobs.length === 0 ? (
-            <p className="text-center text-gray-500 py-4">
-              You have no jobs in progress.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {inProgressJobs.map((job) => (
-                <div key={job.id} className="border rounded-md p-3">
-                  <p className="text-sm">Prompt: {job.promptText ?? "N/A"}</p>
-                  <p className="text-sm text-gray-500">Status: {job.status}</p>
-                  {job.transactionHash && (
-                    <p className="text-sm text-gray-500">
-                      Tx:{" "}
-                      <a
-                        href={`https://etherscan.io/tx/${job.transactionHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline"
-                      >
-                        {job.transactionHash}
-                      </a>
-                    </p>
-                  )}
+          <h2 className="text-2xl font-semibold text-center mb-6">
+            In-Progress Jobs
+          </h2>
+          <div className="space-y-4">
+            {inProgressJobs.map((job) => {
+              // Find if the prompt matches any theme
+              const matchingTheme = themes.find((theme) =>
+                job.promptText?.includes(theme.prompt)
+              );
+
+              return (
+                <div key={job.id} className="border rounded-md p-4">
+                  <div className="flex gap-4">
+                    {/* Input Image Preview */}
+                    <div className="w-24 h-24 flex-shrink-0">
+                      <img
+                        src={
+                          user?.pfpUrl || uploadedImage || "/placeholder.png"
+                        }
+                        alt="Input"
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    </div>
+
+                    {/* Job Details */}
+                    <div className="flex-grow">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">
+                          {matchingTheme ? matchingTheme.name : "Custom Prompt"}
+                        </p>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            job.status === "generating"
+                              ? "bg-blue-100 text-blue-700"
+                              : job.status === "queued"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : job.status === "paid"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {job.status.replace("_", " ")}
+                        </span>
+                      </div>
+
+                      {/* Show full prompt if custom, otherwise just theme name */}
+                      {!matchingTheme && job.promptText && (
+                        <p className="text-sm text-gray-600 mb-2">
+                          {job.promptText}
+                        </p>
+                      )}
+
+                      {job.transactionHash && (
+                        <p className="text-xs text-gray-500">
+                          Tx:{" "}
+                          <a
+                            href={`https://basescan.org/tx/${job.transactionHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline"
+                          >
+                            {truncateAddress(job.transactionHash)}
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -1297,86 +1211,12 @@ export default function Home() {
           <h2 className="text-2xl font-semibold text-center mb-6">
             Your Creations
           </h2>
-          {isLoadingImages && (
-            <p className="text-center py-4">Loading your images...</p>
-          )}
-          {imagesError && (
-            <p className="text-center text-red-500 py-4">
-              Error loading images:{" "}
-              {imagesError instanceof Error
-                ? imagesError.message
-                : String(imagesError)}
-            </p>
-          )}
-          {!isLoadingImages && !imagesError && completedImages.length === 0 && (
-            <p className="text-center text-gray-500 py-4">
-              You haven't generated any characters yet.
-            </p>
-          )}
-          {!isLoadingImages && !imagesError && completedImages.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {completedImages.map((image) => (
-                <Card
-                  key={image.id || image.quoteId}
-                  className="overflow-hidden flex flex-col"
-                >
-                  <CardContent className="p-0 aspect-square flex-grow relative group">
-                    {image.imageDataUrl ? (
-                      <>
-                        <img
-                          src={image.imageDataUrl}
-                          alt={image.promptText || "Generated Character"}
-                          className="w-full h-full object-cover"
-                        />
-                        <Button
-                          variant="secondary"
-                          className="absolute bottom-2 right-2 flex items-center gap-2"
-                          onClick={() => {
-                            const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/generations/${image.id}`;
-                            sdk.actions.composeCast({
-                              text: `Check out my new character! ${shareUrl}`,
-                              embeds: [shareUrl],
-                            });
-                          }}
-                        >
-                          <Share2 className="h-4 w-4" />
-                          Share
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          className="absolute bottom-2 left-2 flex items-center gap-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownloadImage(image.imageDataUrl!, image.id);
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                          Download
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <p className="text-muted-foreground">
-                          Image not available
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                  {(image.promptText ||
-                    image.createdAt ||
-                    image.imageDataUrl) && (
-                    <CardFooter className="p-3 flex flex-col items-start border-t">
-                      {image.createdAt && (
-                        <p className="text-xs text-muted-foreground/80 mt-1">
-                          {new Date(image.createdAt).toLocaleDateString()}
-                        </p>
-                      )}
-                    </CardFooter>
-                  )}
-                </Card>
-              ))}
-            </div>
-          )}
+          <CreationsGallery
+            images={completedImages}
+            isLoading={isLoadingImages}
+            error={imagesError}
+            onDownload={handleDownloadImage}
+          />
         </div>
       )}
 
