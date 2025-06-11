@@ -17,20 +17,22 @@ export async function GET(
 
     const userId = userIdString;
 
+    console.log("userId", userId);
+
     const inProgressJobs = await db
       .selectFrom("generatedImages")
       .select([
         "id",
+        "userPfpUrl",
         "promptText",
         "createdAt",
         "status",
         "quoteId",
         "transactionHash",
       ])
-      .where("userId", "=", userId)
+      .where("userId", "ilike", userId)
       .where((eb) =>
         eb.or([
-          eb("status", "=", "pending_payment"),
           eb("status", "=", "paid"),
           eb("status", "=", "queued"),
           eb("status", "=", "generating"),

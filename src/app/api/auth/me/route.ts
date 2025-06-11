@@ -11,12 +11,22 @@ export async function GET(request: NextRequest) {
 
     const user = verifyJwtToken(token);
 
+    // Return appropriate user data based on authentication type
+    const userData =
+      user.authType === "siwe"
+        ? {
+            authType: user.authType,
+            address: user.address,
+            chainId: user.chainId,
+          }
+        : {
+            authType: user.authType,
+            fid: user.fid,
+          };
+
     return NextResponse.json({
       authenticated: true,
-      user: {
-        address: user.address,
-        chainId: user.chainId,
-      },
+      user: userData,
     });
   } catch (error) {
     console.error("Error checking auth status:", error);

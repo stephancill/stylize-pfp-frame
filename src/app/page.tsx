@@ -24,8 +24,9 @@ import { FramePromptDialog } from "@/components/FramePromptDialog";
 import { createUnifiedUser, type UnifiedUser } from "@/types/user";
 import { truncateAddress } from "../lib/utils";
 import { resizeImage, checkIfResizeNeeded } from "@/lib/image-utils";
-import { useSiweAuth } from "@/hooks/useSiweAuth";
-import { SiweAuthButton } from "@/components/SiweAuthButton";
+import { useAuth } from "@/hooks/useAuth";
+import sdk from "@farcaster/frame-sdk";
+import { fetchAuth } from "../lib/fetch-auth";
 
 interface GenerationRequestPayload {
   userId: string;
@@ -66,6 +67,7 @@ interface InProgressJob {
   status: GeneratedImageStatus;
   quoteId: string;
   transactionHash: string | null;
+  userPfpUrl: string | null;
 }
 
 const getGenerationQuoteAPI = async (
@@ -107,28 +109,38 @@ export default function Home() {
   const { address: connectedAddress } = useAccount();
   const account = useAccount();
 
-  // SIWE Authentication
+  // Unified Authentication (supports both SIWE and Farcaster)
   const {
-    isAuthenticated: isSiweAuthenticated,
-    user: siweUser,
-    isLoading: isSiweLoading,
-    error: siweError,
-  } = useSiweAuth();
+    isAuthenticated,
+    user: authUser,
+    isLoading: isAuthLoading,
+    error: authError,
+    signInWithSiwe,
+    signInWithFarcaster,
+    signOut,
+  } = useAuth();
 
   // Create unified user
   const unifiedUser = createUnifiedUser(farcasterUser, connectedAddress);
 
-  // For now, we focus on SIWE auth for wallet users (FID auth to be implemented later)
-  // User has valid authentication if they have either:
-  // 1. Farcaster user (existing functionality), OR
-  // 2. Wallet connected AND SIWE authenticated
-  const hasValidAuth =
-    !!unifiedUser &&
-    (!!farcasterUser || (!!connectedAddress && isSiweAuthenticated));
+  // Determine if we're in a Farcaster context
+  const isInFarcasterContext = !!farcasterUser;
 
-  // User needs SIWE auth if they have wallet connected but no Farcaster and no SIWE auth
-  const needsSiweAuth =
-    !!connectedAddress && !farcasterUser && !isSiweAuthenticated;
+  // User has valid authentication if they have either:
+  // 1. Farcaster user AND authenticated via Farcaster, OR
+  // 2. Wallet connected AND authenticated via SIWE
+  const hasValidAuth =
+    isAuthenticated &&
+    ((isInFarcasterContext &&
+      authUser?.authType === "farcaster" &&
+      authUser?.fid === farcasterUser?.fid) ||
+      (!isInFarcasterContext &&
+        authUser?.authType === "siwe" &&
+        authUser?.address?.toLowerCase() === connectedAddress?.toLowerCase()));
+
+  // User needs authentication if they don't have valid auth
+  const needsAuth =
+    !hasValidAuth && (isInFarcasterContext || !!connectedAddress);
 
   // State management
   const [apiMessage, setApiMessage] = useState<string | null>(null);
@@ -185,7 +197,7 @@ export default function Home() {
   } = useQuery<CompletedImage[]>({
     queryKey: ["completedImages", unifiedUser?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/user/${unifiedUser!.id}/images`);
+      const response = await fetchAuth(`/api/user/${unifiedUser!.id}/images`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to fetch images");
@@ -201,7 +213,7 @@ export default function Home() {
   >({
     queryKey: ["inProgressJobs", unifiedUser?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/user/${unifiedUser!.id}/jobs`);
+      const response = await fetchAuth(`/api/user/${unifiedUser!.id}/jobs`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to fetch jobs");
@@ -326,6 +338,94 @@ export default function Home() {
     staleTime: 0,
     refetchOnWindowFocus: false,
   });
+
+  // Farcaster authentication handler
+  const handleFarcasterSignIn = async () => {
+    if (!isInFarcasterContext || !farcasterUser) {
+      setApiMessage("Farcaster context not available.");
+      return;
+    }
+
+    try {
+      setApiMessage("Authenticating with Farcaster...");
+
+      // 1. Get nonce from server
+      const nonceResponse = await fetch("/api/auth/nonce");
+      if (!nonceResponse.ok) {
+        throw new Error("Failed to get authentication nonce");
+      }
+      const { nonce } = await nonceResponse.json();
+
+      // 2. Use Farcaster SDK to sign in
+      const result = await sdk.actions.signIn({
+        nonce: nonce,
+        acceptAuthAddress: true,
+      });
+
+      // 3. Authenticate with backend
+      await signInWithFarcaster({
+        message: result.message,
+        signature: result.signature,
+        challengeId: nonce,
+      });
+
+      setApiMessage("Successfully authenticated with Farcaster!");
+
+      // Clear message after a short delay
+      setTimeout(() => {
+        setApiMessage(null);
+      }, 2000);
+    } catch (error) {
+      console.error("Farcaster authentication failed:", error);
+      setApiMessage(
+        error instanceof Error
+          ? `Farcaster authentication failed: ${error.message}`
+          : "Farcaster authentication failed"
+      );
+    }
+  };
+
+  // SIWE authentication handler
+  const handleSiweSignIn = async () => {
+    if (!connectedAddress) {
+      setApiMessage("Please connect your wallet first.");
+      return;
+    }
+
+    try {
+      setApiMessage("Authenticating with Ethereum...");
+      await signInWithSiwe();
+      setApiMessage("Successfully authenticated with Ethereum!");
+
+      // Clear message after a short delay
+      setTimeout(() => {
+        setApiMessage(null);
+      }, 2000);
+    } catch (error) {
+      console.error("SIWE authentication failed:", error);
+      setApiMessage(
+        error instanceof Error
+          ? `Ethereum authentication failed: ${error.message}`
+          : "Ethereum authentication failed"
+      );
+    }
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setApiMessage("Successfully signed out.");
+
+      // Clear message after a short delay
+      setTimeout(() => {
+        setApiMessage(null);
+      }, 2000);
+    } catch (error) {
+      console.error("Sign out failed:", error);
+      setApiMessage("Failed to sign out. Please try again.");
+    }
+  };
 
   // Effects
   useEffect(() => {
@@ -545,8 +645,11 @@ export default function Home() {
     setApiMessage("Requesting generation quote...");
     setGenerationStep("quote_requested");
 
-    // Use the appropriate user ID - SIWE user address or unified user ID
-    const userIdToUse = siweUser?.address || unifiedUser!.id;
+    // Use the appropriate user ID based on authentication type
+    const userIdToUse =
+      authUser?.authType === "farcaster"
+        ? authUser.fid?.toString() || unifiedUser!.id
+        : authUser?.address || unifiedUser!.id;
 
     quoteMutation.mutate({
       userId: userIdToUse,
@@ -585,12 +688,24 @@ export default function Home() {
     noUploadedImage: useUploadedImage && !uploadedImage,
   };
 
-  if (isUserLoading || isSiweLoading) {
+  if (isUserLoading || isAuthLoading) {
     return <div className="text-center py-10">Loading user data...</div>;
   }
 
   return (
-    <div className="container mx-auto p-4 flex flex-col items-center space-y-6 max-w-lg">
+    <div className="container mx-auto p-4 flex flex-col items-center space-y-6 max-w-lg relative">
+      {/* Sign Out Button - Top Right */}
+      {unifiedUser && (
+        <Button
+          onClick={handleSignOut}
+          variant="ghost"
+          size="sm"
+          className="absolute top-4 right-4 h-6 px-2 text-xs hover:bg-red-100 hover:text-red-600"
+        >
+          Sign Out
+        </Button>
+      )}
+
       {/* Logo */}
       <div className="flex flex-col items-center space-y-4">
         <Image
@@ -603,24 +718,57 @@ export default function Home() {
       </div>
 
       {/* Connection Interface */}
-      <ConnectionInterface
-        connectedAddress={connectedAddress}
-        hasAuth={hasValidAuth}
-      />
+      <div className="flex flex-col gap-2 items-center justify-center">
+        <ConnectionInterface
+          connectedAddress={connectedAddress}
+          hasAuth={hasValidAuth}
+        />
+      </div>
 
-      {/* SIWE Authentication Required */}
-      {needsSiweAuth && (
+      {/* Authentication Required */}
+      {needsAuth && (
         <div className="w-full border-2 border-blue-200 rounded-lg p-6 bg-blue-50 text-center">
           <h3 className="text-lg font-semibold text-blue-800 mb-2">
             Authentication Required
           </h3>
-          <p className="text-blue-600 mb-4">
-            To access your creations and generate new characters, please sign in
-            with Ethereum.
-          </p>
-          <SiweAuthButton />
-          {siweError && (
-            <p className="text-red-600 text-sm mt-2">{siweError}</p>
+
+          {isInFarcasterContext ? (
+            <>
+              <p className="text-blue-600 mb-4">
+                Welcome to Stylize Me! Please authenticate with Farcaster to
+                access your creations and generate new characters.
+              </p>
+              <Button
+                onClick={handleFarcasterSignIn}
+                disabled={isAuthLoading}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                {isAuthLoading ? "Authenticating..." : "Sign In with Farcaster"}
+              </Button>
+              {farcasterUser && (
+                <p className="text-sm text-gray-600 mt-2">
+                  FID: {farcasterUser.fid} • {farcasterUser.username}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-blue-600 mb-4">
+                To access your creations and generate new characters, please
+                sign in with Ethereum.
+              </p>
+              <Button
+                onClick={handleSiweSignIn}
+                disabled={isAuthLoading || !connectedAddress}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isAuthLoading ? "Authenticating..." : "Sign In with Ethereum"}
+              </Button>
+            </>
+          )}
+
+          {authError && (
+            <p className="text-red-600 text-sm mt-2">{authError}</p>
           )}
         </div>
       )}
@@ -628,14 +776,6 @@ export default function Home() {
       {/* Main Interface - only show if user has valid authentication */}
       {hasValidAuth && unifiedUser && (
         <>
-          {/* User Info - show SIWE address if authenticated via wallet */}
-          {siweUser && !farcasterUser && (
-            <div className="w-full text-center text-sm text-gray-600 bg-green-50 border border-green-200 rounded-lg p-3">
-              ✅ Authenticated with: {siweUser.address.slice(0, 6)}...
-              {siweUser.address.slice(-4)}
-            </div>
-          )}
-
           {/* Image Selection */}
           <ImageSelector
             profileImageUrl={unifiedUser.profileImage}
@@ -689,15 +829,9 @@ export default function Home() {
       />
 
       {/* Jobs Section - only for authenticated users */}
-      {hasValidAuth && unifiedUser && (
-        <JobsSection
-          jobs={inProgressJobs}
-          userProfileImage={unifiedUser.profileImage}
-          uploadedImage={uploadedImage}
-        />
-      )}
+      {hasValidAuth && unifiedUser && <JobsSection jobs={inProgressJobs} />}
 
-      {/* My Creations Gallery - SIWE Authentication Required for Wallet Users */}
+      {/* My Creations Gallery - for authenticated users */}
       {hasValidAuth && unifiedUser && (
         <div className="w-full mt-10 pt-6 border-t">
           <h2 className="text-2xl font-semibold text-center mb-6">

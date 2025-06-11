@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     signature,
     domain: new URL(process.env.APP_URL ?? "").hostname,
     nonce: challenge,
+    acceptAuthAddress: true,
   });
 
   if (!verifyResponse.success) {
