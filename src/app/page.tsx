@@ -150,6 +150,7 @@ export default function Home() {
   const [useUploadedImage, setUseUploadedImage] = useState<boolean>(false);
   const [showFramePromptDialog, setShowFramePromptDialog] =
     useState<boolean>(false);
+  const [autoSignInAttempted, setAutoSignInAttempted] = useState<boolean>(false);
 
   // Transaction state
   const [quoteId, setQuoteId] = useState<string | null>(null);
@@ -426,6 +427,20 @@ export default function Home() {
       setApiMessage("Failed to sign out. Please try again.");
     }
   };
+
+  // Auto sign in with Farcaster if in Farcaster context
+  useEffect(() => {
+    if (
+      isInFarcasterContext &&
+      needsAuth &&
+      !isAuthLoading &&
+      !autoSignInAttempted &&
+      !isUserLoading
+    ) {
+      setAutoSignInAttempted(true);
+      handleFarcasterSignIn();
+    }
+  }, [isInFarcasterContext, needsAuth, isAuthLoading, autoSignInAttempted, isUserLoading]);
 
   // Effects
   useEffect(() => {
@@ -729,28 +744,15 @@ export default function Home() {
       {needsAuth && (
         <div className="w-full border-2 border-blue-200 rounded-lg p-6 bg-blue-50 text-center">
           <h3 className="text-lg font-semibold text-blue-800 mb-2">
-            Authentication Required
+            {isInFarcasterContext ? "Authenticating with Farcaster" : "Authentication Required"}
           </h3>
 
           {isInFarcasterContext ? (
-            <>
-              <p className="text-blue-600 mb-4">
-                Welcome to Stylize Me! Please authenticate with Farcaster to
-                access your creations and generate new characters.
+            farcasterUser && (
+              <p className="text-sm text-gray-600 mt-2">
+                FID: {farcasterUser.fid} • {farcasterUser.username}
               </p>
-              <Button
-                onClick={handleFarcasterSignIn}
-                disabled={isAuthLoading}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                {isAuthLoading ? "Authenticating..." : "Sign In with Farcaster"}
-              </Button>
-              {farcasterUser && (
-                <p className="text-sm text-gray-600 mt-2">
-                  FID: {farcasterUser.fid} • {farcasterUser.username}
-                </p>
-              )}
-            </>
+            )
           ) : (
             <>
               <p className="text-blue-600 mb-4">
