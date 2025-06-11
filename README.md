@@ -3,6 +3,7 @@
 This is an opinionated starter for building v2 frames
 
 ## Stack
+
 - Next.js
 - PostgreSQL (with Kysely)
 - Redis
@@ -11,6 +12,7 @@ This is an opinionated starter for building v2 frames
 - shadcn/ui
 
 ## Features
+
 - Sign in with Farcaster
 - Customizable db schema
 - Authenticated endpoints
@@ -37,7 +39,7 @@ Copy the `.env.sample` file to `.env` and fill in the values.
 
 > **Note:** The `APP_URL` environment variable is used to configure the frame. It should be the URL of your local dev server.
 
-### Frame
+### Web
 
 To start your local dev server, run the following command:
 
@@ -45,7 +47,9 @@ To start your local dev server, run the following command:
 pnpm run dev
 ```
 
-This should start the dev server at `http://localhost:3000`.
+This should start the dev server at `http://localhost:3000`. The app is compatible with web and farcaster mini apps.
+
+### Frame
 
 To debug the frame locally, you can use the frames.js debugger, which you can run with the following command:
 
@@ -57,7 +61,7 @@ Once the debugger is running, you can load the frame in the debugger by entering
 
 > **Note:** Make sure to select the Farcaster v2 option in the debugger next to the "Debug" button and ensure that you are signed in with your Farcaster account and not impersonating another account.
 
-### Debugging on other URLs
+#### Debugging on other URLs
 
 If you want to test the frame on a different URL such as ngrok or a production URL, you can update the `accountAssociations` in `src/app/.well-known/farcaster.json/route.ts` to include the URL you want to test. You can generate account associations in the frames.js debugger or in the Warpcast app (Settings -> Developer -> Domains).
 
@@ -68,16 +72,6 @@ Then update the `APP_URL` environment variable in your `.env` file to the URL yo
 This project uses Lucia Auth for authentication. You can learn more about it [here](https://lucia-auth.com/).
 
 You can create new authorized endpoints by using the `withAuth` exported from `src/lib/auth.ts`. See the `src/app/api/user/route.ts` file for an example of how to use it.
-
-## Farcaster data
-
-There are some helpers for fetching farcaster data in `src/lib/farcaster.ts`. Wrap these calls with `withCache` to cache the results in Redis.
-
-```ts
-const mutuals = await withCache(`fc:mutuals:${user.fid}`, () =>
-  getMutuals(user.fid)
-);
-```
 
 ## Custommization
 
