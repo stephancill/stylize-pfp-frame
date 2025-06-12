@@ -83,13 +83,13 @@ export function ThemeSelector({
         Select Theme or Enter Custom Prompt:
       </label>
 
-      <div className="flex space-x-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         {themes.map((theme) => (
           <Button
             key={theme.id}
             variant={selectedThemeId === theme.id ? "default" : "outline"}
             onClick={() => onThemeSelect(theme.id)}
-            className="flex-grow"
+            className="flex-1"
           >
             {theme.name}
           </Button>
