@@ -21,6 +21,11 @@ interface Theme {
 
 const themes: Theme[] = [
   {
+    id: "studioGhibli",
+    name: "Studio Ghibli",
+    prompt: `Reimagine the provided image in the iconic Studio Ghibli style.`,
+  },
+  {
     id: "higherBuddy",
     name: "Higher Buddy",
     prompt: `come up with an animal or creature (not too obscure) that is representative of the character or vibe of the image.
@@ -41,11 +46,6 @@ Key elements for the transformation:
 4. Artistic Style: The final image should look like a piece of high-detail digital fantasy art, emphasizing realism within the fantasy context.
 
 Ensure the result is a captivating, profile picture-worthy artwork.`,
-  },
-  {
-    id: "studioGhibli",
-    name: "Studio Ghibli",
-    prompt: `Reimagine the provided image in the iconic Studio Ghibli style.`,
   },
 ];
 
