@@ -18,10 +18,10 @@ export const FRAME_METADATA = {
   imageUrl: `${process.env.APP_URL}/og.png`,
   iconUrl: `${process.env.APP_URL}/splash.png`,
   button: {
-    title: "Stylize Image",
+    title: "Stylize Me",
     action: {
       type: "launch_frame",
-      name: "Stylize Image",
+      name: "Stylize Me",
       url: process.env.APP_URL,
       splashImageUrl: `${process.env.APP_URL}/splash.png`,
       splashBackgroundColor: "#ffffff",
