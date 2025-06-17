@@ -58,6 +58,7 @@ interface CompletedImage {
   promptText: string | null;
   createdAt: string;
   quoteId: string;
+  userPfpUrl: string | null;
 }
 
 interface InProgressJob {

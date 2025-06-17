@@ -37,6 +37,7 @@ const handler: AuthUserRouteHandler<{
         "createdAt",
         "status", // good for debugging, or if UI wants to re-verify
         "quoteId",
+        "userPfpUrl",
       ])
       .where("userId", "=", userId.toString())
       .where("status", "=", "completed")
