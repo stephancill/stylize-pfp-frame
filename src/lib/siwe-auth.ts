@@ -218,7 +218,9 @@ export async function verifySiweMessage(
     const parsedMessage = parseSiweMessage(message);
 
     // Get expected domain from APP_URL
-    const appUrl = process.env.APP_URL!;
+    const appUrl = process.env.VERCEL_BRANCH_URL
+      ? `https://${process.env.VERCEL_BRANCH_URL}`
+      : process.env.APP_URL!;
     const expectedDomain = new URL(appUrl).host;
 
     // First validate the nonce exists in Redis and consume it
