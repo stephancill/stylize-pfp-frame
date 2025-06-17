@@ -4,8 +4,8 @@ import { db } from "@/lib/db";
 // Image metadata
 export const alt = "Generated Character";
 export const size = {
-  width: 1200,
-  height: 630,
+  width: 1146,
+  height: 600,
 };
 
 export const contentType = "image/png";
@@ -84,10 +84,10 @@ export default async function Image({ params }: { params: { id: string } }) {
     }
 
     // Fetch both images
-    const [sourceImage, generatedImage] = await Promise.all([
-      fetch(image.userPfpUrl).then((res) => res.arrayBuffer()),
-      fetch(image.imageDataUrl).then((res) => res.arrayBuffer()),
-    ]);
+    // const [sourceImage, generatedImage] = await Promise.all([
+    //   fetch(image.userPfpUrl).then((res) => res.arrayBuffer()),
+    //   fetch(image.imageDataUrl).then((res) => res.arrayBuffer()),
+    // ]);
 
     return new ImageResponse(
       (
