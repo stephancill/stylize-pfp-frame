@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { db } from "@/lib/db";
+import themes from "@/lib/themes";
 
 // Image metadata
 export const alt = "Generated Character";
@@ -16,7 +17,7 @@ export default async function Image({ params }: { params: { id: string } }) {
     // Fetch image from database
     const image = await db
       .selectFrom("generatedImages")
-      .select(["imageDataUrl", "userPfpUrl", "status"])
+      .select(["imageDataUrl", "userPfpUrl", "status", "promptText"])
       .where("id", "=", params.id)
       .executeTakeFirst();
 
@@ -89,6 +90,13 @@ export default async function Image({ params }: { params: { id: string } }) {
     //   fetch(image.imageDataUrl).then((res) => res.arrayBuffer()),
     // ]);
 
+    const matchingTheme = themes.find((t) =>
+      image.promptText?.includes(t.prompt)
+    );
+    const promptLabel = matchingTheme
+      ? matchingTheme.name
+      : image.promptText || "";
+
     return new ImageResponse(
       (
         <div
@@ -97,48 +105,71 @@ export default async function Image({ params }: { params: { id: string } }) {
             width: "100%",
             height: "100%",
             display: "flex",
-            flexDirection: "row",
+            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: "60px",
+            gap: "20px",
             padding: "40px",
           }}
         >
-          {/* Source Image */}
-          <img
-            src={image.userPfpUrl}
-            alt="Source"
-            width={400}
-            height={400}
-            style={{
-              borderRadius: "50%",
-              objectFit: "cover",
-            }}
-          />
-
-          {/* Arrow */}
           <div
             style={{
-              fontSize: 120,
-              color: "#666",
               display: "flex",
+              flexDirection: "row",
               alignItems: "center",
+              justifyContent: "center",
+              gap: "60px",
             }}
           >
-            →
-          </div>
+            {/* Source Image */}
+            <img
+              src={image.userPfpUrl}
+              alt="Source"
+              width={400}
+              height={400}
+              style={{
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
 
-          {/* Generated Image */}
-          <img
-            src={image.imageDataUrl}
-            alt="Generated"
-            width={400}
-            height={400}
-            style={{
-              borderRadius: "50%",
-              objectFit: "cover",
-            }}
-          />
+            {/* Arrow */}
+            <div
+              style={{
+                fontSize: 120,
+                color: "#666",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              →
+            </div>
+
+            {/* Generated Image */}
+            <img
+              src={image.imageDataUrl}
+              alt="Generated"
+              width={400}
+              height={400}
+              style={{
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
+          </div>
+          {promptLabel && (
+            <div
+              style={{
+                fontSize: 36,
+                color: "#333",
+                textAlign: "center",
+                maxWidth: 1000,
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {promptLabel}
+            </div>
+          )}
         </div>
       ),
       {
