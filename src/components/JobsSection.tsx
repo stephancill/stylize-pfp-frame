@@ -1,7 +1,7 @@
 "use client";
 
 import { truncateAddress } from "../lib/utils";
-import { themes, type Theme } from "./ThemeSelector";
+import themes, { type Theme } from "@/lib/themes";
 import type { GeneratedImageStatus } from "@/types/db";
 import Countdown from "react-countdown";
 
