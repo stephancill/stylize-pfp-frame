@@ -652,11 +652,6 @@ export default function Home() {
     }
 
     const imageToUse = getImageToUse();
-    if (!imageToUse) {
-      setApiMessage("Please upload an image to stylize.");
-      setGenerationStep("error");
-      return;
-    }
 
     setApiMessage("Requesting generation quote...");
     setGenerationStep("quote_requested");
@@ -695,14 +690,18 @@ export default function Home() {
     isConfirming ||
     generationStep === "payment_processing" ||
     !getSelectedPrompt() ||
-    !hasValidAuth ||
-    !getImageToUse();
+    !hasValidAuth;
 
   const hasValidImage = getImageToUse();
   const showWarnings = {
-    noImage: !useUploadedImage && !unifiedUser?.profileImage && !uploadedImage,
     noUploadedImage: useUploadedImage && !uploadedImage,
   };
+
+  const generateButtonLabel = quoteMutation.isPending
+    ? "Processing..."
+    : hasValidImage
+    ? "Generate Character"
+    : "Generate without input image";
 
   if (isUserLoading || isAuthLoading) {
     return <div className="text-center py-10">Loading user data...</div>;
@@ -792,20 +791,17 @@ export default function Home() {
             onError={setApiMessage}
           />
 
-          {/* Theme Selection - only show if user has valid image */}
-          {hasValidImage && (
-            <ThemeSelector
-              selectedThemeId={selectedThemeId}
-              customPrompt={customPrompt}
-              onThemeSelect={setSelectedThemeId}
-              onCustomPromptChange={setCustomPrompt}
-              getSelectedPrompt={getSelectedPrompt}
-            />
-          )}
+          {/* Theme Selection */}
+          <ThemeSelector
+            selectedThemeId={selectedThemeId}
+            customPrompt={customPrompt}
+            onThemeSelect={setSelectedThemeId}
+            onCustomPromptChange={setCustomPrompt}
+            getSelectedPrompt={getSelectedPrompt}
+          />
 
           {/* Generate Button */}
-          {hasValidImage &&
-            generationStep !== "payment_processing" &&
+          {generationStep !== "payment_processing" &&
             generationStep !== "payment_submitted" &&
             generationStep !== "job_queued" && (
               <Button
@@ -813,9 +809,7 @@ export default function Home() {
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 text-lg"
                 disabled={isActionDisabled}
               >
-                {quoteMutation.isPending
-                  ? "Processing..."
-                  : "Generate Character"}
+                {generateButtonLabel}
               </Button>
             )}
         </>
