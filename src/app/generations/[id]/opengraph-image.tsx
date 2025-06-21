@@ -62,7 +62,7 @@ export default async function Image({ params }: { params: { id: string } }) {
       );
     }
 
-    if (!image.imageDataUrl || !image.userPfpUrl) {
+    if (!image.imageDataUrl) {
       return new ImageResponse(
         (
           <div
@@ -104,29 +104,33 @@ export default async function Image({ params }: { params: { id: string } }) {
             padding: "40px",
           }}
         >
-          {/* Source Image */}
-          <img
-            src={image.userPfpUrl}
-            alt="Source"
-            width={400}
-            height={400}
-            style={{
-              borderRadius: "50%",
-              objectFit: "cover",
-            }}
-          />
+          {image.userPfpUrl && (
+            <>
+              {/* Source Image */}
+              <img
+                src={image.userPfpUrl}
+                alt="Source"
+                width={400}
+                height={400}
+                style={{
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
+              />
 
-          {/* Arrow */}
-          <div
-            style={{
-              fontSize: 120,
-              color: "#666",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            →
-          </div>
+              {/* Arrow */}
+              <div
+                style={{
+                  fontSize: 120,
+                  color: "#666",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                →
+              </div>
+            </>
+          )}
 
           {/* Generated Image */}
           <img

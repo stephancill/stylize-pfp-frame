@@ -22,16 +22,11 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
   async (job) => {
     const { userId, prompt, userPfpUrl, quoteId, n = 1 } = job.data;
 
-    if (!userPfpUrl) {
+    if (!quoteId) {
       console.error(
-        `Job ID ${job.id} for userId ${userId}, quoteId ${quoteId}: Missing userPfpUrl. Cannot use image edit without an input image.`
+        `Job ID ${job.id} for userId ${userId}: Missing quoteId. Cannot update database record.`
       );
-      await db
-        .updateTable("generatedImages")
-        .set({ status: "error", imageDataUrl: "Missing userPfpUrl for worker" })
-        .where("quoteId", "=", quoteId)
-        .execute();
-      throw new Error("userPfpUrl is required for image editing.");
+      throw new Error("quoteId is required to update the database.");
     }
     if (!quoteId) {
       console.error(
@@ -41,69 +36,92 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
     }
 
     console.log(
-      `Processing image model image edit job for userId: ${userId}, quoteId: ${quoteId} with prompt: "${prompt}" and PFP URL: ${userPfpUrl.substring(
-        0,
-        50
-      )}...`
+      `Processing image generation job for userId: ${userId}, quoteId: ${quoteId} with prompt: "${prompt}"${
+        userPfpUrl ? ` and PFP URL: ${userPfpUrl.substring(0, 50)}` : ""
+      }...`
     );
 
     try {
-      let imageBuffer: Buffer;
-      let contentType: string;
+      let firstImageB64Json: string;
 
-      // Check if userPfpUrl is a data URL or regular URL
-      if (userPfpUrl.startsWith("data:")) {
-        // Handle data URL case
-        console.log(`Processing uploaded image data URL for job ${job.id}`);
+      if (userPfpUrl) {
+        let imageBuffer: Buffer;
+        let contentType: string;
 
-        const [mimeInfo, base64Data] = userPfpUrl.split(",");
-        if (!base64Data) {
-          throw new Error("Invalid data URL format: missing base64 data");
+        // Check if userPfpUrl is a data URL or regular URL
+        if (userPfpUrl.startsWith("data:")) {
+          // Handle data URL case
+          console.log(`Processing uploaded image data URL for job ${job.id}`);
+
+          const [mimeInfo, base64Data] = userPfpUrl.split(",");
+          if (!base64Data) {
+            throw new Error("Invalid data URL format: missing base64 data");
+          }
+
+          // Extract content type from data URL
+          const mimeMatch = mimeInfo.match(/data:([^;]+)/);
+          contentType = mimeMatch ? mimeMatch[1] : "image/png";
+
+          // Convert base64 to buffer
+          imageBuffer = Buffer.from(base64Data, "base64");
+        } else {
+          // Handle regular URL case
+          console.log(`Fetching image from URL for job ${job.id}: ${userPfpUrl}`);
+
+          const imageResponse = await fetch(userPfpUrl);
+          if (!imageResponse.ok) {
+            throw new Error(
+              `Failed to fetch image from ${userPfpUrl}: ${imageResponse.statusText}`
+            );
+          }
+          imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+          contentType = imageResponse.headers.get("content-type") || "image/png";
         }
 
-        // Extract content type from data URL
-        const mimeMatch = mimeInfo.match(/data:([^;]+)/);
-        contentType = mimeMatch ? mimeMatch[1] : "image/png";
+        const imageFile = await toFile(imageBuffer, "profile.png", {
+          type: contentType,
+        });
 
-        // Convert base64 to buffer
-        imageBuffer = Buffer.from(base64Data, "base64");
-      } else {
-        // Handle regular URL case
-        console.log(`Fetching image from URL for job ${job.id}: ${userPfpUrl}`);
+        const response = await openaiClient.images.edit({
+          model: "gpt-image-1",
+          image: imageFile,
+          prompt: prompt,
+          n: n,
+          size: "1024x1024",
+        });
 
-        const imageResponse = await fetch(userPfpUrl);
-        if (!imageResponse.ok) {
+        if (
+          !response.data ||
+          response.data.length === 0 ||
+          !response.data[0].b64_json
+        ) {
           throw new Error(
-            `Failed to fetch image from ${userPfpUrl}: ${imageResponse.statusText}`
+            "No b64_json data received from OpenAI API after edit."
           );
         }
-        imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-        contentType = imageResponse.headers.get("content-type") || "image/png";
+
+        firstImageB64Json = response.data[0].b64_json;
+      } else {
+        const response = await openaiClient.images.generate({
+          model: "dall-e-3",
+          prompt: prompt,
+          n: n,
+          size: "1024x1024",
+          response_format: "b64_json",
+        });
+
+        if (
+          !response.data ||
+          response.data.length === 0 ||
+          !response.data[0].b64_json
+        ) {
+          throw new Error(
+            "No b64_json data received from OpenAI API after generation."
+          );
+        }
+
+        firstImageB64Json = response.data[0].b64_json;
       }
-
-      const imageFile = await toFile(imageBuffer, "profile.png", {
-        type: contentType,
-      });
-
-      const response = await openaiClient.images.edit({
-        model: "gpt-image-1",
-        image: imageFile,
-        prompt: prompt,
-        n: n, // Number of images to generate
-        size: "1024x1024",
-      });
-
-      if (
-        !response.data ||
-        response.data.length === 0 ||
-        !response.data[0].b64_json
-      ) {
-        throw new Error(
-          "No b64_json data received from OpenAI API after edit."
-        );
-      }
-
-      const firstImageB64Json = response.data[0].b64_json;
 
       // Convert base64 to buffer
       const generatedImageBuffer = Buffer.from(firstImageB64Json, "base64");
@@ -152,10 +170,10 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
       return { b64JsonImage: resizedImageB64Json }; // Return resized image
     } catch (error) {
       console.error(
-        `Job ID ${job.id} for userId ${userId}, quoteId ${quoteId}: Error during image model image edit -`,
+        `Job ID ${job.id} for userId ${userId}, quoteId ${quoteId}: Error during image generation -`,
         error
       );
-      let errorMessage = "Image editing failed.";
+      let errorMessage = "Image generation failed.";
       if (error instanceof Error) errorMessage = error.message;
 
       try {
