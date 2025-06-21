@@ -111,8 +111,7 @@ export async function POST(request: Request) {
       // Assuming promptText, userId are stored. Others like userPfpUrl might also be stored or passed differently.
       if (
         !generationRequest.promptText ||
-        typeof generationRequest.userId !== "string" ||
-        generationRequest.userPfpUrl === undefined
+        typeof generationRequest.userId !== "string"
       ) {
         console.error(
           "Critical data missing from generationRequest for job queuing",
