@@ -4,6 +4,7 @@ import { useUser } from "../providers/UserContextProvider";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   useSendTransaction,
   useAccount,
@@ -110,6 +111,7 @@ export default function Home() {
   const { user: farcasterUser, isLoading: isUserLoading } = useUser();
   const { address: connectedAddress } = useAccount();
   const account = useAccount();
+  const searchParams = useSearchParams();
 
   // Unified Authentication (supports both SIWE and Farcaster)
   const {
@@ -171,6 +173,19 @@ export default function Home() {
   const [isPaymentSubmitted, setIsPaymentSubmitted] = useState<boolean>(false);
   const [isPolling, setIsPolling] = useState<boolean>(false);
   const [pollingQuoteId, setPollingQuoteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const promptParam = searchParams.get("prompt");
+    if (promptParam) {
+      const matching = themes.find((t) => t.prompt === promptParam);
+      if (matching) {
+        setSelectedThemeId(matching.id);
+        setCustomPrompt("");
+      } else {
+        setCustomPrompt(promptParam);
+      }
+    }
+  }, []);
 
   // Wagmi hooks
   const {
