@@ -13,11 +13,11 @@ interface ShareImage {
   createdAt?: string | Date;
 }
 
-export default function ShareGenerationCard({
-  image,
-}: {
+interface ShareGenerationCardProps {
   image: ShareImage;
-}) {
+}
+
+const ShareGenerationCard: React.FC<ShareGenerationCardProps> = ({ image }: ShareGenerationCardProps) => {
   const [showInputFirst, setShowInputFirst] = useState<boolean>(false);
 
   if (!image.imageDataUrl) {
@@ -61,4 +61,6 @@ export default function ShareGenerationCard({
       </CardFooter>
     </Card>
   );
-}
+};
+
+export default ShareGenerationCard;

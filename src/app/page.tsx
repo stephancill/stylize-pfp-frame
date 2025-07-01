@@ -304,7 +304,7 @@ export default function Home() {
         setGenerationStep("awaiting_payment");
       }
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Error getting quote:", error);
       setApiMessage(`Quote Error: ${error.message}`);
       setGenerationStep("error");
@@ -317,7 +317,7 @@ export default function Home() {
     SubmitPaymentPayload
   >({
     mutationFn: submitPaymentAPI,
-    onSuccess: (data) => {
+    onSuccess: (data: SubmitPaymentResponse) => {
       console.log("Payment submission successful:", data);
       setPollingQuoteId(quoteId);
       setIsPolling(true);
@@ -338,7 +338,7 @@ export default function Home() {
       setQuoteId(null);
       setCurrentTxHash(undefined);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Error submitting payment:", error);
       setApiMessage(`Payment Submission Error: ${error.message}`);
       setGenerationStep("error");
@@ -360,7 +360,7 @@ export default function Home() {
       await refetchJobs();
 
       const foundImage = allImages.find(
-        (img) => img.quoteId === pollingQuoteId && img.imageDataUrl
+        (img: CompletedImage) => img.quoteId === pollingQuoteId && !!img.imageDataUrl
       );
 
       if (foundImage) {
