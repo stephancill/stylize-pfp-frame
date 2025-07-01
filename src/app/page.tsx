@@ -22,7 +22,7 @@ import { ConnectionInterface } from "@/components/ConnectionInterface";
 import { StatusMessages } from "@/components/StatusMessages";
 import { JobsSection } from "@/components/JobsSection";
 import { FramePromptDialog } from "@/components/FramePromptDialog";
-import { createUnifiedUser, type UnifiedUser } from "@/types/user";
+import { createUnifiedUser } from "@/types/user";
 import { truncateAddress } from "../lib/utils";
 import { resizeImage, checkIfResizeNeeded } from "@/lib/image-utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -348,7 +348,6 @@ export default function Home() {
 
   // Polling query for generated images
   const {
-    data: polledImage,
     isError: isPollingError,
     error: pollingError,
   } = useQuery<CompletedImage | null, Error>({
@@ -494,9 +493,7 @@ export default function Home() {
     if (isUserLoading) return;
     if (!unifiedUser) return;
 
-    const selectedTheme =
-      themes.find((t) => t.id === selectedThemeId) || themes[0];
-    // The prompt will be determined by getSelectedPrompt function
+    // no-op; prompt determined by getSelectedPrompt()
   }, [unifiedUser, isUserLoading, selectedThemeId]);
 
   useEffect(() => {
