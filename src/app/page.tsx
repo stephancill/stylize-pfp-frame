@@ -28,6 +28,7 @@ import { resizeImage, checkIfResizeNeeded } from "@/lib/image-utils";
 import { useAuth } from "@/hooks/useAuth";
 import sdk from "@farcaster/frame-sdk";
 import { fetchAuth } from "../lib/fetch-auth";
+import { useSearchParams } from "next/navigation";
 
 interface GenerationRequestPayload {
   userId: string;
@@ -171,6 +172,9 @@ export default function Home() {
   const [isPaymentSubmitted, setIsPaymentSubmitted] = useState<boolean>(false);
   const [isPolling, setIsPolling] = useState<boolean>(false);
   const [pollingQuoteId, setPollingQuoteId] = useState<string | null>(null);
+
+  // Prefill prompt from shared image id query param
+  const searchParams = useSearchParams();
 
   // Wagmi hooks
   const {
@@ -560,6 +564,39 @@ export default function Home() {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [isPolling, pollingQuoteId, unifiedUser?.id]);
+
+  // Prefill prompt from shared image id query param
+  useEffect(() => {
+    const imageIdParam = searchParams.get("imageId");
+    if (!imageIdParam) return;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/generations/${imageIdParam}/metadata`);
+        if (!res.ok) {
+          console.error("Failed to fetch shared image metadata");
+          return;
+        }
+        const data = await res.json();
+        const promptText: string | null = data?.promptText ?? null;
+        if (!promptText) return;
+
+        // Match against predefined themes, otherwise treat as custom prompt
+        const matchingTheme = themes.find((t) => promptText.includes(t.prompt));
+
+        if (matchingTheme) {
+          setSelectedThemeId(matchingTheme.id);
+          setCustomPrompt("");
+        } else {
+          setCustomPrompt(promptText);
+        }
+      } catch (error) {
+        console.error("Error pre-filling prompt from shared image", error);
+      }
+    })();
+    // We only want to run once on mount when query param first read
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Helper functions
   const getSelectedPrompt = (): string => {
