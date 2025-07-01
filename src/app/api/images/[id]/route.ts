@@ -6,10 +6,47 @@ export async function GET(
   args: { params: Promise<{ id: string }> }
 ) {
   const params = await args.params;
+  const url = new URL(request.url);
+  const format = url.searchParams.get('format');
+  
   try {
     const imageId = params.id;
 
-    // Fetch image from database
+    if (format === 'json') {
+      // Return JSON metadata for the share page
+      const image = await db
+        .selectFrom("generatedImages")
+        .select([
+          "id",
+          "imageDataUrl", 
+          "promptText", 
+          "createdAt",
+          "quoteId",
+          "userPfpUrl",
+          "status"
+        ])
+        .where("id", "=", imageId)
+        .executeTakeFirst();
+
+      if (!image) {
+        return new NextResponse("Image not found", { status: 404 });
+      }
+
+      if (image.status !== "completed") {
+        return new NextResponse("Image not ready", { status: 400 });
+      }
+
+      return NextResponse.json({
+        id: image.id,
+        imageDataUrl: image.imageDataUrl,
+        promptText: image.promptText,
+        createdAt: image.createdAt,
+        quoteId: image.quoteId,
+        userPfpUrl: image.userPfpUrl
+      });
+    }
+
+    // Original image serving functionality
     const image = await db
       .selectFrom("generatedImages")
       .select(["imageDataUrl", "status"])

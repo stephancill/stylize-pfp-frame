@@ -28,6 +28,7 @@ import { resizeImage, checkIfResizeNeeded } from "@/lib/image-utils";
 import { useAuth } from "@/hooks/useAuth";
 import sdk from "@farcaster/frame-sdk";
 import { fetchAuth } from "../lib/fetch-auth";
+import { useSearchParams } from "next/navigation";
 
 interface GenerationRequestPayload {
   userId: string;
@@ -110,6 +111,7 @@ export default function Home() {
   const { user: farcasterUser, isLoading: isUserLoading } = useUser();
   const { address: connectedAddress } = useAccount();
   const account = useAccount();
+  const searchParams = useSearchParams();
 
   // Unified Authentication (supports both SIWE and Farcaster)
   const {
@@ -153,6 +155,13 @@ export default function Home() {
   const [showFramePromptDialog, setShowFramePromptDialog] =
     useState<boolean>(false);
   const [autoSignInAttempted, setAutoSignInAttempted] = useState<boolean>(false);
+  
+  // URL parameter handling for shared images
+  const imageId = searchParams?.get('imageId');
+  const [sharedImageData, setSharedImageData] = useState<{
+    promptText: string;
+    imageDataUrl: string;
+  } | null>(null);
 
   // Transaction state
   const [quoteId, setQuoteId] = useState<string | null>(null);
@@ -443,6 +452,44 @@ export default function Home() {
       handleFarcasterSignIn();
     }
   }, [isInFarcasterContext, needsAuth, isAuthLoading, autoSignInAttempted, isUserLoading]);
+
+  // Fetch shared image data when imageId is present
+  useEffect(() => {
+    const fetchSharedImageData = async () => {
+      if (!imageId) return;
+      
+      try {
+        const response = await fetch(`/api/images/${imageId}?format=json`);
+        if (!response.ok) {
+          console.error('Failed to fetch shared image data');
+          return;
+        }
+        
+        const data = await response.json();
+        if (data.promptText && data.imageDataUrl) {
+          setSharedImageData({
+            promptText: data.promptText,
+            imageDataUrl: data.imageDataUrl
+          });
+          
+          // Pre-populate the custom prompt
+          setCustomPrompt(data.promptText);
+          
+          // Set the uploaded image
+          setUploadedImage(data.imageDataUrl);
+          setUseUploadedImage(true);
+          
+          // Show a message to the user
+          setApiMessage("Prompt and image loaded from shared creation!");
+          setTimeout(() => setApiMessage(null), 3000);
+        }
+      } catch (error) {
+        console.error('Error fetching shared image data:', error);
+      }
+    };
+
+    fetchSharedImageData();
+  }, [imageId]);
 
   // Effects
   useEffect(() => {
