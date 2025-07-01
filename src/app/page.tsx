@@ -181,22 +181,21 @@ export default function Home() {
   const promptPrefilledRef = useRef(false);
 
   // Fetch shared image metadata via React Query when imageId param present
-  useQuery(
+  type SharedMetadata = { promptText: string | null; userPfpUrl?: string | null };
+
+  useQuery<SharedMetadata | null>(
     ["sharedImageMetadata", imageIdParam],
-    async () => {
+    async (): Promise<SharedMetadata | null> => {
       if (!imageIdParam) return null;
       const res = await fetch(`/api/generations/${imageIdParam}/metadata`);
       if (!res.ok) {
         throw new Error("Failed to fetch shared image metadata");
       }
-      return (await res.json()) as {
-        promptText: string | null;
-        userPfpUrl?: string | null;
-      };
+      return (await res.json()) as SharedMetadata;
     },
     {
       enabled: !!imageIdParam && !promptPrefilledRef.current,
-      onSuccess: (data) => {
+      onSuccess: (data: SharedMetadata | null) => {
         if (!data || !data.promptText) return;
         const matchingTheme = themes.find((t) =>
           data.promptText?.includes(t.prompt)
@@ -298,9 +297,10 @@ export default function Home() {
           chainId: base.id,
         });
         setGenerationStep("payment_processing");
-      } catch (e: any) {
-        console.error("Transaction preparation error:", e);
-        setApiMessage(`Error: ${e.message}`);
+      } catch (e: unknown) {
+        const error = e as Error;
+        console.error("Transaction preparation error:", error);
+        setApiMessage(`Error: ${error.message}`);
         setGenerationStep("awaiting_payment");
       }
     },
@@ -420,11 +420,12 @@ export default function Home() {
       setTimeout(() => {
         setApiMessage(null);
       }, 2000);
-    } catch (error) {
-      console.error("Farcaster authentication failed:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Farcaster authentication failed:", err);
       setApiMessage(
-        error instanceof Error
-          ? `Farcaster authentication failed: ${error.message}`
+        err instanceof Error
+          ? `Farcaster authentication failed: ${err.message}`
           : "Farcaster authentication failed"
       );
     }
@@ -446,11 +447,12 @@ export default function Home() {
       setTimeout(() => {
         setApiMessage(null);
       }, 2000);
-    } catch (error) {
-      console.error("SIWE authentication failed:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("SIWE authentication failed:", err);
       setApiMessage(
-        error instanceof Error
-          ? `Ethereum authentication failed: ${error.message}`
+        err instanceof Error
+          ? `Ethereum authentication failed: ${err.message}`
           : "Ethereum authentication failed"
       );
     }
@@ -466,8 +468,9 @@ export default function Home() {
       setTimeout(() => {
         setApiMessage(null);
       }, 2000);
-    } catch (error) {
-      console.error("Sign out failed:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Sign out failed:", err);
       setApiMessage("Failed to sign out. Please try again.");
     }
   };
@@ -558,10 +561,11 @@ export default function Home() {
           setApiMessage("Switching to Base network...");
           await switchChainAsync({ chainId: base.id });
           setApiMessage("Successfully switched to Base network.");
-        } catch (switchError: any) {
-          console.error("Failed to switch network:", switchError);
+        } catch (switchError: unknown) {
+          const err = switchError as Error;
+          console.error("Failed to switch network:", err);
           setApiMessage(
-            `Failed to switch to Base network: ${switchError.message}. Please switch manually.`
+            `Failed to switch to Base network: ${err.message}. Please switch manually.`
           );
         }
       }
@@ -665,10 +669,11 @@ export default function Home() {
       } else {
         setApiMessage(null);
       }
-    } catch (error) {
-      console.error("Error processing image:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error processing image:", err);
       setApiMessage(
-        error instanceof Error ? error.message : "Failed to process image"
+        err instanceof Error ? err.message : "Failed to process image"
       );
     }
   };
