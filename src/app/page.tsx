@@ -3,7 +3,7 @@
 import { useUser } from "../providers/UserContextProvider";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   useSendTransaction,
   useAccount,
@@ -173,8 +173,46 @@ export default function Home() {
   const [isPolling, setIsPolling] = useState<boolean>(false);
   const [pollingQuoteId, setPollingQuoteId] = useState<string | null>(null);
 
-  // Prefill prompt from shared image id query param
+  // React Navigation params
   const searchParams = useSearchParams();
+  const imageIdParam = searchParams.get("imageId");
+
+  // Ref to avoid re-applying prompt multiple times
+  const promptPrefilledRef = useRef(false);
+
+  // Fetch shared image metadata via React Query when imageId param present
+  useQuery(
+    ["sharedImageMetadata", imageIdParam],
+    async () => {
+      if (!imageIdParam) return null;
+      const res = await fetch(`/api/generations/${imageIdParam}/metadata`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch shared image metadata");
+      }
+      return (await res.json()) as {
+        promptText: string | null;
+        userPfpUrl?: string | null;
+      };
+    },
+    {
+      enabled: !!imageIdParam && !promptPrefilledRef.current,
+      onSuccess: (data) => {
+        if (!data || !data.promptText) return;
+        const matchingTheme = themes.find((t) =>
+          data.promptText?.includes(t.prompt)
+        );
+        if (matchingTheme) {
+          setSelectedThemeId(matchingTheme.id);
+          setCustomPrompt("");
+        } else {
+          setCustomPrompt(data.promptText);
+        }
+        promptPrefilledRef.current = true;
+      },
+      staleTime: Infinity,
+      retry: false,
+    }
+  );
 
   // Wagmi hooks
   const {
@@ -564,39 +602,6 @@ export default function Home() {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [isPolling, pollingQuoteId, unifiedUser?.id]);
-
-  // Prefill prompt from shared image id query param
-  useEffect(() => {
-    const imageIdParam = searchParams.get("imageId");
-    if (!imageIdParam) return;
-
-    (async () => {
-      try {
-        const res = await fetch(`/api/generations/${imageIdParam}/metadata`);
-        if (!res.ok) {
-          console.error("Failed to fetch shared image metadata");
-          return;
-        }
-        const data = await res.json();
-        const promptText: string | null = data?.promptText ?? null;
-        if (!promptText) return;
-
-        // Match against predefined themes, otherwise treat as custom prompt
-        const matchingTheme = themes.find((t) => promptText.includes(t.prompt));
-
-        if (matchingTheme) {
-          setSelectedThemeId(matchingTheme.id);
-          setCustomPrompt("");
-        } else {
-          setCustomPrompt(promptText);
-        }
-      } catch (error) {
-        console.error("Error pre-filling prompt from shared image", error);
-      }
-    })();
-    // We only want to run once on mount when query param first read
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Helper functions
   const getSelectedPrompt = (): string => {
