@@ -18,7 +18,7 @@ export default function ShareGenerationCard({
 }: {
   image: ShareImage;
 }) {
-  const [showInputFirst, setShowInputFirst] = useState(false);
+  const [showInputFirst, setShowInputFirst] = useState<boolean>(false);
 
   if (!image.imageDataUrl) {
     return null;
@@ -43,7 +43,7 @@ export default function ShareGenerationCard({
             src={overlaySrc}
             alt="Input"
             className="absolute top-2 right-2 w-16 h-16 object-cover border-2 border-background rounded-md cursor-pointer"
-            onClick={() => setShowInputFirst((prev) => !prev)}
+            onClick={() => setShowInputFirst((prev: boolean) => !prev)}
           />
         )}
       </CardContent>

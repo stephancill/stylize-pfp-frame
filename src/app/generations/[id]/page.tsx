@@ -1,4 +1,3 @@
-import React from "react";
 import { FRAME_METADATA } from "@/lib/constants";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";

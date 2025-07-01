@@ -63,6 +63,7 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
+    "@types/next": "^9.0.0",
     "@types/node": "^20",
     "@types/pg": "^8.11.10",
     "@types/pg-cursor": "^2.7.2",
