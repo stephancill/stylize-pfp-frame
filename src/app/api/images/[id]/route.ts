@@ -6,13 +6,24 @@ export async function GET(
   args: { params: Promise<{ id: string }> }
 ) {
   const params = await args.params;
+  const url = new URL(request.url);
+  const format = url.searchParams.get('format');
+
   try {
     const imageId = params.id;
 
-    // Fetch image from database
+    // Fetch image from database with all necessary fields for sharing
     const image = await db
       .selectFrom("generatedImages")
-      .select(["imageDataUrl", "status"])
+      .select([
+        "id",
+        "imageDataUrl", 
+        "status", 
+        "promptText", 
+        "userPfpUrl", 
+        "createdAt",
+        "quoteId"
+      ])
       .where("id", "=", imageId)
       .executeTakeFirst();
 
@@ -28,6 +39,19 @@ export async function GET(
       return new NextResponse("Image data not available", { status: 404 });
     }
 
+    // If format=json, return JSON data for the share page
+    if (format === 'json') {
+      return NextResponse.json({
+        id: image.id,
+        imageDataUrl: image.imageDataUrl,
+        promptText: image.promptText,
+        userPfpUrl: image.userPfpUrl,
+        createdAt: image.createdAt,
+        quoteId: image.quoteId
+      });
+    }
+
+    // Otherwise return the raw image (existing behavior)
     // Convert base64 data URL to buffer
     const base64Data = image.imageDataUrl.split(",")[1];
     const imageBuffer = Buffer.from(base64Data, "base64");

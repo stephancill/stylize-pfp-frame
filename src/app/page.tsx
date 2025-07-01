@@ -28,6 +28,7 @@ import { resizeImage, checkIfResizeNeeded } from "@/lib/image-utils";
 import { useAuth } from "@/hooks/useAuth";
 import sdk from "@farcaster/frame-sdk";
 import { fetchAuth } from "../lib/fetch-auth";
+import { useSearchParams } from "next/navigation";
 
 interface GenerationRequestPayload {
   userId: string;
@@ -110,6 +111,7 @@ export default function Home() {
   const { user: farcasterUser, isLoading: isUserLoading } = useUser();
   const { address: connectedAddress } = useAccount();
   const account = useAccount();
+  const searchParams = useSearchParams();
 
   // Unified Authentication (supports both SIWE and Farcaster)
   const {
@@ -429,6 +431,19 @@ export default function Home() {
       setApiMessage("Failed to sign out. Please try again.");
     }
   };
+
+  // Handle URL parameters for shared prompts
+  useEffect(() => {
+    const promptParam = searchParams.get('prompt');
+    if (promptParam) {
+      setCustomPrompt(promptParam);
+      // Show a message to indicate the prompt was loaded from a share
+      setApiMessage("Prompt loaded from shared creation! You can modify it or use it as-is.");
+      setTimeout(() => {
+        setApiMessage(null);
+      }, 5000);
+    }
+  }, [searchParams]);
 
   // Auto sign in with Farcaster if in Farcaster context
   useEffect(() => {
