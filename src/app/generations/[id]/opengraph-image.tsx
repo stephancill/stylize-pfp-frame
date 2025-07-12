@@ -50,8 +50,8 @@ export default async function Image({ params }: { params: { id: string } }) {
       throw new Error("Image data not available");
     }
 
-    const matchingTheme = themes.find((t) =>
-      image.promptText?.includes(t.prompt)
+    const matchingTheme = themes.find(
+      (t) => image.promptText?.trim() === t.prompt.trim()
     );
 
     // Apply similar truncation logic as ThemeSelector
