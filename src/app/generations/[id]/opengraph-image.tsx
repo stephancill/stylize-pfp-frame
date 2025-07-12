@@ -5,8 +5,8 @@ import themes from "@/lib/themes";
 // Image metadata
 export const alt = "Generated Character";
 export const size = {
-  width: 1146,
-  height: 600,
+  width: 1200,
+  height: 800,
 };
 
 export const contentType = "image/png";
@@ -43,59 +43,29 @@ export default async function Image({ params }: { params: { id: string } }) {
     }
 
     if (image.status !== "completed") {
-      return new ImageResponse(
-        (
-          <div
-            style={{
-              fontSize: 60,
-              background: "white",
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            Image not ready
-          </div>
-        ),
-        size
-      );
+      throw new Error("Image not ready");
     }
 
     if (!image.imageDataUrl || !image.userPfpUrl) {
-      return new ImageResponse(
-        (
-          <div
-            style={{
-              fontSize: 60,
-              background: "white",
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            Image data not available
-          </div>
-        ),
-        size
-      );
+      throw new Error("Image data not available");
     }
-
-    // Fetch both images
-    // const [sourceImage, generatedImage] = await Promise.all([
-    //   fetch(image.userPfpUrl).then((res) => res.arrayBuffer()),
-    //   fetch(image.imageDataUrl).then((res) => res.arrayBuffer()),
-    // ]);
 
     const matchingTheme = themes.find((t) =>
       image.promptText?.includes(t.prompt)
     );
-    const promptLabel = matchingTheme
-      ? matchingTheme.name
-      : image.promptText || "";
+
+    // Apply similar truncation logic as ThemeSelector
+    let promptLabel = "";
+    if (matchingTheme) {
+      // For matching themes, show the theme name
+      promptLabel = matchingTheme.name;
+    } else if (image.promptText) {
+      // For custom prompts, truncate to first 100 characters
+      promptLabel =
+        image.promptText.length > 100
+          ? image.promptText.substring(0, 100) + "..."
+          : image.promptText;
+    }
 
     return new ImageResponse(
       (

@@ -167,15 +167,17 @@ export function CreationItem({ image }: { image: CompletedImage }) {
                       <Copy className="h-4 w-4 mr-2" />
                       Copy link
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={handleDraftTweet}
-                    >
-                      <Twitter className="h-4 w-4 mr-2" />
-                      Draft Tweet
-                    </Button>
+                    {!isInMiniApp && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={handleDraftTweet}
+                      >
+                        <Twitter className="h-4 w-4 mr-2" />
+                        Draft Tweet
+                      </Button>
+                    )}
                     {isInMiniApp && (
                       <Button
                         variant="ghost"

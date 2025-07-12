@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
 export const alt = "Stylize Your Profile Picture";
 export const size = {
   width: 1200,
-  height: 630,
+  height: 800,
 };
 
 export const contentType = "image/png";
