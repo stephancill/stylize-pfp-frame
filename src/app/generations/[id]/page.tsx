@@ -1,11 +1,11 @@
 import { CreationItem } from "@/components/CreationItem";
+import { MiniAppReady } from "@/components/MiniAppReady";
 import { Button } from "@/components/ui/button";
-import { FRAME_METADATA } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { Metadata } from "next";
-import { notFound } from "next/navigation";
-import Link from "next/link";
 import { Sparkles } from "lucide-react";
+import { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 
 export async function generateMetadata({
   params,
@@ -19,8 +19,19 @@ export async function generateMetadata({
     description: "Stylize any image with AI",
     other: {
       "fc:frame": JSON.stringify({
-        ...FRAME_METADATA,
+        version: "next",
         imageUrl: `${process.env.APP_URL}/generations/${id}/opengraph-image`,
+        iconUrl: `${process.env.APP_URL}/splash.png`,
+        button: {
+          title: "Stylize Me",
+          action: {
+            type: "launch_frame",
+            name: "Stylize Me",
+            url: `${process.env.APP_URL}/generations/${id}`,
+            splashImageUrl: `${process.env.APP_URL}/splash.png`,
+            splashBackgroundColor: "#ffffff",
+          },
+        },
       }),
     },
   };
@@ -52,6 +63,7 @@ export default async function Page({
 
   return (
     <div className="flex justify-center items-center min-h-screen p-4">
+      <MiniAppReady />
       <div className="max-w-md w-full space-y-4">
         <CreationItem
           image={{
