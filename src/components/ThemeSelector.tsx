@@ -12,8 +12,9 @@ import {
   CredenzaBody,
 } from "@/components/ui/credenza";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import themes, { type Theme } from "@/lib/themes";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface ThemeSelectorProps {
   selectedThemeId: string;
@@ -23,6 +24,11 @@ interface ThemeSelectorProps {
   getSelectedPrompt: () => string;
 }
 
+// Helper function to find matching theme
+const findMatchingTheme = (prompt: string): Theme | null => {
+  return themes.find((theme) => theme.prompt.trim() === prompt.trim()) || null;
+};
+
 export function ThemeSelector({
   selectedThemeId,
   customPrompt,
@@ -31,6 +37,7 @@ export function ThemeSelector({
 }: ThemeSelectorProps) {
   const [showCustomPromptDialog, setShowCustomPromptDialog] = useState(false);
   const [tempCustomPrompt, setTempCustomPrompt] = useState(customPrompt);
+  const [showFullPrompt, setShowFullPrompt] = useState(false);
 
   const handleSaveCustomPrompt = () => {
     onCustomPromptChange(tempCustomPrompt);
@@ -41,6 +48,11 @@ export function ThemeSelector({
     setTempCustomPrompt(customPrompt);
     setShowCustomPromptDialog(false);
   };
+
+  const matchingTheme = useMemo(
+    () => findMatchingTheme(customPrompt),
+    [customPrompt]
+  );
 
   return (
     <div className="w-full">
@@ -74,8 +86,40 @@ export function ThemeSelector({
 
       {customPrompt && (
         <div className="p-2 mb-4 border border-blue-300 rounded-md bg-blue-50 text-blue-700 text-sm">
-          <p className="font-semibold">Using Custom Prompt:</p>
-          <p className="truncate">{customPrompt}</p>
+          <div className="flex items-center justify-between">
+            <p className="font-semibold">
+              {matchingTheme
+                ? `Using Theme: ${matchingTheme.name}`
+                : "Using Custom Prompt:"}
+            </p>
+            {customPrompt.length > 100 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFullPrompt(!showFullPrompt)}
+                className="h-6 px-2 text-xs"
+              >
+                {showFullPrompt ? (
+                  <>
+                    <ChevronUp className="h-3 w-3 mr-1" />
+                    Show prompt
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3 mr-1" />
+                    Show prompt
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+          {showFullPrompt ? (
+            <p className="whitespace-pre-wrap break-words">{customPrompt}</p>
+          ) : (
+            <p className="whitespace-pre-wrap break-words">
+              {matchingTheme ? customPrompt : customPrompt.split("\n")[0]}
+            </p>
+          )}
         </div>
       )}
 

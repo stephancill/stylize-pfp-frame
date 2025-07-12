@@ -28,6 +28,8 @@ import { resizeImage, checkIfResizeNeeded } from "@/lib/image-utils";
 import { useAuth } from "@/hooks/useAuth";
 import sdk from "@farcaster/frame-sdk";
 import { fetchAuth } from "../lib/fetch-auth";
+import { useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 interface GenerationRequestPayload {
   userId: string;
@@ -110,6 +112,8 @@ export default function Home() {
   const { user: farcasterUser, isLoading: isUserLoading } = useUser();
   const { address: connectedAddress } = useAccount();
   const account = useAccount();
+  const searchParams = useSearchParams();
+  const generationId = searchParams.get("generationId");
 
   // Unified Authentication (supports both SIWE and Farcaster)
   const {
@@ -146,7 +150,7 @@ export default function Home() {
 
   // State management
   const [apiMessage, setApiMessage] = useState<string | null>(null);
-  const [selectedThemeId, setSelectedThemeId] = useState<string>(themes[0].id);
+  const [selectedThemeId, setSelectedThemeId] = useState<string>("");
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [useUploadedImage, setUseUploadedImage] = useState<boolean>(false);
@@ -226,6 +230,27 @@ export default function Home() {
       return data.jobs || [];
     },
     enabled: hasValidAuth && !!unifiedUser?.id,
+  });
+
+  // Query to fetch specific image data when generationId is present
+  const {
+    data: generationImage,
+    isLoading: isLoadingGenerationImage,
+    error: generationImageError,
+  } = useQuery<CompletedImage | null>({
+    queryKey: ["generationImage", generationId],
+    queryFn: async () => {
+      if (!generationId) return null;
+
+      const response = await fetch(`/api/images/${generationId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch generation image");
+      }
+      const data = await response.json();
+      return data;
+    },
+    enabled: !!generationId,
   });
 
   // Mutations
@@ -461,6 +486,23 @@ export default function Home() {
     // The prompt will be determined by getSelectedPrompt function
   }, [unifiedUser, isUserLoading, selectedThemeId]);
 
+  // Effect to set prompt when generation data is loaded
+  useEffect(() => {
+    if (generationImage) {
+      // Set the custom prompt from the generation
+      if (generationImage.promptText) {
+        setCustomPrompt(generationImage.promptText);
+      }
+
+      setApiMessage("Loaded theme from URL - please upload your own image");
+
+      // Clear the message after a short delay
+      setTimeout(() => {
+        setApiMessage(null);
+      }, 3000);
+    }
+  }, [generationImage]);
+
   useEffect(() => {
     const handleTransactionConfirmation = async () => {
       if (isConfirmed && currentTxHash && !isPaymentSubmitted) {
@@ -547,6 +589,16 @@ export default function Home() {
     }
   }, [isPollingError, pollingError]);
 
+  // Handle generation image error
+  useEffect(() => {
+    if (generationImageError) {
+      console.error("Generation image error:", generationImageError);
+      setApiMessage(
+        `Error loading generation: ${generationImageError.message}. Please check the URL and try again.`
+      );
+    }
+  }, [generationImageError]);
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
 
@@ -571,9 +623,11 @@ export default function Home() {
   // Helper functions
   const getSelectedPrompt = (): string => {
     if (customPrompt) return customPrompt;
-    const selectedTheme =
-      themes.find((t) => t.id === selectedThemeId) || themes[0];
-    return selectedTheme.prompt;
+    if (selectedThemeId) {
+      const selectedTheme = themes.find((t) => t.id === selectedThemeId);
+      return selectedTheme?.prompt || "";
+    }
+    return ""; // No theme selected and no custom prompt
   };
 
   const getImageToUse = (): string | undefined => {
@@ -643,6 +697,21 @@ export default function Home() {
     setUseUploadedImage(false);
   };
 
+  // Handle theme selection - clear custom prompt when a theme is selected
+  const handleThemeSelect = (themeId: string) => {
+    setSelectedThemeId(themeId);
+    setCustomPrompt(""); // Clear custom prompt when a theme is selected
+  };
+
+  // Handle custom prompt change - clear selected theme when custom prompt is used
+  const handleCustomPromptChange = (prompt: string) => {
+    setCustomPrompt(prompt);
+    if (prompt.trim()) {
+      // Clear selected theme when custom prompt is entered
+      setSelectedThemeId("");
+    }
+  };
+
   const handleRequestQuote = () => {
     if (!hasValidAuth) {
       setApiMessage("Please authenticate to continue.");
@@ -693,13 +762,18 @@ export default function Home() {
     !getImageToUse();
 
   const hasValidImage = getImageToUse();
+  const hasThemeFromUrl = !!generationImage?.promptText;
   const showWarnings = {
     noImage: !useUploadedImage && !unifiedUser?.profileImage && !uploadedImage,
     noUploadedImage: useUploadedImage && !uploadedImage,
   };
 
-  if (isUserLoading || isAuthLoading) {
-    return <div className="text-center py-10">Loading user data...</div>;
+  if (isUserLoading || isAuthLoading || isLoadingGenerationImage) {
+    return (
+      <div className="flex justify-center items-center py-10">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
   }
 
   return (
@@ -788,19 +862,19 @@ export default function Home() {
             onError={setApiMessage}
           />
 
-          {/* Theme Selection - only show if user has valid image */}
-          {hasValidImage && (
+          {/* Theme Selection - show if user has valid image OR if theme is loaded from URL */}
+          {(hasValidImage || hasThemeFromUrl) && (
             <ThemeSelector
               selectedThemeId={selectedThemeId}
               customPrompt={customPrompt}
-              onThemeSelect={setSelectedThemeId}
-              onCustomPromptChange={setCustomPrompt}
+              onThemeSelect={handleThemeSelect}
+              onCustomPromptChange={handleCustomPromptChange}
               getSelectedPrompt={getSelectedPrompt}
             />
           )}
 
           {/* Generate Button */}
-          {hasValidImage &&
+          {(hasValidImage || hasThemeFromUrl) &&
             generationStep !== "payment_processing" &&
             generationStep !== "payment_submitted" &&
             generationStep !== "job_queued" && (
@@ -811,7 +885,9 @@ export default function Home() {
               >
                 {quoteMutation.isPending
                   ? "Processing..."
-                  : "Generate Character"}
+                  : hasValidImage
+                  ? "Generate Character"
+                  : "Upload an image to generate"}
               </Button>
             )}
         </>

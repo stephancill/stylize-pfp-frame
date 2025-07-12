@@ -4,6 +4,8 @@ import { FRAME_METADATA } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -61,6 +63,14 @@ export default async function Page({
             userPfpUrl: image.userPfpUrl,
           }}
         />
+        <div className="flex justify-center">
+          <Link href={`/?generationId=${id}`} className="w-full">
+            <Button variant="outline" size="sm" className="w-full text-xs">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Use this theme
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );

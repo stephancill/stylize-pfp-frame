@@ -8,8 +8,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import sdk from "@farcaster/frame-sdk";
-import { Download, Share2, Copy, Twitter, MessageCircle } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { Copy, Download, MessageCircle, Share2, Twitter } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export interface CompletedImage {
@@ -132,7 +132,7 @@ export function CreationItem({ image }: { image: CompletedImage }) {
               />
             )}
             <div className="absolute bottom-2 left-2 right-2 flex justify-between gap-2 pointer-events-auto">
-              {image.imageDataUrl && (
+              {image.imageDataUrl && !isInMiniApp && (
                 <Button
                   variant="secondary"
                   size="icon"
@@ -199,9 +199,9 @@ export function CreationItem({ image }: { image: CompletedImage }) {
         )}
       </CardContent>
       {(image.promptText || image.createdAt || image.imageDataUrl) && (
-        <CardFooter className="p-3 flex flex-col items-start border-t">
+        <CardFooter className="p-3 flex flex-col items-start border-t space-y-2">
           {image.createdAt && isClient && (
-            <p className="text-xs text-muted-foreground/80 mt-1">
+            <p className="text-xs text-muted-foreground/80">
               {new Date(image.createdAt).toLocaleDateString()}
             </p>
           )}
