@@ -9,11 +9,11 @@ export async function GET() {
     accountAssociation: accountAssociations[appUrl],
     frame: {
       version: "1",
-      name: "Stylize PFP",
+      name: "Stylize Me",
       iconUrl: `${appUrl}/splash.png`,
       homeUrl: appUrl,
       imageUrl: `${appUrl}/og.png`,
-      buttonTitle: "Stylize my PFP",
+      buttonTitle: "Try it now",
       splashImageUrl: `${appUrl}/splash.png`,
       splashBackgroundColor: "#f7f7f7",
       webhookUrl: `${appUrl}/api/webhooks/farcaster`,
@@ -38,5 +38,12 @@ const accountAssociations = {
     payload: "eyJkb21haW4iOiJzdHlsaXplLnN0ZWVyLmZ1biJ9",
     signature:
       "MHgzMzU4MzFkZTM3MjllNmVjZDM3MTdiODc1NzhkNWI1NGZiNmQyODE2NzIxYjE2ODlhMTMwNDlkYTAwNDRhOGEzMGE5NTU1MTRhNTQ3NzQ5YmNhMzJhMTlmYTQ0OTVlNDI3Y2ZiOGVjOTA0MjJlYTZlZDRkYmI3NjBjY2QwNzFmNzFj",
+  },
+  "https://1cf731bbcee8.ngrok-free.app": {
+    header:
+      "eyJmaWQiOjE2ODksInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgyNzM4QjIxY0I5NTIwMzM4RjlBMzc1YzNiOTcxQjE3NzhhZTEwMDRhIn0",
+    payload: "eyJkb21haW4iOiIxY2Y3MzFiYmNlZTgubmdyb2stZnJlZS5hcHAifQ",
+    signature:
+      "MHg4ZGY5Yzk5NGJmMDZjY2QwMTk2MzhkOTlhZDQ0Y2NlZjQxOWE5MzRjYzEyNzg5NGRlMzdiMmM2N2M4ZTEyMWMyMzZhMjJkOGQ2YzNiYWEyMjA4MmI5ZTExNDI0MTQ0ZDMxMzdmNjNiYTQ4MjI2ZWJlMzNlZjYyNGU2ZDgyZTY5MDFj",
   },
 };
