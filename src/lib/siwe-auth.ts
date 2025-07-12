@@ -119,12 +119,22 @@ export function verifyJwtToken(token: string): AuthUser {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
 
+    let id = decoded.id;
+    if (!decoded.id) {
+      const derivedId =
+        decoded.authType === "siwe" ? decoded.address : decoded.fid?.toString();
+      if (!derivedId) {
+        throw new AuthError("Invalid or expired token");
+      }
+      id = derivedId;
+    }
+
     return {
       authType: decoded.authType,
       address: decoded.address,
       chainId: decoded.chainId,
       fid: decoded.fid,
-      id: decoded.id,
+      id,
       nonce: decoded.nonce,
       issuedAt: decoded.issuedAt,
       expirationTime: decoded.expirationTime,
