@@ -92,7 +92,8 @@ export function ThemeSelector({
                 ? `Using Theme: ${matchingTheme.name}`
                 : "Using Custom Prompt:"}
             </p>
-            {customPrompt.length > 100 && (
+            {(customPrompt.length > 100 ||
+              customPrompt.indexOf("\n") !== -1) && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -102,7 +103,7 @@ export function ThemeSelector({
                 {showFullPrompt ? (
                   <>
                     <ChevronUp className="h-3 w-3 mr-1" />
-                    Show prompt
+                    Hide prompt
                   </>
                 ) : (
                   <>
@@ -113,8 +114,10 @@ export function ThemeSelector({
               </Button>
             )}
           </div>
-          {showFullPrompt ? (
-            <p className="whitespace-pre-wrap break-words">{customPrompt}</p>
+          {!showFullPrompt ? (
+            <p className="whitespace-pre-wrap break-words line-clamp-2">
+              {customPrompt}
+            </p>
           ) : (
             <p className="whitespace-pre-wrap break-words">
               {matchingTheme ? customPrompt : customPrompt.split("\n")[0]}
