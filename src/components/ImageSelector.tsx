@@ -137,7 +137,7 @@ export function ImageSelector({
                   alt="Uploaded"
                   className={`${
                     showBothOptions ? "w-16 h-16 mb-2" : "w-20 h-20 mb-3"
-                  } mx-auto rounded-full object-cover`}
+                  } mx-auto rounded-md object-cover`}
                 />
                 <Button
                   variant="ghost"
@@ -152,7 +152,7 @@ export function ImageSelector({
               <div
                 className={`${
                   showBothOptions ? "w-16 h-16 mb-2" : "w-20 h-20 mb-3"
-                } mx-auto bg-gray-200 rounded-full flex items-center justify-center`}
+                } mx-auto bg-gray-200 rounded-md flex items-center justify-center`}
               >
                 <Upload
                   className={`${

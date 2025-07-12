@@ -1,8 +1,7 @@
 import { Lucia } from "lucia";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { AUTH_SESSION_COOKIE_NAME } from "./constants";
 import { getAuthAdapter } from "./db";
-import { AuthError } from "./errors";
 
 const adapter = getAuthAdapter();
 
@@ -33,36 +32,6 @@ export type UserRouteHandler<
   user: NonNullable<Awaited<ReturnType<typeof lucia.validateSession>>["user"]>,
   context: T
 ) => Promise<Response>;
-
-export function withAuth<
-  T extends Record<string, object | string> = NextContext
->(handler: UserRouteHandler<T>, options: {} = {}) {
-  return async (req: NextRequest, context: T): Promise<Response> => {
-    try {
-      const cookieHeader = req.headers.get("Cookie");
-      const authorizationHeader = req.headers.get("Authorization");
-      const token =
-        lucia.readBearerToken(authorizationHeader ?? "") ||
-        lucia.readSessionCookie(cookieHeader ?? "");
-
-      const result = await lucia.validateSession(token ?? "");
-      if (!result.session) {
-        throw new AuthError("Invalid session");
-      }
-
-      return handler(req, result.user, context);
-    } catch (error) {
-      if (error instanceof AuthError) {
-        return NextResponse.json({ error: error.message }, { status: 401 });
-      }
-      console.error("Unexpected error in withAuth:", error);
-      return NextResponse.json(
-        { error: "Internal server error" },
-        { status: 500 }
-      );
-    }
-  };
-}
 
 declare module "lucia" {
   interface Register {

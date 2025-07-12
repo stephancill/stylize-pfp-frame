@@ -1,24 +1,9 @@
 import { db } from "@/lib/db";
+import { withAuth } from "@/lib/siwe-auth";
 import { NextResponse } from "next/server";
 
-export async function GET(
-  request: Request,
-  args: { params: Promise<{ fid: string }> }
-) {
-  const params = await args.params;
+export const GET = withAuth(async ({ user }) => {
   try {
-    const userIdString = params.fid;
-    if (!userIdString) {
-      return NextResponse.json(
-        { error: "userId parameter is required." },
-        { status: 400 }
-      );
-    }
-
-    const userId = userIdString;
-
-    console.log("userId", userId);
-
     const inProgressJobs = await db
       .selectFrom("generatedImages")
       .select([
@@ -30,7 +15,7 @@ export async function GET(
         "quoteId",
         "transactionHash",
       ])
-      .where("userId", "ilike", userId)
+      .where("userId", "ilike", user.id)
       .where((eb) =>
         eb.or([
           eb("status", "=", "paid"),
@@ -43,14 +28,11 @@ export async function GET(
 
     return NextResponse.json({ jobs: inProgressJobs });
   } catch (error) {
-    console.error(
-      `Error fetching in-progress jobs for userId ${params.fid}:`,
-      error
-    );
+    console.error(`Error fetching in-progress jobs for userId ${user}:`, error);
     let errorMessage = "Internal Server Error";
     if (error instanceof Error) {
       errorMessage = error.message;
     }
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-}
+});

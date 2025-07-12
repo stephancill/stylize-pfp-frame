@@ -1,28 +1,17 @@
+import { SIWE_JWT_COOKIE_NAME } from "@/lib/constants";
 import { db } from "@/lib/db";
+import { withAuth } from "@/lib/siwe-auth";
 import { NextResponse } from "next/server";
-import { withAuth, AuthUserRouteHandler } from "@/lib/siwe-auth";
 
-const handler: AuthUserRouteHandler<{
-  params: Promise<{ fid: string }>;
-}> = async (request, user, args) => {
-  const params = await args.params;
+export const GET = withAuth(async ({ user }) => {
   try {
-    const userIdString = params.fid; // Keep the route parameter name for backward compatibility
-    if (!userIdString) {
-      return NextResponse.json(
-        { error: "userId parameter is required." },
-        { status: 400 }
+    if (!user.id) {
+      const response = NextResponse.json(
+        { error: "Invalid user" },
+        { status: 401 }
       );
-    }
-
-    // userId can be either a numeric FID or a wallet address
-    // Since we're using SIWE, we now have the authenticated user's address
-    // We can either use the route parameter or the authenticated user's address
-    // For security, let's use the authenticated user's address if no specific userId is requested
-    const userId = user.authType === "siwe" ? user.address : user.fid;
-
-    if (!userId) {
-      return NextResponse.json({ error: "Invalid user" }, { status: 400 });
+      response.cookies.delete(SIWE_JWT_COOKIE_NAME);
+      return response;
     }
 
     // Kysely automatically converts camelCase to snake_case for column names
@@ -39,7 +28,7 @@ const handler: AuthUserRouteHandler<{
         "quoteId",
         "userPfpUrl",
       ])
-      .where("userId", "=", userId.toString())
+      .where("userId", "ilike", user.id.toString().toLowerCase())
       .where("status", "=", "completed")
       .orderBy("createdAt", "desc")
       .execute();
@@ -61,7 +50,7 @@ const handler: AuthUserRouteHandler<{
     });
   } catch (error) {
     console.error(
-      `Error fetching completed images for userId ${params.fid}:`,
+      `Error fetching completed images for userId ${user.fid}:`,
       error
     );
     let errorMessage = "Internal Server Error";
@@ -70,6 +59,4 @@ const handler: AuthUserRouteHandler<{
     }
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-};
-
-export const GET = withAuth(handler);
+});

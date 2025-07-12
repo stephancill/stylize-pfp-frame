@@ -152,7 +152,8 @@ export default function Home() {
   const [useUploadedImage, setUseUploadedImage] = useState<boolean>(false);
   const [showFramePromptDialog, setShowFramePromptDialog] =
     useState<boolean>(false);
-  const [autoSignInAttempted, setAutoSignInAttempted] = useState<boolean>(false);
+  const [autoSignInAttempted, setAutoSignInAttempted] =
+    useState<boolean>(false);
 
   // Transaction state
   const [quoteId, setQuoteId] = useState<string | null>(null);
@@ -200,7 +201,7 @@ export default function Home() {
   } = useQuery<CompletedImage[]>({
     queryKey: ["completedImages", unifiedUser?.id],
     queryFn: async () => {
-      const response = await fetchAuth(`/api/user/${unifiedUser!.id}/images`);
+      const response = await fetchAuth(`/api/images`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to fetch images");
@@ -216,7 +217,7 @@ export default function Home() {
   >({
     queryKey: ["inProgressJobs", unifiedUser?.id],
     queryFn: async () => {
-      const response = await fetchAuth(`/api/user/${unifiedUser!.id}/jobs`);
+      const response = await fetchAuth(`/api/jobs`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to fetch jobs");
@@ -442,7 +443,13 @@ export default function Home() {
       setAutoSignInAttempted(true);
       handleFarcasterSignIn();
     }
-  }, [isInFarcasterContext, needsAuth, isAuthLoading, autoSignInAttempted, isUserLoading]);
+  }, [
+    isInFarcasterContext,
+    needsAuth,
+    isAuthLoading,
+    autoSignInAttempted,
+    isUserLoading,
+  ]);
 
   // Effects
   useEffect(() => {
@@ -675,20 +682,6 @@ export default function Home() {
     });
   };
 
-  const handleDownloadImage = (imageDataUrl: string, imageId: string) => {
-    try {
-      const link = document.createElement("a");
-      link.href = imageDataUrl;
-      link.download = `stylized-character-${imageId}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error("Error downloading image:", error);
-      setApiMessage("Failed to download image. Please try again.");
-    }
-  };
-
   const isActionDisabled =
     quoteMutation.isPending ||
     paymentSubmissionMutation.isPending ||
@@ -746,7 +739,9 @@ export default function Home() {
       {needsAuth && (
         <div className="w-full border-2 border-blue-200 rounded-lg p-6 bg-blue-50 text-center">
           <h3 className="text-lg font-semibold text-blue-800 mb-2">
-            {isInFarcasterContext ? "Authenticating with Farcaster" : "Authentication Required"}
+            {isInFarcasterContext
+              ? "Authenticating with Farcaster"
+              : "Authentication Required"}
           </h3>
 
           {isInFarcasterContext ? (
@@ -845,7 +840,6 @@ export default function Home() {
             images={completedImages}
             isLoading={isLoadingImages}
             error={imagesError}
-            onDownload={handleDownloadImage}
           />
         </div>
       )}

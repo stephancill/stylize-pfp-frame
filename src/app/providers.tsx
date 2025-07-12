@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { UserContextProvider } from "@/providers/UserContextProvider";
 import { WagmiProvider } from "wagmi";
 import { config } from "@/lib/wagmi";
+import { Toaster } from "@/components/ui/sonner";
 
 const queryClient = new QueryClient();
 
@@ -15,6 +16,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
         <Suspense>
           <UserContextProvider>{children}</UserContextProvider>
         </Suspense>
+        <Toaster />
       </QueryClientProvider>
     </WagmiProvider>
   );

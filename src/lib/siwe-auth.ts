@@ -45,6 +45,7 @@ export interface AuthUser {
   nonce?: string;
   issuedAt?: string;
   expirationTime?: string;
+  id: string;
 }
 
 export interface JwtPayload extends AuthUser {
@@ -90,6 +91,7 @@ export function createJwtToken(siweMessage: SiweMessage): string {
     nonce: siweMessage.nonce,
     issuedAt: siweMessage.issuedAt?.toISOString(),
     expirationTime: siweMessage.expirationTime?.toISOString(),
+    id: siweMessage.address.toLowerCase(),
   };
 
   return jwt.sign(payload, JWT_SECRET, {
@@ -104,6 +106,7 @@ export function createFarcasterJwtToken(fid: number, nonce: string): string {
     fid,
     nonce,
     issuedAt: new Date().toISOString(),
+    id: fid.toString(),
   };
 
   return jwt.sign(payload, JWT_SECRET, {
@@ -115,11 +118,13 @@ export function createFarcasterJwtToken(fid: number, nonce: string): string {
 export function verifyJwtToken(token: string): AuthUser {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+
     return {
       authType: decoded.authType,
       address: decoded.address,
       chainId: decoded.chainId,
       fid: decoded.fid,
+      id: decoded.id,
       nonce: decoded.nonce,
       issuedAt: decoded.issuedAt,
       expirationTime: decoded.expirationTime,
@@ -171,7 +176,11 @@ type NextContext = { params: Promise<Record<string, string | string[]>> };
 
 export type AuthUserRouteHandler<
   T extends Record<string, object | string> = NextContext
-> = (req: NextRequest, user: AuthUser, context: T) => Promise<Response>;
+> = (args: {
+  req: NextRequest;
+  user: AuthUser;
+  context: T;
+}) => Promise<Response>;
 
 // withAuth decorator for protecting routes (supports both auth types)
 export function withAuth<
@@ -193,9 +202,11 @@ export function withAuth<
       // Optionally, you can add additional validation here
       // For example, check if the token is close to expiring and refresh it
 
-      return handler(req, user, context);
+      return handler({ req, user, context });
     } catch (error) {
       if (error instanceof AuthError) {
+        // Unset the cookie
+        req.cookies.delete(SIWE_JWT_COOKIE_NAME);
         return NextResponse.json({ error: error.message }, { status: 401 });
       }
 

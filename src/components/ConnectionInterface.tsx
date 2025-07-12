@@ -90,7 +90,8 @@ export function ConnectionInterface({
             onClick={() => connect({ connector })}
             className="w-full"
           >
-            Connect with {connector.name}
+            {connector.icon && <img src={connector.icon} className="w-4 h-4" />}
+            {connector.name}
           </Button>
         ))}
       </div>

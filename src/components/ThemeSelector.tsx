@@ -2,18 +2,18 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+  Credenza,
+  CredenzaContent,
+  CredenzaHeader,
+  CredenzaTitle,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaClose,
+  CredenzaBody,
+} from "@/components/ui/credenza";
+import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import themes, { type Theme } from "@/lib/themes";
-
 
 interface ThemeSelectorProps {
   selectedThemeId: string;
@@ -28,7 +28,6 @@ export function ThemeSelector({
   customPrompt,
   onThemeSelect,
   onCustomPromptChange,
-  getSelectedPrompt,
 }: ThemeSelectorProps) {
   const [showCustomPromptDialog, setShowCustomPromptDialog] = useState(false);
   const [tempCustomPrompt, setTempCustomPrompt] = useState(customPrompt);
@@ -81,32 +80,33 @@ export function ThemeSelector({
       )}
 
       {/* Custom Prompt Dialog */}
-      <Dialog
+      <Credenza
         open={showCustomPromptDialog}
         onOpenChange={setShowCustomPromptDialog}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Enter Custom Prompt</DialogTitle>
-            <DialogDescription>
+        <CredenzaContent className="sm:max-w-md">
+          <CredenzaHeader>
+            <CredenzaTitle>Enter Custom Prompt</CredenzaTitle>
+            <CredenzaDescription>
               Type your desired prompt below. This will override the selected
               theme.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Input
+            </CredenzaDescription>
+          </CredenzaHeader>
+          <CredenzaBody>
+            <Textarea
               id="customPromptInput"
               value={tempCustomPrompt}
               onChange={(e) => setTempCustomPrompt(e.target.value)}
               placeholder="e.g., A cat wearing a wizard hat"
               className="w-full"
+              rows={4}
             />
-          </div>
-          <DialogFooter className="sm:justify-end">
+          </CredenzaBody>
+          <CredenzaFooter className="sm:justify-end">
             <Button type="button" onClick={handleSaveCustomPrompt}>
               Save Prompt
             </Button>
-            <DialogClose asChild>
+            <CredenzaClose asChild>
               <Button
                 type="button"
                 variant="outline"
@@ -114,10 +114,10 @@ export function ThemeSelector({
               >
                 Cancel
               </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </CredenzaClose>
+          </CredenzaFooter>
+        </CredenzaContent>
+      </Credenza>
     </div>
   );
 }

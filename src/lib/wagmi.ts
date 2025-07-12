@@ -9,7 +9,7 @@ export const config = createConfig({
       appLogoUrl: "https://stylize.steer.fun/splash.png",
     }),
   ],
-  chains: [base as any],
+  chains: [base],
   transports: {
     [base.id]: http(),
   },
