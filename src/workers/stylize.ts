@@ -218,6 +218,7 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
   },
   {
     connection: redisQueue,
+    concurrency: 5,
   }
 );
 
