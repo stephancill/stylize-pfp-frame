@@ -10,6 +10,9 @@ export async function GET() {
     frame: {
       version: "1",
       name: "Stylize Me",
+      subtitle: "AI Image Style Transfer",
+      description:
+        "Transform your photos with AI-powered style transfer. Upload any image and apply artistic styles to create stunning visual effects.",
       iconUrl: `${appUrl}/splash.png`,
       homeUrl: appUrl,
       imageUrl: `${appUrl}/og.png`,
@@ -17,6 +20,12 @@ export async function GET() {
       splashImageUrl: `${appUrl}/splash.png`,
       splashBackgroundColor: "#f7f7f7",
       webhookUrl: `${appUrl}/api/webhooks/farcaster`,
+      primaryCategory: "art-creativity",
+      tags: ["image", "style-transfer", "creative", "photo-editing"],
+      ogTitle: "Stylize Me - Image Style Transfer",
+      ogDescription:
+        "Transform photos with AI style transfer. Create stunning artistic effects instantly.",
+      ogImageUrl: `${appUrl}/og.png`,
     },
   };
 
