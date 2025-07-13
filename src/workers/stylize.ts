@@ -17,6 +17,38 @@ const openaiClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+/**
+ * Converts a GIF buffer to PNG by extracting the first frame
+ * @param gifBuffer - The GIF buffer to convert
+ * @returns Promise that resolves to a PNG buffer
+ */
+async function convertGifBufferToPng(gifBuffer: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    // Create a canvas-like environment using sharp
+    sharp(gifBuffer)
+      .gif() // Ensure it's treated as GIF
+      .png() // Convert to PNG
+      .toBuffer()
+      .then((pngBuffer) => {
+        resolve(pngBuffer);
+      })
+      .catch((error) => {
+        reject(new Error(`Failed to convert GIF to PNG: ${error.message}`));
+      });
+  });
+}
+
+/**
+ * Checks if a buffer contains a GIF image
+ * @param buffer - The buffer to check
+ * @returns Boolean indicating if the buffer contains a GIF
+ */
+function isGifBuffer(buffer: Buffer): boolean {
+  // Check for GIF magic numbers: GIF87a or GIF89a
+  const gifHeader = buffer.slice(0, 6).toString("ascii");
+  return gifHeader === "GIF87a" || gifHeader === "GIF89a";
+}
+
 export const stylizeImageWorker = new Worker<StylizeImageJobData>(
   STYLIZE_IMAGE_QUEUE_NAME,
   async (job) => {
@@ -79,6 +111,14 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
         }
         imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
         contentType = imageResponse.headers.get("content-type") || "image/png";
+      }
+
+      // Check if the image is a GIF and convert it to PNG
+      if (isGifBuffer(imageBuffer)) {
+        console.log(`Converting GIF to PNG for job ${job.id}`);
+        imageBuffer = await convertGifBufferToPng(imageBuffer);
+        contentType = "image/png";
+        console.log(`GIF converted to PNG successfully for job ${job.id}`);
       }
 
       const imageFile = await toFile(imageBuffer, "profile.png", {

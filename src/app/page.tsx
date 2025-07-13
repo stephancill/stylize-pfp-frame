@@ -24,7 +24,12 @@ import { JobsSection } from "@/components/JobsSection";
 import { FramePromptDialog } from "@/components/FramePromptDialog";
 import { createUnifiedUser, type UnifiedUser } from "@/types/user";
 import { truncateAddress } from "../lib/utils";
-import { resizeImage, checkIfResizeNeeded } from "@/lib/image-utils";
+import {
+  resizeImage,
+  checkIfResizeNeeded,
+  convertGifToPng,
+  isGifFile,
+} from "@/lib/image-utils";
 import { useAuth } from "@/hooks/useAuth";
 import sdk from "@farcaster/frame-sdk";
 import { fetchAuth } from "../lib/fetch-auth";
@@ -643,47 +648,50 @@ export default function Home() {
     if (!file) return;
 
     try {
-      // Check if the image needs to be resized
-      const needsResize = await checkIfResizeNeeded(file, 1024, 1024);
-
       let dataUrl: string;
 
-      if (needsResize) {
-        // Show a message that we're processing the image
-        setApiMessage("Processing large image...");
-
-        // Resize the image while maintaining aspect ratio
-        dataUrl = await resizeImage(file, {
-          maxWidth: 1024,
-          maxHeight: 1024,
-          quality: 0.9,
-        });
-
-        setApiMessage("Image resized to optimize for processing.");
+      // Check if the file is a GIF and convert it to PNG
+      if (isGifFile(file)) {
+        setApiMessage("Converting GIF to PNG (extracting first frame)...");
+        dataUrl = await convertGifToPng(file);
+        setApiMessage("GIF converted to PNG successfully.");
       } else {
-        // For smaller images, read directly as data URL
-        dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const result = e.target?.result as string;
-            resolve(result);
-          };
-          reader.onerror = () => reject(new Error("Failed to read file"));
-          reader.readAsDataURL(file);
-        });
+        // Check if the image needs to be resized
+        const needsResize = await checkIfResizeNeeded(file, 1024, 1024);
+
+        if (needsResize) {
+          // Show a message that we're processing the image
+          setApiMessage("Processing large image...");
+
+          // Resize the image while maintaining aspect ratio
+          dataUrl = await resizeImage(file, {
+            maxWidth: 1024,
+            maxHeight: 1024,
+            quality: 0.9,
+          });
+
+          setApiMessage("Image resized to optimize for processing.");
+        } else {
+          // For smaller images, read directly as data URL
+          dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const result = e.target?.result as string;
+              resolve(result);
+            };
+            reader.onerror = () => reject(new Error("Failed to read file"));
+            reader.readAsDataURL(file);
+          });
+        }
       }
 
       setUploadedImage(dataUrl);
       setUseUploadedImage(true);
 
-      // Clear the processing message after a short delay if it was shown
-      if (needsResize) {
-        setTimeout(() => {
-          setApiMessage(null);
-        }, 2000);
-      } else {
+      // Clear the processing message after a short delay
+      setTimeout(() => {
         setApiMessage(null);
-      }
+      }, 2000);
     } catch (error) {
       console.error("Error processing image:", error);
       setApiMessage(

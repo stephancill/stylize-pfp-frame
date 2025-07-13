@@ -5,6 +5,57 @@ export interface ResizeOptions {
 }
 
 /**
+ * Converts a GIF file to PNG by extracting the first frame
+ * @param file - The GIF file to convert
+ * @returns Promise that resolves to a data URL of the converted PNG image
+ */
+export function convertGifToPng(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    if (!ctx) {
+      reject(new Error("Failed to get canvas context"));
+      return;
+    }
+
+    img.onload = () => {
+      // Clean up object URL
+      URL.revokeObjectURL(img.src);
+
+      // Set canvas dimensions to match the image
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Draw the first frame of the GIF
+      ctx.drawImage(img, 0, 0);
+
+      // Convert to PNG data URL
+      const dataUrl = canvas.toDataURL("image/png");
+      resolve(dataUrl);
+    };
+
+    img.onerror = () => {
+      reject(new Error("Failed to load GIF image"));
+    };
+
+    // Create object URL for the image
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+  });
+}
+
+/**
+ * Checks if a file is a GIF
+ * @param file - The file to check
+ * @returns Boolean indicating if the file is a GIF
+ */
+export function isGifFile(file: File): boolean {
+  return file.type === "image/gif";
+}
+
+/**
  * Resizes an image file while maintaining aspect ratio
  * @param file - The image file to resize
  * @param options - Resize options including maxWidth, maxHeight, and quality
