@@ -1,12 +1,12 @@
-import {
-  Hex,
-  parseAbi,
-  parseEventLogs,
-  PublicClient,
-  toHex,
-  Transport,
-} from "viem";
+import { DelegateABI } from "@/abi/DelegateABI";
+import { getAddressForUserId } from "@/app/api/generate/route";
+import { Hex, parseEventLogs, PublicClient, Transport } from "viem";
 import { base } from "viem/chains";
+import {
+  ROYALTY_PROMPT_AUTHOR_BASIS_POINTS,
+  ROYALTY_REFERRER_BASIS_POINTS,
+} from "./constants";
+import { db } from "./db";
 
 export async function verifyPaymentTransaction({
   transactionHash,
@@ -42,17 +42,13 @@ export async function verifyPaymentTransaction({
     }
 
     const parsedLogs = parseEventLogs({
-      abi: parseAbi([
-        "event ETHReceived(address indexed from, uint256 indexed amount, bytes data)",
-      ]),
+      abi: DelegateABI,
       logs: receipt.logs,
     });
 
-    console.log(parsedLogs);
-
-    // Requires recipient address to have delegated to 0x1691F3f170D0652A4c208882D01b638cD14739C8
+    // Requires recipient address to have delegated to 0xC7C5B754413A50CB5d8d09FbC11e8092Bf98E246
     const ethReceivedLogs = parsedLogs.filter((log) => {
-      return log.eventName === "ETHReceived";
+      return log.eventName === "PaymentReceived";
     });
 
     if (ethReceivedLogs.length === 0) {
@@ -62,13 +58,25 @@ export async function verifyPaymentTransaction({
     }
 
     const {
-      args: { data, amount },
+      args: { payment },
       address: to,
     } = ethReceivedLogs[0];
 
     const matchedRecipient = to.toLowerCase() === paymentAddress.toLowerCase();
-    const matchedValue = amount >= expectedValueWei;
-    const matchedInput = data === toHex(quoteId);
+    const matchedValue = payment.amount >= expectedValueWei;
+    const matchedInput = payment.memo === quoteId;
+
+    // Check royalties
+    const quote = await db
+      .selectFrom("generatedImages")
+      .selectAll()
+      .where("quoteId", "=", quoteId)
+      .executeTakeFirstOrThrow();
+
+    const royalties = await calculateRoyalties({
+      prompt: quote.promptText!,
+      referringImageId: quote.referringImageId,
+    });
 
     if (matchedRecipient && matchedValue && matchedInput) {
       isPaymentVerified = true;
@@ -76,9 +84,26 @@ export async function verifyPaymentTransaction({
         `Transaction ${transactionHash} successfully verified for quoteId: ${quoteId}`
       );
     } else {
-      verificationError = `Transaction ${transactionHash} does not match the expected values. Recipient\n${to}\n${paymentAddress}\nValue\n${amount}\n${expectedValueWei}\nInput\n${data}\n${toHex(
-        quoteId
-      )}`;
+      verificationError = `Transaction ${transactionHash} does not match the expected values. Recipient\n${to}\n${paymentAddress}\nValue\n${payment.amount}\n${expectedValueWei}\nInput\n${payment.memo}\n${quoteId}`;
+    }
+
+    // Check if event royalties match the expected royalties
+    for (const royalty of royalties) {
+      const matchedRoyalty = payment.royalties.find(
+        (r) => r.receiver.toLowerCase() === royalty.receiver.toLowerCase()
+      );
+
+      if (!matchedRoyalty) {
+        isPaymentVerified = false;
+        verificationError = `Transaction ${transactionHash} does not match the expected royalties. Recipient\n${royalty.receiver}\n${matchedRoyalty}\n${royalty.basisPoints}`;
+        break;
+      }
+
+      if (matchedRoyalty.basisPoints !== royalty.basisPoints) {
+        isPaymentVerified = false;
+        verificationError = `Transaction ${transactionHash} does not match the expected royalties. Recipient\n${royalty.receiver}\n${matchedRoyalty.basisPoints}\n${royalty.basisPoints}`;
+        break;
+      }
     }
   } catch (e: any) {
     console.error(
@@ -93,4 +118,57 @@ export async function verifyPaymentTransaction({
   }
 
   return isPaymentVerified;
+}
+
+export async function calculateRoyalties({
+  prompt,
+  referringImageId,
+}: {
+  prompt: string;
+  referringImageId?: string | null;
+}): Promise<{ receiver: `0x${string}`; basisPoints: bigint }[]> {
+  const royalties: { receiver: `0x${string}`; basisPoints: bigint }[] = [];
+
+  console.log("Calculating royalties for prompt:", prompt);
+  console.log("Referring image ID:", referringImageId);
+
+  if (referringImageId) {
+    const referringImage = await db
+      .selectFrom("generatedImages")
+      .selectAll()
+      .where("id", "=", referringImageId)
+      .where("status", "=", "completed")
+      .executeTakeFirstOrThrow();
+
+    const referrerAddress = await getAddressForUserId(referringImage.userId);
+
+    if (referrerAddress) {
+      royalties.push({
+        receiver: referrerAddress,
+        basisPoints: BigInt(ROYALTY_REFERRER_BASIS_POINTS),
+      });
+    }
+  }
+
+  // Calculate prompt author royalties
+  const promptOccurrence = await db
+    .selectFrom("generatedImages")
+    .selectAll()
+    .where("promptText", "=", prompt)
+    .where("status", "=", "completed")
+    .orderBy("createdAt", "asc")
+    .executeTakeFirst();
+
+  if (promptOccurrence) {
+    const receiverAddress = await getAddressForUserId(promptOccurrence.userId);
+
+    if (receiverAddress) {
+      royalties.push({
+        receiver: receiverAddress,
+        basisPoints: BigInt(ROYALTY_PROMPT_AUTHOR_BASIS_POINTS),
+      });
+    }
+  }
+
+  return royalties;
 }

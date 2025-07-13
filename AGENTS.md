@@ -25,6 +25,7 @@ This Agents.md file provides comprehensive guidance for AI agents working with t
 - PNPM for package management
 - BullMQ for job queues and background processing
 - Docker for containerization
+- React Query for data fetching
 
 ## Package Management
 

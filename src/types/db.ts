@@ -34,6 +34,7 @@ export type GeneratedImageRow = {
   imageDataUrl: string | null;
   promptText: string | null;
   userPfpUrl: string | null;
+  referringImageId: string | null; // Reference to another generated image
   createdAt: Generated<Date>;
 };
 

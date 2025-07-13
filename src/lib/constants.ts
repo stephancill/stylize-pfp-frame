@@ -13,6 +13,10 @@ export const NOTIFICATIONS_BULK_QUEUE_NAME = "notifications-bulk";
 // Jobs that stylize images for users
 export const STYLIZE_IMAGE_QUEUE_NAME = "stylize-image";
 
+// Royalties
+export const ROYALTY_PROMPT_AUTHOR_BASIS_POINTS = 10000; // 10%
+export const ROYALTY_REFERRER_BASIS_POINTS = 10000; // 10%
+
 export const FRAME_METADATA = {
   version: "next",
   imageUrl: `${process.env.APP_URL}/og.png`,

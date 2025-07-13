@@ -3,26 +3,31 @@ import { db } from "@/lib/db";
 import { stylizeImageQueue } from "@/lib/queue";
 import { StylizeImageJobData } from "@/types/jobs";
 import { randomUUID } from "crypto";
-import { createPublicClient, http, parseEther, Hex, toHex } from "viem";
+import {
+  createPublicClient,
+  http,
+  parseEther,
+  Hex,
+  toHex,
+  encodeFunctionData,
+  isHex,
+} from "viem";
 import { base } from "viem/chains"; // Assuming Ethereum Mainnet. Change if using a different chain.
-import { verifyPaymentTransaction } from "@/lib/transactions";
+import {
+  calculateRoyalties,
+  verifyPaymentTransaction,
+} from "@/lib/transactions";
+import { DelegateABI } from "@/abi/DelegateABI";
+import { getAddressForFid } from "@/lib/farcaster";
 
 // Environment variables for payment
 const PAYMENT_ADDRESS = process.env.PAYMENT_ADDRESS! as Hex;
 const AMOUNT_DUE_ETH_STRING = process.env.PAYMENT_AMOUNT || "0.00001";
 const EXPECTED_VALUE_WEI = parseEther(AMOUNT_DUE_ETH_STRING);
 
-// Initialize Viem Public Client
-const publicClient = createPublicClient({
-  chain: base as any,
-  transport: http(),
-});
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-
-    console.log("body", body);
 
     if (body.quoteId && body.transactionHash) {
       // --- PAYMENT SUBMISSION FLOW ---
@@ -156,11 +161,13 @@ export async function POST(request: Request) {
         userId,
         prompt,
         userPfpUrl, // Now expecting this from the client
+        referringImageId,
       } = body as Partial<
         StylizeImageJobData & {
           prompt: string;
           userId: string;
           userPfpUrl?: string;
+          referringImageId?: string;
         }
       >;
 
@@ -186,6 +193,11 @@ export async function POST(request: Request) {
 
       const newQuoteId = randomUUID();
 
+      const royalties = await calculateRoyalties({
+        prompt,
+        referringImageId,
+      });
+
       await db
         .insertInto("generatedImages")
         .values({
@@ -193,16 +205,23 @@ export async function POST(request: Request) {
           promptText: prompt,
           quoteId: newQuoteId,
           status: "pending_payment",
-          userPfpUrl: userPfpUrl, // Store userPfpUrl
+          userPfpUrl: userPfpUrl,
+          referringImageId,
         })
-        .executeTakeFirstOrThrow(); // Ensures insert happens
+        .executeTakeFirstOrThrow();
+
+      const calldata = encodeFunctionData({
+        abi: DelegateABI,
+        functionName: "pay",
+        args: [newQuoteId, royalties],
+      });
 
       return NextResponse.json({
         message: "Generation quote created. Please proceed with payment.",
         quoteId: newQuoteId,
         paymentAddress: PAYMENT_ADDRESS,
-        amountDue: AMOUNT_DUE_ETH_STRING, // Send the string representation for display
-        calldata: toHex(newQuoteId),
+        amountDue: AMOUNT_DUE_ETH_STRING,
+        calldata,
       });
     }
   } catch (error) {
@@ -231,7 +250,12 @@ export async function POST(request: Request) {
   }
 }
 
-// Optional: Implement GET or other methods if needed
-// export async function GET(request: Request) {
-//   return NextResponse.json({ message: "This is the generate API. Use POST to submit a job." });
-// }
+export async function getAddressForUserId(
+  userId: string
+): Promise<`0x${string}` | null> {
+  if (isHex(userId)) {
+    return userId as `0x${string}`;
+  } else {
+    return getAddressForFid(Number(userId));
+  }
+}

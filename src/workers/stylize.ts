@@ -170,12 +170,18 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
         // Only notify if userId is a numeric FID (Farcaster user)
         const parsedUserId = parseInt(userId);
         if (!isNaN(parsedUserId)) {
-          await sendFrameNotification({
-            fid: parsedUserId,
-            title: "Stylize complete",
-            body: "Your profile picture has been stylized",
-            targetUrl: process.env.APP_URL,
-          });
+          try {
+            await sendFrameNotification({
+              fid: parsedUserId,
+              title: "Stylize complete",
+              body: "Your profile picture has been stylized",
+              targetUrl: process.env.APP_URL,
+            });
+          } catch (error) {
+            console.error(
+              `Job ID ${job.id} for quoteId ${quoteId}: Failed to send frame notification -`
+            );
+          }
         } else {
           console.log(`Skipping notification for wallet-only user: ${userId}`);
         }

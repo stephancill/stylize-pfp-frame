@@ -40,6 +40,7 @@ interface GenerationRequestPayload {
   userId: string;
   prompt: string;
   userPfpUrl?: string;
+  referringImageId?: string;
 }
 
 interface GenerationRequestResponse {
@@ -756,6 +757,7 @@ export default function Home() {
       userId: userIdToUse,
       prompt: promptToUse,
       userPfpUrl: imageToUse,
+      referringImageId: generationId || undefined,
     });
   };
 

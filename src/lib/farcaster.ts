@@ -27,6 +27,24 @@ export async function getUserData(fid: number) {
   return userData;
 }
 
+export async function getAddressForFid(
+  fid: number
+): Promise<`0x${string}` | null> {
+  const response = await fetch(
+    `https://api.farcaster.xyz/fc/primary-address?fid=${fid}&protocol=ethereum`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch primary address: ${response.statusText} (${response.status})`
+    );
+  }
+
+  const data = await response.json();
+  // The address is at data.result.address.address
+  return data?.result?.address?.address ?? null;
+}
+
 export async function getUserDatasCached(
   fids: number[]
 ): Promise<NeynarUser[]> {
