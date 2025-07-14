@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMemo, useState } from "react";
 import themes, { type Theme } from "@/lib/themes";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { getPromptInfo, truncatePrompt } from "@/lib/prompt-utils";
 
 interface ThemeSelectorProps {
   selectedThemeId: string;
@@ -24,10 +25,7 @@ interface ThemeSelectorProps {
   getSelectedPrompt: () => string;
 }
 
-// Helper function to find matching theme
-const findMatchingTheme = (prompt: string): Theme | null => {
-  return themes.find((theme) => theme.prompt.trim() === prompt.trim()) || null;
-};
+
 
 export function ThemeSelector({
   selectedThemeId,
@@ -49,8 +47,8 @@ export function ThemeSelector({
     setShowCustomPromptDialog(false);
   };
 
-  const matchingTheme = useMemo(
-    () => findMatchingTheme(customPrompt),
+  const promptInfo = useMemo(
+    () => getPromptInfo(customPrompt),
     [customPrompt]
   );
 
@@ -88,9 +86,7 @@ export function ThemeSelector({
         <div className="p-2 mb-4 border border-blue-300 rounded-md bg-blue-50 text-blue-700 text-sm">
           <div className="flex items-center justify-between">
             <p className="font-semibold">
-              {matchingTheme
-                ? `Using Theme: ${matchingTheme.name}`
-                : "Using Custom Prompt:"}
+              {promptInfo.isCustom ? "Using Custom Prompt:" : `Using Theme: ${promptInfo.label}`}
             </p>
             {(customPrompt.length > 100 ||
               customPrompt.indexOf("\n") !== -1) && (
@@ -114,15 +110,9 @@ export function ThemeSelector({
               </Button>
             )}
           </div>
-          {!showFullPrompt ? (
-            <p className="whitespace-pre-wrap break-words line-clamp-2">
-              {customPrompt}
-            </p>
-          ) : (
-            <p className="whitespace-pre-wrap break-words">
-              {matchingTheme ? customPrompt : customPrompt.split("\n")[0]}
-            </p>
-          )}
+          <p className="whitespace-pre-wrap break-words line-clamp-2">
+            {truncatePrompt(customPrompt, 100, showFullPrompt)}
+          </p>
         </div>
       )}
 

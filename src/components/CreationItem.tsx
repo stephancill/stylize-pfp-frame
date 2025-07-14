@@ -8,9 +8,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import sdk from "@farcaster/frame-sdk";
-import { Copy, Download, MessageCircle, Share2, Twitter } from "lucide-react";
+import { Copy, Download, MessageCircle, Share2, Twitter, ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { getPromptInfo, truncatePrompt } from "@/lib/prompt-utils";
 
 export interface CompletedImage {
   id: string;
@@ -26,6 +27,7 @@ export function CreationItem({ image }: { image: CompletedImage }) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [showFullPrompt, setShowFullPrompt] = useState(false);
 
   const handleDownloadImage = (imageDataUrl: string, imageId: string) => {
     try {
@@ -67,6 +69,18 @@ export function CreationItem({ image }: { image: CompletedImage }) {
         : undefined,
     [image.id]
   );
+
+  // Get prompt information
+  const promptInfo = useMemo(() => {
+    if (!image.promptText) return null;
+    return getPromptInfo(image.promptText);
+  }, [image.promptText]);
+
+  // Check if prompt should be truncated
+  const shouldTruncate = useMemo(() => {
+    if (!image.promptText) return false;
+    return image.promptText.length > 100 || image.promptText.indexOf("\n") !== -1;
+  }, [image.promptText]);
 
   const handleCopyUrl = async () => {
     if (!shareUrl) {
@@ -202,6 +216,38 @@ export function CreationItem({ image }: { image: CompletedImage }) {
       </CardContent>
       {(image.promptText || image.createdAt || image.imageDataUrl) && (
         <CardFooter className="p-3 flex flex-col items-start border-t space-y-2">
+          {promptInfo && (
+            <div className="w-full">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-foreground">
+                  {promptInfo.isCustom ? "Custom Prompt" : promptInfo.label}
+                </p>
+                {shouldTruncate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowFullPrompt(!showFullPrompt)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {showFullPrompt ? (
+                      <>
+                        <ChevronUp className="h-3 w-3 mr-1" />
+                        Hide
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3 w-3 mr-1" />
+                        Show
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+              <p className={`text-sm text-muted-foreground whitespace-pre-wrap break-words ${!showFullPrompt ? 'line-clamp-2' : ''}`}>
+                {truncatePrompt(image.promptText!, 100, showFullPrompt)}
+              </p>
+            </div>
+          )}
           {image.createdAt && isClient && (
             <p className="text-xs text-muted-foreground/80">
               {new Date(image.createdAt).toLocaleDateString()}
