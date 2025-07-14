@@ -216,16 +216,11 @@ export function CreationItem({ image }: { image: CompletedImage }) {
       </CardContent>
       {(image.promptText || image.createdAt || image.imageDataUrl) && (
         <CardFooter className="p-3 flex flex-col items-start border-t space-y-2">
-          {image.createdAt && isClient && (
-            <p className="text-xs text-muted-foreground/80">
-              {new Date(image.createdAt).toLocaleDateString()}
-            </p>
-          )}
           {promptInfo && (
-            <div className="w-full p-2 border border-blue-300 rounded-md bg-blue-50 text-blue-700 text-sm">
+            <div className="w-full">
               <div className="flex items-center justify-between">
-                <p className="font-semibold">
-                  {promptInfo.isCustom ? "Custom Prompt:" : `Theme: ${promptInfo.label}`}
+                <p className="text-sm font-medium text-foreground">
+                  {promptInfo.isCustom ? "Custom Prompt" : promptInfo.label}
                 </p>
                 {shouldTruncate && (
                   <Button
@@ -237,21 +232,26 @@ export function CreationItem({ image }: { image: CompletedImage }) {
                     {showFullPrompt ? (
                       <>
                         <ChevronUp className="h-3 w-3 mr-1" />
-                        Hide prompt
+                        Hide
                       </>
                     ) : (
                       <>
                         <ChevronDown className="h-3 w-3 mr-1" />
-                        Show prompt
+                        Show
                       </>
                     )}
                   </Button>
                 )}
               </div>
-              <p className="whitespace-pre-wrap break-words line-clamp-2">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words line-clamp-2">
                 {truncatePrompt(image.promptText!, 100, showFullPrompt)}
               </p>
             </div>
+          )}
+          {image.createdAt && isClient && (
+            <p className="text-xs text-muted-foreground/80">
+              {new Date(image.createdAt).toLocaleDateString()}
+            </p>
           )}
         </CardFooter>
       )}
