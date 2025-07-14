@@ -72,8 +72,6 @@
     "@types/pg-cursor": "^2.7.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9.31.0",
-    "eslint-config-next": "15.3.5",
     "jest": "^29.7.0",
     "pino-pretty": "^13.0.0",
     "postcss": "^8",
