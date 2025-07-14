@@ -243,7 +243,7 @@ export function CreationItem({ image }: { image: CompletedImage }) {
                   </Button>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words line-clamp-2">
+              <p className={`text-sm text-muted-foreground whitespace-pre-wrap break-words ${!showFullPrompt ? 'line-clamp-2' : ''}`}>
                 {truncatePrompt(image.promptText!, 100, showFullPrompt)}
               </p>
             </div>
