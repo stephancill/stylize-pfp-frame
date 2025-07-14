@@ -22,7 +22,7 @@ export async function GET() {
       webhookUrl: `${appUrl}/api/webhooks/farcaster`,
       primaryCategory: "art-creativity",
       tags: ["image", "style-transfer", "creative", "photo-editing"],
-      ogTitle: "Stylize Me - Image Style Transfer",
+      ogTitle: "Stylize Me",
       ogDescription:
         "Transform photos with AI style transfer. Create stunning artistic effects instantly.",
       ogImageUrl: `${appUrl}/og.png`,
