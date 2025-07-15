@@ -184,7 +184,7 @@ export function checkIfResizeNeeded(
  */
 export function getImageUrl(imageId: string): string {
   const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || '';
-  return `${baseUrl}/images/${imageId}`;
+  return `${baseUrl}/api/images/${imageId}`;
 }
 
 /**
@@ -194,5 +194,5 @@ export function getImageUrl(imageId: string): string {
  */
 export function getInputImageUrl(imageId: string): string {
   const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || '';
-  return `${baseUrl}/images/${imageId}/input`;
+  return `${baseUrl}/api/images/${imageId}/input`;
 }
