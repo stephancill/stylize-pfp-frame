@@ -14,5 +14,12 @@ export const stylizeImageQueue = new Queue<StylizeImageJobData>(
   STYLIZE_IMAGE_QUEUE_NAME,
   {
     connection: redisQueue,
+    defaultJobOptions: {
+      attempts: 2,
+      backoff: {
+        type: "exponential",
+        delay: 5000,
+      },
+    },
   }
 );
