@@ -2,6 +2,7 @@ import { SIWE_JWT_COOKIE_NAME } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { withAuth } from "@/lib/siwe-auth";
 import { NextResponse } from "next/server";
+import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
 
 export const GET = withAuth(async ({ user }) => {
   try {
@@ -21,12 +22,10 @@ export const GET = withAuth(async ({ user }) => {
       .selectFrom("generatedImages")
       .select([
         "id", // or quoteId if that's the unique identifier for an image item
-        "imageDataUrl",
         "promptText",
         "createdAt",
         "status", // good for debugging, or if UI wants to re-verify
         "quoteId",
-        "userPfpUrl",
       ])
       .where("userId", "ilike", user.id.toString().toLowerCase())
       .where("status", "=", "completed")
@@ -44,8 +43,15 @@ export const GET = withAuth(async ({ user }) => {
       );
     }
 
+    // Transform the images to include URLs instead of raw data
+    const imagesWithUrls = completedImages.map(image => ({
+      ...image,
+      imageDataUrl: getImageUrl(image.id),
+      userPfpUrl: getInputImageUrl(image.id),
+    }));
+
     return NextResponse.json({
-      images: completedImages,
+      images: imagesWithUrls,
       authenticatedUser: user.address, // Include for debugging
     });
   } catch (error) {

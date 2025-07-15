@@ -176,3 +176,23 @@ export function checkIfResizeNeeded(
     img.src = URL.createObjectURL(file);
   });
 }
+
+/**
+ * Gets the URL for an image by ID
+ * @param imageId - The ID of the image
+ * @returns The URL for the image
+ */
+export function getImageUrl(imageId: string): string {
+  const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+  return `${baseUrl}/images/${imageId}`;
+}
+
+/**
+ * Gets the URL for an input image by ID
+ * @param imageId - The ID of the image
+ * @returns The URL for the input image
+ */
+export function getInputImageUrl(imageId: string): string {
+  const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+  return `${baseUrl}/images/${imageId}/input`;
+}

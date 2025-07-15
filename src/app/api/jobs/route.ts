@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { withAuth } from "@/lib/siwe-auth";
 import { NextResponse } from "next/server";
+import { getInputImageUrl } from "@/lib/image-utils";
 
 export const GET = withAuth(async ({ user }) => {
   try {
@@ -8,7 +9,6 @@ export const GET = withAuth(async ({ user }) => {
       .selectFrom("generatedImages")
       .select([
         "id",
-        "userPfpUrl",
         "promptText",
         "createdAt",
         "status",
@@ -26,7 +26,13 @@ export const GET = withAuth(async ({ user }) => {
       .orderBy("createdAt", "desc")
       .execute();
 
-    return NextResponse.json({ jobs: inProgressJobs });
+    // Transform the jobs to include URLs instead of raw data
+    const jobsWithUrls = inProgressJobs.map(job => ({
+      ...job,
+      userPfpUrl: getInputImageUrl(job.id),
+    }));
+
+    return NextResponse.json({ jobs: jobsWithUrls });
   } catch (error) {
     console.error(`Error fetching in-progress jobs for userId ${user}:`, error);
     let errorMessage = "Internal Server Error";
