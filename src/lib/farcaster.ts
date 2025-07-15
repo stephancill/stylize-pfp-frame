@@ -4,6 +4,13 @@ import { type User as NeynarUser } from "@neynar/nodejs-sdk/build/api";
 import { getUserDataKey } from "./keys";
 import { redisCache } from "./redis";
 
+// Single Neynar client instance
+const neynarClient = new NeynarAPIClient(
+  new Configuration({
+    apiKey: process.env.NEYNAR_API_KEY!,
+  })
+);
+
 export async function getUserData(fid: number) {
   const res = await fetch(`${process.env.HUB_URL}/v1/userDataByFid?fid=${fid}`);
 
@@ -52,12 +59,6 @@ export async function getUserDatasCached(
     return [];
   }
 
-  const neynarClient = new NeynarAPIClient(
-    new Configuration({
-      apiKey: process.env.NEYNAR_API_KEY!,
-    })
-  );
-
   // Get users from cache
   const cachedUsersRes = await redisCache.mget(
     fids.map((fid) => getUserDataKey(fid))
@@ -96,4 +97,42 @@ export async function getUserDatasCached(
   await multi.exec();
 
   return [...cachedUsers, ...res.users];
+}
+
+export async function getFidsFromAddresses(
+  addresses: string[]
+): Promise<(NeynarUser | null)[]> {
+  if (addresses.length === 0) {
+    return [];
+  }
+
+  // TODO: Implement pagination if needed
+  if (addresses.length > 100) {
+    throw new Error("Can't fetch more than 100 addresses at a time");
+  }
+
+  try {
+    const res = await neynarClient.fetchBulkUsersByEthOrSolAddress({
+      addresses: addresses,
+    });
+
+    // Create a map of address to user (taking the first user for each address)
+    const addressToUser = new Map<string, NeynarUser>();
+    for (const [address, users] of Object.entries(res)) {
+      if (Array.isArray(users) && users.length > 0) {
+        addressToUser.set(address.toLowerCase(), users[0]);
+      }
+    }
+
+    // Return users in the same order as input addresses, null if not found
+    return addresses.map(
+      (address) => addressToUser.get(address.toLowerCase()) || null
+    );
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch users by addresses: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
 }

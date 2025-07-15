@@ -7,6 +7,7 @@ import { WagmiProvider } from "wagmi";
 import { config } from "@/lib/wagmi";
 import { Toaster } from "@/components/ui/sonner";
 import { PostHogProvider } from "@/providers/PostHogProvider";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +17,16 @@ export function Provider({ children }: { children: React.ReactNode }) {
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
           <Suspense>
-            <UserContextProvider>{children}</UserContextProvider>
+            <UserContextProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+              >
+                {children}
+              </ThemeProvider>
+            </UserContextProvider>
           </Suspense>
           <Toaster />
         </QueryClientProvider>

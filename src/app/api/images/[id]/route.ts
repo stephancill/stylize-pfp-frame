@@ -44,6 +44,8 @@ export async function GET(
       .where("id", "=", imageId)
       .executeTakeFirst();
 
+    console.log(image);
+
     if (!image) {
       return new NextResponse("Image not found", { status: 404 });
     }

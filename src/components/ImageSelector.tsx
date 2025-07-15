@@ -85,12 +85,6 @@ export function ImageSelector({
 
   return (
     <div className="w-full">
-      <label className="block text-sm font-medium text-gray-700 mb-3">
-        {showBothOptions
-          ? "Choose Image to Stylize:"
-          : "Upload Image to Stylize:"}
-      </label>
-
       <div
         className={`grid ${
           showBothOptions ? "grid-cols-2" : "grid-cols-1"
@@ -98,88 +92,58 @@ export function ImageSelector({
       >
         {/* Profile Picture Option - only show if user has profile image */}
         {hasProfileImage && (
-          <Card
-            className={`cursor-pointer transition-all ${
-              !useUploadedImage
-                ? "ring-2 ring-purple-500 bg-purple-50"
-                : "hover:bg-gray-50"
-            }`}
-            onClick={() => onUseUploadedImageChange(false)}
-          >
-            <CardContent className="p-4 text-center">
-              <Avatar className="w-16 h-16 mx-auto mb-2">
-                <AvatarImage src={profileImageUrl} alt="Profile" />
-                <AvatarFallback>
-                  {getInitials(displayName, username)}
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-sm font-medium">Use Profile Picture</p>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center">
+            <Card
+              className="cursor-pointer transition-all hover:bg-gray-25 mb-2 w-24 h-24"
+              onClick={() => onUseUploadedImageChange(false)}
+            >
+              <CardContent className="p-4 flex items-center justify-center h-full">
+                <div className="w-16 h-16 rounded-md overflow-hidden">
+                  <Avatar className="w-full h-full">
+                    <AvatarImage src={profileImageUrl} alt="Profile" />
+                    <AvatarFallback>
+                      {getInitials(displayName, username)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </CardContent>
+            </Card>
+            <p className="text-sm font-medium text-center">Profile</p>
+          </div>
         )}
 
         {/* Upload Option */}
-        <Card
-          className={`cursor-pointer transition-all ${
-            useUploadedImage || !hasProfileImage
-              ? "ring-2 ring-purple-500 bg-purple-50"
-              : "hover:bg-gray-50"
-          } ${!showBothOptions ? "col-span-1" : ""}`}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <CardContent
-            className={`p-${showBothOptions ? "4" : "6"} text-center`}
+        <div className="flex flex-col items-center">
+          <Card
+            className="cursor-pointer transition-all hover:bg-gray-25 mb-2 w-24 h-24"
+            onClick={() => fileInputRef.current?.click()}
           >
-            {uploadedImage ? (
-              <div className="relative inline-block">
-                <img
-                  src={uploadedImage}
-                  alt="Uploaded"
-                  className={`${
-                    showBothOptions ? "w-16 h-16 mb-2" : "w-20 h-20 mb-3"
-                  } mx-auto rounded-md object-cover`}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                  onClick={handleClearImage}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ) : (
-              <div
-                className={`${
-                  showBothOptions ? "w-16 h-16 mb-2" : "w-20 h-20 mb-3"
-                } mx-auto bg-gray-200 rounded-md flex items-center justify-center`}
-              >
-                <Upload
-                  className={`${
-                    showBothOptions ? "h-6 w-6" : "h-8 w-8"
-                  } text-gray-400`}
-                />
-              </div>
-            )}
-            <p
-              className={`${
-                showBothOptions ? "text-sm" : "text-lg"
-              } font-medium`}
-            >
-              {uploadedImage
-                ? "Change Image"
-                : showBothOptions
-                ? "Upload Image"
-                : "Upload Your Image"}
-            </p>
-            {!showBothOptions && (
-              <p className="text-sm text-gray-500 mt-1">
-                Click to select an image to stylize. Large images will be
-                automatically resized.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+            <CardContent className="p-4 flex items-center justify-center h-full">
+              {uploadedImage ? (
+                <div className="relative inline-block">
+                  <img
+                    src={uploadedImage}
+                    alt="Uploaded"
+                    className="w-16 h-16 rounded-md object-cover"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                    onClick={handleClearImage}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300">
+                  <Upload className="h-6 w-6 text-gray-400" />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <p className="text-sm font-medium text-center">Upload</p>
+        </div>
       </div>
 
       <input
