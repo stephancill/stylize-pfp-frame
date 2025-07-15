@@ -14,12 +14,8 @@ export async function GET(
       .selectFrom("generatedImages")
       .select([
         "id",
-        "imageDataUrl",
-        "status",
-        "promptText",
         "userPfpUrl",
-        "createdAt",
-        "quoteId",
+        "status",
       ])
       .where("id", "=", imageId)
       .executeTakeFirst();
@@ -32,14 +28,14 @@ export async function GET(
       return new NextResponse("Image not ready", { status: 400 });
     }
 
-    if (!image.imageDataUrl) {
-      return new NextResponse("Image data not available", { status: 404 });
+    if (!image.userPfpUrl) {
+      return new NextResponse("Input image not available", { status: 404 });
     }
 
-    // Check if imageDataUrl is a data URL (base64 encoded)
-    if (image.imageDataUrl.startsWith("data:")) {
+    // Check if userPfpUrl is a data URL (base64 encoded)
+    if (image.userPfpUrl.startsWith("data:")) {
       // Extract the base64 data and content type
-      const [mimeInfo, base64Data] = image.imageDataUrl.split(",");
+      const [mimeInfo, base64Data] = image.userPfpUrl.split(",");
       if (!base64Data) {
         return new NextResponse("Invalid image data", { status: 400 });
       }
@@ -60,10 +56,10 @@ export async function GET(
       });
     } else {
       // For regular URLs, redirect to the original URL
-      return NextResponse.redirect(image.imageDataUrl);
+      return NextResponse.redirect(image.userPfpUrl);
     }
   } catch (error) {
-    console.error("Error serving image:", error);
+    console.error("Error serving input image:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

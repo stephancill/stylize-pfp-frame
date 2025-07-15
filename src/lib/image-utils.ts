@@ -176,3 +176,33 @@ export function checkIfResizeNeeded(
     img.src = URL.createObjectURL(file);
   });
 }
+
+/**
+ * Gets the base URL for the application
+ * @returns The base URL
+ */
+export function getBaseUrl(): string {
+  const appUrl =
+    process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL
+      ? `https://${process.env.VERCEL_BRANCH_URL}`
+      : process.env.APP_URL!;
+  return appUrl;
+}
+
+/**
+ * Gets the URL for an image by ID
+ * @param imageId - The ID of the image
+ * @returns The URL for the image
+ */
+export function getImageUrl(imageId: string): string {
+  return `${getBaseUrl()}/api/images/${imageId}`;
+}
+
+/**
+ * Gets the URL for an input image by ID
+ * @param imageId - The ID of the image
+ * @returns The URL for the input image
+ */
+export function getInputImageUrl(imageId: string): string {
+  return `${getBaseUrl()}/api/images/${imageId}/input`;
+}

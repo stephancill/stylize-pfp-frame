@@ -6,6 +6,7 @@ import { Sparkles } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
 
 export async function generateMetadata({
   params,
@@ -47,11 +48,9 @@ export default async function Page({
   const image = await db
     .selectFrom("generatedImages")
     .select([
-      "imageDataUrl",
       "status",
       "createdAt",
       "quoteId",
-      "userPfpUrl",
       "promptText",
     ])
     .where("id", "=", id)
@@ -69,10 +68,10 @@ export default async function Page({
           image={{
             createdAt: image.createdAt.toISOString(),
             id,
-            imageDataUrl: image.imageDataUrl,
+            imageDataUrl: getImageUrl(id),
             promptText: image.promptText,
             quoteId: image.quoteId,
-            userPfpUrl: image.userPfpUrl,
+            userPfpUrl: getInputImageUrl(id),
           }}
         />
         <div className="flex justify-center">
