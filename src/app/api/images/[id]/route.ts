@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   args: { params: Promise<{ id: string }> }
 ) {
   const params = await args.params;
@@ -11,8 +11,9 @@ export async function GET(
     const imageId = params.id;
 
     // Check if the request wants JSON response
+    const jsonSearch = request.nextUrl.searchParams.get("json");
     const acceptHeader = request.headers.get("accept");
-    const wantsJson = acceptHeader?.includes("application/json");
+    const wantsJson = jsonSearch || acceptHeader?.includes("application/json");
 
     if (wantsJson) {
       const image = await db

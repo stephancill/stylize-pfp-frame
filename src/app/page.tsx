@@ -248,7 +248,7 @@ export default function Home() {
     queryFn: async () => {
       if (!generationId) return null;
 
-      const response = await fetch(`/api/images/${generationId}`, {
+      const response = await fetch(`/api/images/${generationId}?json=true`, {
         headers: {
           Accept: "application/json",
         },
