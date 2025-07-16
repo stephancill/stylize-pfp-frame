@@ -5,15 +5,89 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useDisconnect } from "wagmi";
-import { LogOut } from "lucide-react";
+import { LogOut, Loader2 } from "lucide-react";
 import { MiniAppReady } from "@/components/MiniAppReady";
 import { Navigation } from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AuthModal } from "@/components/AuthModal";
+import { useMiniApp } from "@/hooks/use-mini-app";
+import { useAccount, useConnect } from "wagmi";
+import { useEffect, useState } from "react";
 
 export default function V2Layout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, signOut, isLoading } = useAuth();
+  const { isAuthenticated, signOut, isLoading, signInWithSiwe } = useAuth();
   const { disconnect } = useDisconnect();
   const isMobile = useIsMobile();
+
+  // Auth-related state
+  const { connect, connectors } = useConnect();
+  const { address, isConnected } = useAccount();
+  const isInMiniApp = useMiniApp();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [hasAttemptedSignIn, setHasAttemptedSignIn] = useState(false);
+
+  // Auto-connect in mini app context
+  useEffect(() => {
+    if (
+      isInMiniApp &&
+      !isAuthenticated &&
+      connectors.length > 0 &&
+      !isConnecting
+    ) {
+      handleMiniAppConnect();
+    }
+  }, [isInMiniApp, isAuthenticated, connectors, isConnecting]);
+
+  // Auto-trigger SIWE when wallet connects in mini app
+  useEffect(() => {
+    if (
+      isInMiniApp &&
+      isConnected &&
+      address &&
+      !hasAttemptedSignIn &&
+      isConnecting
+    ) {
+      setHasAttemptedSignIn(true);
+      handleSiweSignIn();
+    }
+  }, [isInMiniApp, isConnected, address, hasAttemptedSignIn, isConnecting]);
+
+  // Auto-show auth modal when not authenticated and not in mini app
+  useEffect(() => {
+    if (!isAuthenticated && !isInMiniApp && !isLoading && !showAuthModal) {
+      setShowAuthModal(true);
+    }
+  }, [isAuthenticated, isInMiniApp, isLoading, showAuthModal]);
+
+  // Auto-close auth modal when authenticated
+  useEffect(() => {
+    if (isAuthenticated && showAuthModal) {
+      setShowAuthModal(false);
+    }
+  }, [isAuthenticated, showAuthModal]);
+
+  const handleMiniAppConnect = async () => {
+    setIsConnecting(true);
+    setHasAttemptedSignIn(false);
+    try {
+      await connect({ connector: connectors[0] });
+    } catch (error) {
+      console.error("Connection failed:", error);
+      setIsConnecting(false);
+    }
+  };
+
+  const handleSiweSignIn = async () => {
+    try {
+      await signInWithSiwe();
+    } catch (error) {
+      console.error("Sign in failed:", error);
+    } finally {
+      setIsConnecting(false);
+      setHasAttemptedSignIn(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -26,10 +100,19 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Show loading state
+  if (isLoading || isConnecting) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex justify-center items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
+      <AuthModal isOpen={showAuthModal} onOpenChange={setShowAuthModal} />
       <MiniAppReady />
-
       {/* Header with logo and navigation */}
       <div className="flex items-center justify-between p-6">
         <div className="flex items-center space-x-4">
@@ -61,10 +144,8 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </div>
-
       {/* Main content with mobile bottom padding */}
       <div className={isMobile ? "pb-20" : ""}>{children}</div>
-
       {/* Mobile Navigation */}
       {isMobile && <Navigation />}
     </div>

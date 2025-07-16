@@ -4,6 +4,7 @@ import { truncateAddress } from "../lib/utils";
 import themes, { type Theme } from "@/lib/themes";
 import type { GeneratedImageStatus } from "@/types/db";
 import Countdown from "react-countdown";
+import { Clock } from "lucide-react";
 
 interface InProgressJob {
   id: string;
@@ -22,7 +23,12 @@ interface JobsSectionProps {
 
 export function JobsSection({ jobs }: JobsSectionProps) {
   if (jobs.length === 0) {
-    return null;
+    return (
+      <div className="text-center py-8">
+        <Clock className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+        <p className="text-gray-500">Pending creations will show up here.</p>
+      </div>
+    );
   }
 
   return (

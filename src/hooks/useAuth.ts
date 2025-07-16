@@ -43,6 +43,17 @@ const removeAuthToken = (): void => {
   }
 };
 
+// Get user ID based on authentication type
+const getUserId = (user: AuthUser | null): string | null => {
+  if (!user) return null;
+  if (user.authType === "siwe") {
+    return user.address || null;
+  } else if (user.authType === "farcaster") {
+    return user.fid?.toString() || null;
+  }
+  return null;
+};
+
 // Fetch authentication status using fetchAuth helper
 const fetchAuthStatus = async (): Promise<AuthResponse> => {
   const response = await fetchAuth("/api/auth/me");
@@ -304,5 +315,7 @@ export function useAuth() {
       authData?.user?.address?.toLowerCase() === address?.toLowerCase(),
     // Utility to get the current auth token
     getToken: getAuthToken,
+    // Utility to get the current user ID
+    userId: getUserId(authData?.user || null),
   };
 }

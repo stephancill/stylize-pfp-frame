@@ -31,15 +31,26 @@ const ensClient = createPublicClient({
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
     const themes = await withCache(
-      "themes:top",
+      `themes:top:${userId || "all"}`,
       async () => {
-        // First, get the top 10 themes by usage count
-        const topThemesQuery = db
+        // Build the base query for themes
+        let topThemesQuery = db
           .selectFrom("generatedImages")
           .select(["promptText", db.fn.countAll().as("usageCount")])
           .where("promptText", "is not", null)
-          .where("status", "=", "completed")
+          .where("status", "=", "completed");
+
+        // Add filter for specific user if provided
+        if (userId) {
+          topThemesQuery = topThemesQuery.where("userId", "=", userId);
+        }
+
+        // Complete the query
+        topThemesQuery = topThemesQuery
           .groupBy("promptText")
           .orderBy(db.fn.countAll(), "desc")
           .limit(10);
@@ -66,6 +77,7 @@ export async function GET(request: NextRequest) {
               .where("gi.promptText", "=", theme.promptText)
               .where("gi.status", "=", "completed")
               .groupBy(["gi.id", "gi.userId", "gi.createdAt"])
+              .having(sql`count(refs.id)`, ">", 0) // Only include images with references
               .orderBy(sql`count(refs.id)`, "desc")
               .orderBy("gi.createdAt", "asc") // Secondary sort by creation date for consistency
               .limit(3);

@@ -66,7 +66,7 @@ export function AuthModal({ isOpen, onOpenChange }: AuthModalProps) {
   };
 
   return (
-    <Credenza open={isOpen} onOpenChange={onOpenChange}>
+    <Credenza open={isOpen} onOpenChange={() => {}}>
       <CredenzaContent className="sm:max-w-md">
         <CredenzaHeader>
           <CredenzaTitle className="flex items-center gap-2">
@@ -75,7 +75,7 @@ export function AuthModal({ isOpen, onOpenChange }: AuthModalProps) {
           </CredenzaTitle>
           <CredenzaDescription>
             Connect your wallet to access your creations and generate new
-            characters.
+            images.
           </CredenzaDescription>
         </CredenzaHeader>
 

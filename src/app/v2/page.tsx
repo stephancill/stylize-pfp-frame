@@ -1,10 +1,7 @@
 "use client";
 
-import { AuthModal } from "@/components/AuthModal";
 import { ImageSelector } from "@/components/ImageSelector";
 import { ThemeGrid } from "@/components/ThemeGrid";
-import { useMiniApp } from "@/hooks/use-mini-app";
-import { useAuth } from "@/hooks/useAuth";
 import {
   checkIfResizeNeeded,
   convertGifToPng,
@@ -12,20 +9,9 @@ import {
   resizeImage,
 } from "@/lib/image-utils";
 import themes from "@/lib/themes";
-import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useAccount, useConnect } from "wagmi";
+import { useState } from "react";
 
 export default function Page() {
-  const { connect, connectors } = useConnect();
-  const { address, isConnected } = useAccount();
-  const { isAuthenticated, user, signInWithSiwe, isLoading } = useAuth();
-  const isInMiniApp = useMiniApp();
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [hasAttemptedSignIn, setHasAttemptedSignIn] = useState(false);
-
   // Image upload state
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [useUploadedImage, setUseUploadedImage] = useState<boolean>(false);
@@ -34,68 +20,6 @@ export default function Page() {
   // Theme selection state
   const [selectedThemeId, setSelectedThemeId] = useState<string>("");
   const [customPrompt, setCustomPrompt] = useState<string>("");
-
-  // Auto-connect in mini app context
-  useEffect(() => {
-    if (
-      isInMiniApp &&
-      !isAuthenticated &&
-      connectors.length > 0 &&
-      !isConnecting
-    ) {
-      handleMiniAppConnect();
-    }
-  }, [isInMiniApp, isAuthenticated, connectors, isConnecting]);
-
-  // Auto-trigger SIWE when wallet connects in mini app
-  useEffect(() => {
-    if (
-      isInMiniApp &&
-      isConnected &&
-      address &&
-      !hasAttemptedSignIn &&
-      isConnecting
-    ) {
-      setHasAttemptedSignIn(true);
-      handleSiweSignIn();
-    }
-  }, [isInMiniApp, isConnected, address, hasAttemptedSignIn, isConnecting]);
-
-  // Auto-show auth modal when not authenticated and not in mini app
-  useEffect(() => {
-    if (!isAuthenticated && !isInMiniApp && !isLoading && !showAuthModal) {
-      setShowAuthModal(true);
-    }
-  }, [isAuthenticated, isInMiniApp, isLoading, showAuthModal]);
-
-  // Auto-close auth modal when authenticated
-  useEffect(() => {
-    if (isAuthenticated && showAuthModal) {
-      setShowAuthModal(false);
-    }
-  }, [isAuthenticated, showAuthModal]);
-
-  const handleMiniAppConnect = async () => {
-    setIsConnecting(true);
-    setHasAttemptedSignIn(false);
-    try {
-      await connect({ connector: connectors[0] });
-    } catch (error) {
-      console.error("Connection failed:", error);
-      setIsConnecting(false);
-    }
-  };
-
-  const handleSiweSignIn = async () => {
-    try {
-      await signInWithSiwe();
-    } catch (error) {
-      console.error("Sign in failed:", error);
-    } finally {
-      setIsConnecting(false);
-      setHasAttemptedSignIn(false);
-    }
-  };
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -171,38 +95,10 @@ export default function Page() {
     return ""; // No theme selected and no custom prompt
   };
 
-  if (isLoading || isConnecting) {
-    return (
-      <div className="flex justify-center items-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-      </div>
-    );
-  }
-
-  // Show auth screen if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="max-w-md mx-auto mt-16 px-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-8">
-          Sign in
-        </h1>
-
-        {!isAuthenticated && !isInMiniApp && (
-          <div className="text-center text-gray-600 dark:text-gray-400">
-            <p>Please connect your wallet to continue</p>
-          </div>
-        )}
-
-        <AuthModal isOpen={showAuthModal} onOpenChange={setShowAuthModal} />
-      </div>
-    );
-  }
-
-  // Show creation screen if authenticated
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-6xl mx-auto px-6 py-8">
       <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-8">
-        Create your stylized profile picture
+        Create
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

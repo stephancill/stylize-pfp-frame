@@ -140,7 +140,10 @@ export function CreationItem({ image }: { image: CompletedImage }) {
   };
 
   return (
-    <Card key={image.id || image.quoteId} className="flex flex-col">
+    <Card
+      key={image.id || image.quoteId}
+      className="flex flex-col rounded-t-lg overflow-hidden"
+    >
       <CardContent className="p-0 aspect-square flex-grow relative group overflow-hidden">
         {mainImageSrc ? (
           <>
@@ -234,38 +237,30 @@ export function CreationItem({ image }: { image: CompletedImage }) {
         <CardFooter className="p-3 flex flex-col items-start border-t space-y-2">
           {promptInfo && (
             <div className="w-full">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground">
-                  {promptInfo.isCustom ? "Custom Prompt" : promptInfo.label}
-                </p>
-                {shouldTruncate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowFullPrompt(!showFullPrompt)}
-                    className="h-6 px-2 text-xs"
-                  >
-                    {showFullPrompt ? (
-                      <>
-                        <ChevronUp className="h-3 w-3 mr-1" />
-                        Hide
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-3 w-3 mr-1" />
-                        Show
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
+              <p className="text-sm font-medium text-foreground">
+                {promptInfo.isCustom ? "Custom Prompt" : promptInfo.label}
+              </p>
               <p
-                className={`text-sm text-muted-foreground whitespace-pre-wrap break-words ${
+                className={`text-sm text-muted-foreground whitespace-pre-wrap break-words cursor-pointer ${
                   !showFullPrompt ? "line-clamp-2" : ""
                 }`}
+                onClick={() => {
+                  if (shouldTruncate) {
+                    setShowFullPrompt(!showFullPrompt);
+                  }
+                }}
               >
                 {truncatePrompt(image.promptText!, 100, showFullPrompt)}
               </p>
+              {shouldTruncate && (
+                <button
+                  type="button"
+                  onClick={() => setShowFullPrompt(!showFullPrompt)}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  {showFullPrompt ? "Show less" : "Show more"}
+                </button>
+              )}
             </div>
           )}
           {image.createdAt && isClient && (

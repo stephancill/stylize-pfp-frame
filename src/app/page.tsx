@@ -202,26 +202,6 @@ export default function Home() {
 
   const { switchChainAsync } = useSwitchChain();
 
-  // Queries
-  const {
-    data: completedImages = [],
-    isLoading: isLoadingImages,
-    error: imagesError,
-    refetch: refetchImages,
-  } = useQuery<CompletedImage[]>({
-    queryKey: ["completedImages", unifiedUser?.id],
-    queryFn: async () => {
-      const response = await fetchAuth(`/api/images`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch images");
-      }
-      const data = await response.json();
-      return data.images || [];
-    },
-    enabled: hasValidAuth && !!unifiedUser?.id,
-  });
-
   const { data: inProgressJobs = [], refetch: refetchJobs } = useQuery<
     InProgressJob[]
   >({
@@ -352,11 +332,20 @@ export default function Home() {
       if (!unifiedUser?.id || !pollingQuoteId) {
         return null;
       }
-      const { data: allImages = [] } = await refetchImages();
+
+      // Fetch images directly to check for the new generation
+      const response = await fetchAuth(`/api/images`);
+      if (!response.ok) {
+        return null;
+      }
+      const data = await response.json();
+      const allImages = data.images || [];
+
       await refetchJobs();
 
       const foundImage = allImages.find(
-        (img) => img.quoteId === pollingQuoteId && img.imageDataUrl
+        (img: CompletedImage) =>
+          img.quoteId === pollingQuoteId && img.imageDataUrl
       );
 
       if (foundImage) {
@@ -927,11 +916,7 @@ export default function Home() {
           <h2 className="text-2xl font-semibold text-center mb-6">
             My Creations
           </h2>
-          <CreationsGallery
-            images={completedImages}
-            isLoading={isLoadingImages}
-            error={imagesError}
-          />
+          <CreationsGallery />
         </div>
       )}
 
