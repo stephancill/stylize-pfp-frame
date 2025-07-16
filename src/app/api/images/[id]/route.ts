@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
 
 export async function GET(
   request: Request,
@@ -9,18 +10,36 @@ export async function GET(
   try {
     const imageId = params.id;
 
+    // Check if the request wants JSON response
+    const acceptHeader = request.headers.get("accept");
+    const wantsJson = acceptHeader?.includes("application/json");
+
+    if (wantsJson) {
+      const image = await db
+        .selectFrom("generatedImages")
+        .select(["id", "status", "promptText", "createdAt", "quoteId"])
+        .where("id", "=", imageId)
+        .executeTakeFirst();
+
+      if (!image) {
+        return new NextResponse("Image not found", { status: 404 });
+      }
+
+      return NextResponse.json({
+        id: image.id,
+        imageDataUrl: getImageUrl(image.id),
+        status: image.status,
+        promptText: image.promptText,
+        userPfpUrl: getInputImageUrl(image.id),
+        createdAt: image.createdAt,
+        quoteId: image.quoteId,
+      });
+    }
+
     // Fetch image from database
     const image = await db
       .selectFrom("generatedImages")
-      .select([
-        "id",
-        "imageDataUrl",
-        "status",
-        "promptText",
-        "userPfpUrl",
-        "createdAt",
-        "quoteId",
-      ])
+      .select(["id", "imageDataUrl", "status"])
       .where("id", "=", imageId)
       .executeTakeFirst();
 

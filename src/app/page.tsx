@@ -248,7 +248,12 @@ export default function Home() {
     queryFn: async () => {
       if (!generationId) return null;
 
-      const response = await fetch(`/api/images/${generationId}`);
+      const response = await fetch(`/api/images/${generationId}`, {
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to fetch generation image");
