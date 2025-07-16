@@ -4,6 +4,8 @@ import { createSiweMessage } from "viem/siwe";
 import { base } from "wagmi/chains";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAuth } from "../lib/fetch-auth";
+import posthog from "posthog-js";
+import * as Sentry from "@sentry/nextjs";
 
 // Unified auth user interface
 interface AuthUser {
@@ -46,7 +48,16 @@ const fetchAuthStatus = async (): Promise<AuthResponse> => {
   const response = await fetchAuth("/api/auth/me");
 
   if (response.ok) {
-    return await response.json();
+    const authData: AuthResponse = await response.json();
+
+    const userId = authData.user?.fid?.toString() || authData.user?.address;
+
+    posthog.identify(userId);
+    Sentry.setUser({
+      id: userId,
+    });
+
+    return authData;
   }
 
   // If unauthorized, clear the token

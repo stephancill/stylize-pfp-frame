@@ -52,6 +52,8 @@
     "ox": "^0.4.4",
     "pg": "^8.13.1",
     "pg-cursor": "^2.12.1",
+    "posthog-js": "^1.257.0",
+    "posthog-node": "^5.5.1",
     "react": "^19.0.0",
     "react-countdown": "^2.3.6",
     "react-dom": "^19.0.0",

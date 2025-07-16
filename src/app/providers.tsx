@@ -6,18 +6,21 @@ import { UserContextProvider } from "@/providers/UserContextProvider";
 import { WagmiProvider } from "wagmi";
 import { config } from "@/lib/wagmi";
 import { Toaster } from "@/components/ui/sonner";
+import { PostHogProvider } from "@/providers/PostHogProvider";
 
 const queryClient = new QueryClient();
 
 export function Provider({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <Suspense>
-          <UserContextProvider>{children}</UserContextProvider>
-        </Suspense>
-        <Toaster />
-      </QueryClientProvider>
-    </WagmiProvider>
+    <PostHogProvider>
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <Suspense>
+            <UserContextProvider>{children}</UserContextProvider>
+          </Suspense>
+          <Toaster />
+        </QueryClientProvider>
+      </WagmiProvider>
+    </PostHogProvider>
   );
 }

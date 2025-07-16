@@ -1,21 +1,23 @@
+import { createAppClient, viemConnector } from "@farcaster/auth-client";
+import * as Sentry from "@sentry/nextjs";
 import jwt from "jsonwebtoken";
 import { NextRequest, NextResponse } from "next/server";
-import { AuthError } from "./errors";
+import { createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+import {
+  generateSiweNonce,
+  parseSiweMessage,
+  type SiweMessage,
+} from "viem/siwe";
 import {
   SIWE_JWT_COOKIE_NAME,
   SIWE_JWT_EXPIRES_IN,
   SIWE_NONCE_EXPIRY_SECONDS,
   SIWE_NONCE_REDIS_PREFIX,
 } from "./constants";
+import { AuthError } from "./errors";
 import { redisCache } from "./redis";
-import {
-  generateSiweNonce,
-  parseSiweMessage,
-  type SiweMessage,
-} from "viem/siwe";
-import { createPublicClient, http } from "viem";
-import { base } from "viem/chains";
-import { createAppClient, viemConnector } from "@farcaster/auth-client";
+import posthog from "posthog-js";
 
 // Create a public client for SIWE verification
 const publicClient = createPublicClient({
@@ -211,6 +213,12 @@ export function withAuth<
 
       // Optionally, you can add additional validation here
       // For example, check if the token is close to expiring and refresh it
+
+      Sentry.setUser({
+        id: user.id,
+      });
+
+      posthog.identify(user.id);
 
       return handler({ req, user, context });
     } catch (error) {
