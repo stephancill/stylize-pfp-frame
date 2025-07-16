@@ -12,20 +12,12 @@ export async function GET(
     // Fetch image from database
     const image = await db
       .selectFrom("generatedImages")
-      .select([
-        "id",
-        "userPfpUrl",
-        "status",
-      ])
+      .select(["id", "userPfpUrl", "status"])
       .where("id", "=", imageId)
       .executeTakeFirst();
 
     if (!image) {
       return new NextResponse("Image not found", { status: 404 });
-    }
-
-    if (image.status !== "completed") {
-      return new NextResponse("Image not ready", { status: 400 });
     }
 
     if (!image.userPfpUrl) {
