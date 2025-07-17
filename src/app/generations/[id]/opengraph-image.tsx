@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { db } from "@/lib/db";
 import themes from "@/lib/themes";
+import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
 
 // Image metadata
 export const alt = "Generated Character";
@@ -17,7 +18,7 @@ export default async function Image({ params }: { params: { id: string } }) {
     // Fetch image from database
     const image = await db
       .selectFrom("generatedImages")
-      .select(["imageDataUrl", "userPfpUrl", "status", "promptText"])
+      .select(["id", "status", "promptText"])
       .where("id", "=", params.id)
       .executeTakeFirst();
 
@@ -46,10 +47,6 @@ export default async function Image({ params }: { params: { id: string } }) {
       throw new Error("Image not ready");
     }
 
-    if (!image.imageDataUrl || !image.userPfpUrl) {
-      throw new Error("Image data not available");
-    }
-
     // Apply similar truncation logic as ThemeSelector
     let promptLabel = image.promptText;
 
@@ -69,22 +66,43 @@ export default async function Image({ params }: { params: { id: string } }) {
             position: "relative",
           }}
         >
-          {/* Splash logo in top left */}
-          <img
-            src={`${process.env.APP_URL}/splash.png`}
-            alt="Logo"
-            width={80}
-            height={80}
+          {/* Splash logo and text in top left */}
+          <div
             style={{
               position: "absolute",
               top: "20px",
               left: "20px",
-              borderRadius: "8px",
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
             }}
-          />
+          >
+            <img
+              src={`${process.env.APP_URL}/splash.png`}
+              alt="Logo"
+              width={80}
+              height={80}
+              style={{
+                borderRadius: "8px",
+              }}
+            />
+            <span
+              style={{
+                fontSize: "28px",
+                fontWeight: 700,
+                color: "#464646",
+                lineHeight: 1.1,
+                letterSpacing: "-0.5px",
+                marginLeft: "4px",
+                fontFamily: "inherit",
+              }}
+            >
+              Stylize Me – Create & Earn
+            </span>
+          </div>
           {/* Source Image */}
           <img
-            src={image.userPfpUrl}
+            src={getInputImageUrl(image.id)}
             alt="Source"
             width={312}
             height={312}
@@ -99,7 +117,7 @@ export default async function Image({ params }: { params: { id: string } }) {
 
           {/* Generated Image */}
           <img
-            src={image.imageDataUrl}
+            src={getImageUrl(image.id)}
             alt="Generated"
             width={312}
             height={312}
