@@ -20,6 +20,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { getPromptInfo, truncatePrompt } from "@/lib/prompt-utils";
+import { getImageUrl } from "@/lib/image-utils";
 
 export interface CompletedImage {
   id: string;
@@ -130,7 +131,7 @@ export function CreationItem({ image }: { image: CompletedImage }) {
     try {
       sdk.actions.composeCast({
         text: `Check out my new character! ${shareUrl}`,
-        embeds: [shareUrl],
+        embeds: [getImageUrl(image.id), shareUrl],
       });
       setPopoverOpen(false);
     } catch (err) {

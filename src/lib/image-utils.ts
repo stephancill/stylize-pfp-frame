@@ -182,11 +182,15 @@ export function checkIfResizeNeeded(
  * @returns The base URL
  */
 export function getBaseUrl(): string {
-  const appUrl =
-    process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL
-      ? `https://${process.env.VERCEL_BRANCH_URL}`
-      : process.env.APP_URL!;
-  return appUrl;
+  if (typeof window === "undefined") {
+    const appUrl =
+      process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL
+        ? `https://${process.env.VERCEL_BRANCH_URL}`
+        : process.env.APP_URL!;
+    return appUrl;
+  } else {
+    return window.location.origin;
+  }
 }
 
 /**
