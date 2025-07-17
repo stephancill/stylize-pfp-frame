@@ -8,7 +8,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import sdk from "@farcaster/frame-sdk";
-import { Copy, Download, MessageCircle, Share2, Twitter, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Copy,
+  Download,
+  MessageCircle,
+  Share2,
+  Twitter,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { getPromptInfo, truncatePrompt } from "@/lib/prompt-utils";
@@ -44,9 +52,14 @@ export function CreationItem({ image }: { image: CompletedImage }) {
 
   // Check if we're in a Farcaster mini app context
   useEffect(() => {
-    sdk
-      .isInMiniApp()
-      .then(setIsInMiniApp)
+    sdk.context
+      .then((context) => {
+        if (context) {
+          setIsInMiniApp(true);
+        } else {
+          setIsInMiniApp(false);
+        }
+      })
       .catch(() => setIsInMiniApp(false));
   }, []);
 
@@ -79,7 +92,9 @@ export function CreationItem({ image }: { image: CompletedImage }) {
   // Check if prompt should be truncated
   const shouldTruncate = useMemo(() => {
     if (!image.promptText) return false;
-    return image.promptText.length > 100 || image.promptText.indexOf("\n") !== -1;
+    return (
+      image.promptText.length > 100 || image.promptText.indexOf("\n") !== -1
+    );
   }, [image.promptText]);
 
   const handleCopyUrl = async () => {
@@ -243,7 +258,11 @@ export function CreationItem({ image }: { image: CompletedImage }) {
                   </Button>
                 )}
               </div>
-              <p className={`text-sm text-muted-foreground whitespace-pre-wrap break-words ${!showFullPrompt ? 'line-clamp-2' : ''}`}>
+              <p
+                className={`text-sm text-muted-foreground whitespace-pre-wrap break-words ${
+                  !showFullPrompt ? "line-clamp-2" : ""
+                }`}
+              >
                 {truncatePrompt(image.promptText!, 100, showFullPrompt)}
               </p>
             </div>
