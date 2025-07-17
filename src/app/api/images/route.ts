@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { withAuth } from "@/lib/siwe-auth";
 import { NextResponse } from "next/server";
 import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
+import { sql } from "kysely";
 
 export const GET = withAuth(async ({ user, req }) => {
   try {
@@ -35,14 +36,21 @@ export const GET = withAuth(async ({ user, req }) => {
     // Kysely automatically converts camelCase to snake_case for column names
     // if a CamelCasePlugin is used, otherwise ensure your column names match the DB.
     // Assuming camelCase plugin is in use based on user prompt.
+    // Get completed images with reference count using a subquery approach
     const completedImages = await db
       .selectFrom("generatedImages")
       .select([
-        "id", // or quoteId if that's the unique identifier for an image item
+        "id",
         "promptText",
         "createdAt",
-        "status", // good for debugging, or if UI wants to re-verify
+        "status",
         "quoteId",
+        sql<number>`(
+          SELECT count(*)
+          FROM generated_images refs
+          WHERE refs.referring_image_id = generated_images.id
+          AND refs.status = 'completed'
+        )`.as("referenceCount"),
       ])
       .where("userId", "ilike", user.id.toString().toLowerCase())
       .where("status", "=", "completed")
@@ -75,6 +83,7 @@ export const GET = withAuth(async ({ user, req }) => {
       ...image,
       imageDataUrl: getImageUrl(image.id),
       userPfpUrl: getInputImageUrl(image.id),
+      referenceCount: Number(image.referenceCount),
     }));
 
     return NextResponse.json({

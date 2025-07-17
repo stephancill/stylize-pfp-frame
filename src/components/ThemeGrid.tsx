@@ -6,6 +6,7 @@ import { fetchAuth } from "@/lib/fetch-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { Card } from "./ui/card";
 
 interface ThemeGridProps {
   selectedThemeId: string;
@@ -13,6 +14,7 @@ interface ThemeGridProps {
   onThemeSelect: (themeId: string) => void;
   onCustomPromptChange: (prompt: string) => void;
   uploadedImage?: string | null;
+  handleProceed: (params: { prompt: string; referrerId?: string }) => void;
 }
 
 export function ThemeGrid({
@@ -21,6 +23,7 @@ export function ThemeGrid({
   onThemeSelect,
   onCustomPromptChange,
   uploadedImage,
+  handleProceed,
 }: ThemeGridProps) {
   const [showCredenza, setShowCredenza] = useState(false);
   const [selectedTheme, setSelectedThemeForCredenza] = useState<{
@@ -73,31 +76,23 @@ export function ThemeGrid({
     setShowCredenza(true);
   };
 
-  const handleProceed = () => {
-    if (!uploadedImage) return; // Don't proceed if no image uploaded
-
-    if (selectedTheme?.id === "custom") {
-      onCustomPromptChange(tempCustomPrompt);
-    } else if (selectedTheme) {
-      onThemeSelect(selectedTheme.id);
-    }
+  const handleProceedFromModal = (params: {
+    prompt: string;
+    referrerId?: string;
+  }) => {
+    handleProceed(params);
     setShowCredenza(false);
-  };
-
-  const handleCancel = () => {
-    setShowCredenza(false);
-    setSelectedThemeForCredenza(null);
   };
 
   return (
     <div className="w-full space-y-6">
       {/* Custom Option */}
-      <div
-        className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      <Card
+        className="rounded-lg p-4 cursor-pointer transition-colors"
         onClick={handleCustomClick}
       >
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-md flex items-center justify-center">
+          <div className="w-20 h-20 rounded-md flex items-center justify-center">
             <Plus className="h-8 w-8 text-gray-400" />
           </div>
           <div className="flex-1">
@@ -109,7 +104,7 @@ export function ThemeGrid({
             </p>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Loading state */}
       {isLoading && (
@@ -137,7 +132,7 @@ export function ThemeGrid({
         selectedTheme={selectedTheme}
         tempCustomPrompt={tempCustomPrompt}
         onTempCustomPromptChange={setTempCustomPrompt}
-        onProceed={handleProceed}
+        onProceed={handleProceedFromModal}
         uploadedImage={uploadedImage}
       />
     </div>

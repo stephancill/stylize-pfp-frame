@@ -11,11 +11,11 @@ interface ImageSelectorProps {
   displayName?: string;
   username?: string;
   uploadedImage: string | null;
-  useUploadedImage: boolean;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   onUseUploadedImageChange: (useUploaded: boolean) => void;
   onClearUploadedImage: () => void;
   onError: (message: string) => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const getInitials = (
@@ -36,14 +36,12 @@ export function ImageSelector({
   displayName,
   username,
   uploadedImage,
-  useUploadedImage,
   onImageUpload,
   onUseUploadedImageChange,
   onClearUploadedImage,
   onError,
+  fileInputRef,
 }: ImageSelectorProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {

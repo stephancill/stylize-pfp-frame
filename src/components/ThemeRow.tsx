@@ -45,7 +45,7 @@ interface ThemeRowProps {
 export function ThemeRow({ theme, onThemeClick }: ThemeRowProps) {
   return (
     <Card
-      className="bg-gray-50 dark:bg-gray-900 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      className="cursor-pointer transition-colors"
       onClick={() => onThemeClick(theme)}
     >
       <div className="p-4 space-y-3">

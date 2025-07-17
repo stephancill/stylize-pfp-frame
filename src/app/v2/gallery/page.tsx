@@ -1,54 +1,13 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { JobsSection } from "@/components/JobsSection";
 import { CreationsGallery } from "@/components/CreationsGallery";
 import { UserThemes } from "@/components/UserThemes";
-import { fetchAuth } from "@/lib/fetch-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { GeneratedImageStatus } from "@/types/db";
-
-interface CompletedImage {
-  id: string;
-  imageDataUrl: string | null;
-  promptText: string | null;
-  createdAt: string;
-  quoteId: string;
-  userPfpUrl: string | null;
-}
-
-interface InProgressJob {
-  id: string;
-  promptText: string | null;
-  createdAt: string;
-  status: GeneratedImageStatus;
-  quoteId: string;
-  transactionHash: string | null;
-  userPfpUrl: string | null;
-}
 
 export default function GalleryPage() {
   const { isAuthenticated, userId } = useAuth();
-
-  const {
-    data: inProgressJobs = [],
-    isLoading: isLoadingJobs,
-    error: jobsError,
-  } = useQuery<InProgressJob[]>({
-    queryKey: ["inProgressJobs", userId],
-    queryFn: async () => {
-      const response = await fetchAuth(`/api/jobs`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch jobs");
-      }
-      const data = await response.json();
-      return data.jobs || [];
-    },
-    enabled: isAuthenticated && !!userId,
-  });
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
@@ -65,7 +24,7 @@ export default function GalleryPage() {
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
               In Progress
             </h2>
-            <JobsSection jobs={inProgressJobs} />
+            <JobsSection />
           </div>
 
           {/* Completed Creations Gallery */}
@@ -97,7 +56,7 @@ export default function GalleryPage() {
           <TabsContent value="images" className="space-y-8">
             {/* In Progress Jobs Section */}
             <div>
-              <JobsSection jobs={inProgressJobs} />
+              <JobsSection />
             </div>
 
             {/* Completed Creations Gallery */}

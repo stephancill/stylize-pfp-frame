@@ -23,7 +23,7 @@ export function Navigation() {
             <Plus
               className={clsx(
                 "h-6 w-6 text-muted-foreground",
-                pathname === "/v2" && "text-black dark:text-white"
+                pathname === "/v2" && "!text-foreground"
               )}
             />
           </Link>
@@ -31,7 +31,7 @@ export function Navigation() {
             <Image
               className={clsx(
                 "h-6 w-6 text-muted-foreground",
-                pathname === "/v2/gallery" && "text-black dark:text-white"
+                pathname === "/v2/gallery" && "!text-foreground"
               )}
             />
           </Link>
@@ -46,8 +46,8 @@ export function Navigation() {
         <Link href="/v2">
           <div
             className={clsx(
-              "flex items-center space-x-2 text-muted-foreground hover:text-black hover:dark:text-white transition-colors",
-              pathname === "/v2" && "text-black dark:text-white"
+              "flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors",
+              pathname === "/v2" && "!text-foreground"
             )}
           >
             <Plus className="h-6 w-6" />
@@ -57,8 +57,8 @@ export function Navigation() {
         <Link href="/v2/gallery">
           <div
             className={clsx(
-              "flex items-center space-x-2 text-muted-foreground hover:text-black hover:dark:text-white transition-colors",
-              pathname === "/v2/gallery" && "text-black dark:text-white"
+              "flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors",
+              pathname === "/v2/gallery" && "!text-foreground"
             )}
           >
             <Image className="h-6 w-6" />

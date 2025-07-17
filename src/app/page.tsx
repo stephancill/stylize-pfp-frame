@@ -3,7 +3,7 @@
 import { useUser } from "../providers/UserContextProvider";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   useSendTransaction,
   useAccount,
@@ -13,7 +13,7 @@ import {
 import { Hex, parseEther } from "viem";
 import { base } from "wagmi/chains";
 import Image from "next/image";
-import type { GeneratedImageStatus } from "@/types/db";
+
 import { CreationsGallery } from "@/components/CreationsGallery";
 import { ImageSelector } from "@/components/ImageSelector";
 import { ThemeSelector } from "@/components/ThemeSelector";
@@ -70,16 +70,6 @@ interface CompletedImage {
   userPfpUrl: string | null;
 }
 
-interface InProgressJob {
-  id: string;
-  promptText: string | null;
-  createdAt: string;
-  status: GeneratedImageStatus;
-  quoteId: string;
-  transactionHash: string | null;
-  userPfpUrl: string | null;
-}
-
 const getGenerationQuoteAPI = async (
   payload: GenerationRequestPayload
 ): Promise<GenerationRequestResponse> => {
@@ -120,6 +110,7 @@ export default function Home() {
   const account = useAccount();
   const searchParams = useSearchParams();
   const generationId = searchParams.get("generationId");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Unified Authentication (supports both SIWE and Farcaster)
   const {
@@ -201,22 +192,6 @@ export default function Home() {
   });
 
   const { switchChainAsync } = useSwitchChain();
-
-  const { data: inProgressJobs = [], refetch: refetchJobs } = useQuery<
-    InProgressJob[]
-  >({
-    queryKey: ["inProgressJobs", unifiedUser?.id],
-    queryFn: async () => {
-      const response = await fetchAuth(`/api/jobs`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch jobs");
-      }
-      const data = await response.json();
-      return data.jobs || [];
-    },
-    enabled: hasValidAuth && !!unifiedUser?.id,
-  });
 
   // Query to fetch specific image data when generationId is present
   const {
@@ -340,8 +315,6 @@ export default function Home() {
       }
       const data = await response.json();
       const allImages = data.images || [];
-
-      await refetchJobs();
 
       const foundImage = allImages.find(
         (img: CompletedImage) =>
@@ -859,11 +832,11 @@ export default function Home() {
             displayName={unifiedUser.displayName}
             username={unifiedUser.username}
             uploadedImage={uploadedImage}
-            useUploadedImage={useUploadedImage}
             onImageUpload={handleImageUpload}
             onUseUploadedImageChange={setUseUploadedImage}
             onClearUploadedImage={handleClearUploadedImage}
             onError={setApiMessage}
+            fileInputRef={fileInputRef}
           />
 
           {/* Theme Selection - show if user has valid image OR if theme is loaded from URL */}
@@ -908,7 +881,7 @@ export default function Home() {
       />
 
       {/* Jobs Section - only for authenticated users */}
-      {hasValidAuth && unifiedUser && <JobsSection jobs={inProgressJobs} />}
+      {hasValidAuth && unifiedUser && <JobsSection />}
 
       {/* My Creations Gallery - for authenticated users */}
       {hasValidAuth && unifiedUser && (
