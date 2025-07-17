@@ -131,7 +131,7 @@ export function CreationItem({ image }: { image: CompletedImage }) {
     try {
       sdk.actions.composeCast({
         text: `Check out my new character! ${shareUrl}`,
-        embeds: [getImageUrl(image.id), shareUrl],
+        embeds: [shareUrl, getImageUrl(image.id)],
       });
       setPopoverOpen(false);
     } catch (err) {
