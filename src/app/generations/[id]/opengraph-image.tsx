@@ -50,28 +50,14 @@ export default async function Image({ params }: { params: { id: string } }) {
       throw new Error("Image data not available");
     }
 
-    const matchingTheme = themes.find(
-      (t) => image.promptText?.trim() === t.prompt.trim()
-    );
-
     // Apply similar truncation logic as ThemeSelector
-    let promptLabel = "";
-    if (matchingTheme) {
-      // For matching themes, show the theme name
-      promptLabel = matchingTheme.name;
-    } else if (image.promptText) {
-      // For custom prompts, truncate to first 100 characters
-      promptLabel =
-        image.promptText.length > 100
-          ? image.promptText.substring(0, 100) + "..."
-          : image.promptText;
-    }
+    let promptLabel = image.promptText;
 
     return new ImageResponse(
       (
         <div
           style={{
-            background: "white",
+            background: "#FFFFFF",
             width: "100%",
             height: "100%",
             display: "flex",
@@ -80,64 +66,101 @@ export default async function Image({ params }: { params: { id: string } }) {
             justifyContent: "center",
             gap: "20px",
             padding: "40px",
+            position: "relative",
           }}
         >
-          <div
+          {/* Splash logo in top left */}
+          <img
+            src={`${process.env.APP_URL}/splash.png`}
+            alt="Logo"
+            width={80}
+            height={80}
             style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "60px",
+              position: "absolute",
+              top: "20px",
+              left: "20px",
+              borderRadius: "8px",
             }}
-          >
-            {/* Source Image */}
-            <img
-              src={image.userPfpUrl}
-              alt="Source"
-              width={400}
-              height={400}
-              style={{
-                borderRadius: "50%",
-                objectFit: "cover",
-              }}
-            />
+          />
+          {/* Source Image */}
+          <img
+            src={image.userPfpUrl}
+            alt="Source"
+            width={312}
+            height={312}
+            style={{
+              borderRadius: "12px",
+              objectFit: "cover",
+              position: "absolute",
+              top: "180px",
+              left: "180px",
+            }}
+          />
 
-            {/* Arrow */}
-            <div
-              style={{
-                fontSize: 120,
-                color: "#666",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              →
-            </div>
+          {/* Generated Image */}
+          <img
+            src={image.imageDataUrl}
+            alt="Generated"
+            width={312}
+            height={312}
+            style={{
+              borderRadius: "12px",
+              objectFit: "cover",
+              position: "absolute",
+              top: "180px",
+              right: "180px",
+            }}
+          />
 
-            {/* Generated Image */}
-            <img
-              src={image.imageDataUrl}
-              alt="Generated"
-              width={400}
-              height={400}
-              style={{
-                borderRadius: "50%",
-                objectFit: "cover",
-              }}
-            />
-          </div>
+          {/* Arrow between images */}
+          <img
+            src={`${process.env.APP_URL}/arrow.svg`}
+            alt="Arrow"
+            width={100}
+            style={{
+              position: "absolute",
+              top: "340px",
+              left: "600px",
+              transform: "translate(-50%, -50%)",
+            }}
+          />
           {promptLabel && (
             <div
               style={{
                 fontSize: 36,
-                color: "#333",
-                textAlign: "center",
-                maxWidth: 1000,
-                whiteSpace: "pre-wrap",
+                color: "#464646",
+                textAlign: "left",
+                position: "absolute",
+                top: "532px",
+                left: "180px",
+                right: "180px",
+                lineHeight: "1.2",
+                display: "flex",
               }}
             >
-              {promptLabel}
+              <div style={{ display: "flex", flexDirection: "row" }}>
+                {/* Vertical line as long as the text */}
+                <div
+                  style={{
+                    width: "5px",
+                    height: "100%",
+                    backgroundColor: "#D1D1D1",
+                    marginBottom: "10px",
+                    borderRadius: "10px",
+                  }}
+                ></div>
+                <div
+                  style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: "vertical",
+                    textOverflow: "ellipsis",
+                    marginLeft: "10px",
+                  }}
+                >
+                  {promptLabel}
+                </div>
+              </div>
             </div>
           )}
         </div>
