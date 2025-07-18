@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/providers/AuthProvider";
-import { truncateAddress } from "@/lib/utils";
+import { cn, truncateAddress } from "@/lib/utils";
 import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 import { farcasterMiniApp as miniAppConnector } from "@farcaster/miniapp-wagmi-connector";
 import { Loader2, LogOut } from "lucide-react";
@@ -74,7 +74,12 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen bg-background"
+      style={{
+        paddingBottom: context?.client.safeAreaInsets?.bottom,
+      }}
+    >
       <AuthModal isOpen={showAuthModal} onOpenChange={setShowAuthModal} />
       {/* Header with logo and navigation */}
       <div className="flex items-center justify-between p-6">
