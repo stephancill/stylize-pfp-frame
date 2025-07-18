@@ -69,7 +69,7 @@ export default async function Page({
         />
         <div className="flex justify-center">
           <Link href={`/?promptId=${id}`} className="w-full">
-            <Button variant="outline" size="sm" className="w-full text-xs">
+            <Button variant="default" size="lg" className="w-full">
               <Sparkles className="h-3 w-3 mr-1" />
               Use this theme
             </Button>

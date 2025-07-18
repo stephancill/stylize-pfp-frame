@@ -61,16 +61,12 @@ export function ThemeRow({ theme, onThemeClick }: ThemeRowProps) {
               }}
             >
               <div className="aspect-square rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700">
-                {image.urls.output ? (
+                {image.urls.output && (
                   <img
                     src={image.urls.output}
                     alt={`Theme variation ${imgIndex + 1}`}
                     className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-xs text-gray-400">No preview</span>
-                  </div>
                 )}
               </div>
               {/* Reference count badge */}
@@ -82,19 +78,6 @@ export function ThemeRow({ theme, onThemeClick }: ThemeRowProps) {
               )}
             </div>
           ))}
-
-          {/* Fill empty slots */}
-          {theme.images.length < 3 &&
-            Array(3 - theme.images.length)
-              .fill(null)
-              .map((_, i) => (
-                <div
-                  key={`empty-${i}`}
-                  className="aspect-square rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center"
-                >
-                  <span className="text-xs text-gray-400">No preview</span>
-                </div>
-              ))}
         </div>
 
         {/* Prompt description */}

@@ -315,18 +315,12 @@ export function ThemeModal({
                           className="pl-2 md:pl-4 basis-4/5 md:basis-3/4"
                         >
                           <div className="relative w-full aspect-square rounded-md overflow-hidden">
-                            {image.urls.output ? (
+                            {image.urls.output && (
                               <img
                                 src={image.urls.output}
                                 alt={`Theme variation ${index + 1}`}
                                 className="w-full h-full object-cover"
                               />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center border border-dashed">
-                                <span className="text-sm text-gray-500">
-                                  No preview
-                                </span>
-                              </div>
                             )}
 
                             {/* Reference count badge */}
