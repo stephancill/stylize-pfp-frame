@@ -1,4 +1,13 @@
-import { useCallback, useEffect } from "react";
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { createSiweMessage } from "viem/siwe";
 import { base } from "wagmi/chains";
@@ -6,6 +15,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAuth } from "../lib/fetch-auth";
 import posthog from "posthog-js";
 import * as Sentry from "@sentry/nextjs";
+import sdk from "@farcaster/frame-sdk";
+import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 
 // Unified auth user interface
 interface AuthUser {
@@ -21,6 +32,24 @@ interface AuthResponse {
   authenticated: boolean;
   user: AuthUser | null;
 }
+
+interface AuthContextType {
+  isAuthenticated: boolean;
+  user: AuthUser | null;
+  isLoading: boolean;
+  error: string | null;
+  signInWithSiwe: () => Promise<AuthUser>;
+  signInWithFarcaster: () => Promise<AuthUser>;
+  signOut: () => Promise<void>;
+  checkAuth: () => Promise<AuthResponse>;
+  isWalletAuthenticated: boolean;
+  getToken: () => string | null;
+  userId: string | null;
+}
+
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 const AUTH_QUERY_KEY = ["auth"];
 const AUTH_TOKEN_KEY = "authToken";
@@ -139,24 +168,29 @@ const siweSignInMutation = async ({
 };
 
 // Farcaster sign in mutation
-const farcasterSignInMutation = async ({
-  message,
-  signature,
-  challengeId,
-}: {
-  message: string;
-  signature: string;
-  challengeId: string;
-}) => {
+const farcasterSignIn = async () => {
+  // 1. Get nonce from server
+  const nonceResponse = await fetch("/api/auth/nonce");
+  if (!nonceResponse.ok) {
+    throw new Error("Failed to get authentication nonce");
+  }
+  const { nonce } = await nonceResponse.json();
+
+  // 2. Use Farcaster SDK to sign in
+  const result = await sdk.actions.signIn({
+    nonce: nonce,
+    acceptAuthAddress: true,
+  });
+
   const signInResponse = await fetch("/api/auth/farcaster/signin", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message,
-      signature,
-      challengeId,
+      message: result.message,
+      signature: result.signature,
+      challengeId: nonce,
     }),
   });
 
@@ -189,10 +223,17 @@ const signOutMutation = async () => {
   }
 };
 
-export function useAuth() {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const queryClient = useQueryClient();
+  const { context } = useMiniAppContext();
+
+  // Ref to track if Farcaster sign in is in progress
+  const farcasterSignInInProgress = useRef(false);
+
+  // State to track if we've already attempted auto sign-in
+  const [hasAttemptedAutoSignIn, setHasAttemptedAutoSignIn] = useState(false);
 
   // Query for authentication status
   const {
@@ -220,11 +261,13 @@ export function useAuth() {
 
   // Farcaster sign in mutation
   const farcasterSignInMut = useMutation({
-    mutationFn: farcasterSignInMutation,
+    mutationFn: farcasterSignIn,
     onSuccess: () => {
+      farcasterSignInInProgress.current = false;
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
     },
     onError: (error) => {
+      farcasterSignInInProgress.current = false;
       console.error("Farcaster sign in error:", error);
     },
   });
@@ -253,16 +296,21 @@ export function useAuth() {
   }, [address, isConnected, signMessageAsync, siweSignInMut]);
 
   // Farcaster sign in handler
-  const signInWithFarcaster = useCallback(
-    async (params: {
-      message: string;
-      signature: string;
-      challengeId: string;
-    }) => {
-      return farcasterSignInMut.mutateAsync(params);
-    },
-    [farcasterSignInMut]
-  );
+  const signInWithFarcaster = useCallback(async () => {
+    // Prevent concurrent Farcaster sign in attempts
+    if (farcasterSignInInProgress.current || farcasterSignInMut.isPending) {
+      throw new Error("Farcaster sign in already in progress");
+    }
+
+    farcasterSignInInProgress.current = true;
+
+    try {
+      return await farcasterSignInMut.mutateAsync();
+    } catch (error) {
+      farcasterSignInInProgress.current = false;
+      throw error;
+    }
+  }, [farcasterSignInMut]);
 
   // Sign out handler
   const signOut = useCallback(async () => {
@@ -290,7 +338,39 @@ export function useAuth() {
     queryClient,
   ]);
 
-  return {
+  // Auto-trigger SIWF when wallet connects in mini app and no user is authenticated
+  useEffect(() => {
+    if (
+      context &&
+      !authData?.authenticated &&
+      !isLoading &&
+      !farcasterSignInMut.isPending &&
+      !farcasterSignInMut.isSuccess &&
+      !farcasterSignInInProgress.current &&
+      !hasAttemptedAutoSignIn
+    ) {
+      console.log("Triggering Farcaster sign in from AuthProvider", {
+        context,
+      });
+
+      // Set both the ref and state to prevent multiple calls
+      farcasterSignInInProgress.current = true;
+      setHasAttemptedAutoSignIn(true);
+
+      // Call the mutation immediately
+      farcasterSignInMut.mutate();
+    }
+  }, [
+    context,
+    authData?.authenticated,
+    isLoading,
+    farcasterSignInMut.isPending,
+    farcasterSignInMut.isSuccess,
+    hasAttemptedAutoSignIn,
+    farcasterSignInMut,
+  ]);
+
+  const contextValue: AuthContextType = {
     isAuthenticated: authData?.authenticated || false,
     user: authData?.user || null,
     isLoading:
@@ -307,10 +387,13 @@ export function useAuth() {
     signInWithSiwe,
     signInWithFarcaster,
     signOut,
-    checkAuth,
+    checkAuth: async () => {
+      const result = await checkAuth();
+      return result.data || { authenticated: false, user: null };
+    },
     // Helper to check if the current wallet matches the authenticated SIWE user
     isWalletAuthenticated:
-      address &&
+      !!address &&
       authData?.user?.authType === "siwe" &&
       authData?.user?.address?.toLowerCase() === address?.toLowerCase(),
     // Utility to get the current auth token
@@ -318,4 +401,16 @@ export function useAuth() {
     // Utility to get the current user ID
     userId: getUserId(authData?.user || null),
   };
+
+  return (
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context!;
 }

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchAuth } from "@/lib/fetch-auth";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/providers/AuthProvider";
 import type { GeneratedImageStatus } from "@/types/db";
 
 interface InProgressJob {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/providers/AuthProvider";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAuth } from "@/lib/fetch-auth";
 import { ThemeRow, type ServerTheme } from "./ThemeRow";

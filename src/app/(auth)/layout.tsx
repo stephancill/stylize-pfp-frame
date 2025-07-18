@@ -1,66 +1,50 @@
 "use client";
 
-import Image from "next/image";
-import { ModeToggle } from "@/components/ModeToggle";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { useDisconnect } from "wagmi";
-import { LogOut, Loader2, User } from "lucide-react";
-import { Navigation } from "@/components/Navigation";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { AuthModal } from "@/components/AuthModal";
-import { useAccount, useConnect } from "wagmi";
-import { useEffect, useState } from "react";
-import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
+import { ModeToggle } from "@/components/ModeToggle";
+import { Navigation } from "@/components/Navigation";
 import { PendingJobsButton } from "@/components/PendingJobsButton";
-import { truncateAddress } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/providers/AuthProvider";
+import { truncateAddress } from "@/lib/utils";
+import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
+import { farcasterMiniApp as miniAppConnector } from "@farcaster/miniapp-wagmi-connector";
+import { Loader2, LogOut } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 export default function V2Layout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, signOut, isLoading, signInWithSiwe, user } =
-    useAuth();
+  const { isAuthenticated, signOut, isLoading, user } = useAuth();
   const { disconnect } = useDisconnect();
   const isMobile = useIsMobile();
-
-  // Auth-related state
-  const { connect, connectors } = useConnect();
-  const { address, isConnected } = useAccount();
+  const { connect } = useConnect();
   const { context } = useMiniAppContext();
   const isInMiniApp = !!context;
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [hasAttemptedSignIn, setHasAttemptedSignIn] = useState(false);
 
-  // Auto-connect in mini app context
-  useEffect(() => {
-    if (
-      isInMiniApp &&
-      !isAuthenticated &&
-      connectors.length > 0 &&
-      !isConnecting
-    ) {
-      handleMiniAppConnect();
+  const handleSignOut = async () => {
+    try {
+      // Sign out from the auth system
+      await signOut();
+      // Disconnect the wallet
+      disconnect();
+    } catch (error) {
+      console.error("Sign out failed:", error);
     }
-  }, [isInMiniApp, isAuthenticated, connectors, isConnecting]);
+  };
 
-  // Auto-trigger SIWE when wallet connects in mini app
   useEffect(() => {
-    if (
-      isInMiniApp &&
-      isConnected &&
-      address &&
-      !hasAttemptedSignIn &&
-      isConnecting
-    ) {
-      setHasAttemptedSignIn(true);
-      handleSiweSignIn();
+    if (isInMiniApp) {
+      connect({ connector: miniAppConnector() });
     }
-  }, [isInMiniApp, isConnected, address, hasAttemptedSignIn, isConnecting]);
+  }, [connect, isInMiniApp]);
 
   // Auto-show auth modal when not authenticated and not in mini app
   useEffect(() => {
@@ -76,46 +60,17 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, showAuthModal]);
 
-  const handleMiniAppConnect = async () => {
-    setIsConnecting(true);
-    setHasAttemptedSignIn(false);
-    try {
-      await connect({ connector: connectors[0] });
-    } catch (error) {
-      console.error("Connection failed:", error);
-      setIsConnecting(false);
-    }
-  };
-
-  const handleSiweSignIn = async () => {
-    try {
-      await signInWithSiwe();
-    } catch (error) {
-      console.error("Sign in failed:", error);
-    } finally {
-      setIsConnecting(false);
-      setHasAttemptedSignIn(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      // Sign out from the auth system
-      await signOut();
-      // Disconnect the wallet
-      disconnect();
-    } catch (error) {
-      console.error("Sign out failed:", error);
-    }
-  };
-
   // Show loading state
-  if (isLoading || isConnecting) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex justify-center items-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
       </div>
     );
+  }
+
+  if (!user) {
+    return <AuthModal isOpen={showAuthModal} onOpenChange={setShowAuthModal} />;
   }
 
   return (

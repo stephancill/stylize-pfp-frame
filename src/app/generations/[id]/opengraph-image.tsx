@@ -103,14 +103,14 @@ export default async function Image({ params }: { params: { id: string } }) {
           <img
             src={getInputImageUrl(image.id)}
             alt="Source"
-            width={312}
-            height={312}
+            width={400}
+            height={400}
             style={{
               borderRadius: "12px",
               objectFit: "cover",
               position: "absolute",
-              top: "180px",
-              left: "180px",
+              top: "120px",
+              left: "120px",
             }}
           />
 
@@ -118,14 +118,14 @@ export default async function Image({ params }: { params: { id: string } }) {
           <img
             src={getImageUrl(image.id)}
             alt="Generated"
-            width={312}
-            height={312}
+            width={400}
+            height={400}
             style={{
               borderRadius: "12px",
               objectFit: "cover",
               position: "absolute",
-              top: "180px",
-              right: "180px",
+              top: "120px",
+              right: "120px",
             }}
           />
 
@@ -136,7 +136,7 @@ export default async function Image({ params }: { params: { id: string } }) {
             width={100}
             style={{
               position: "absolute",
-              top: "340px",
+              top: "300px",
               left: "600px",
               transform: "translate(-50%, -50%)",
             }}
@@ -148,9 +148,9 @@ export default async function Image({ params }: { params: { id: string } }) {
                 color: "#464646",
                 textAlign: "left",
                 position: "absolute",
-                top: "532px",
-                left: "180px",
-                right: "180px",
+                top: "550px",
+                left: "120px",
+                right: "120px",
                 lineHeight: "1.2",
                 display: "flex",
               }}

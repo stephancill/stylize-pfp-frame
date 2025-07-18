@@ -4,7 +4,7 @@ import { ImageSelector } from "@/components/ImageSelector";
 import { PaymentModal } from "@/components/PaymentModal";
 import { ThemeGrid } from "@/components/ThemeGrid";
 import { ThemeModal } from "@/components/ThemeModal";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/providers/AuthProvider";
 import { usePendingImages } from "@/hooks/usePendingImages";
 import themes from "@/lib/themes";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/providers/AuthProvider";
 import { useInfiniteImages } from "@/hooks/useInfiniteImages";
 import { getImageUrl } from "@/lib/image-utils";
 import sdk from "@farcaster/frame-sdk";
