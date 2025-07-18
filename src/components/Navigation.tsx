@@ -19,19 +19,19 @@ export function Navigation() {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
         <div className="flex justify-around items-center py-4">
-          <Link href="/v2">
+          <Link href="/">
             <Plus
               className={clsx(
                 "h-6 w-6 text-muted-foreground",
-                pathname === "/v2" && "!text-foreground"
+                pathname === "/" && "!text-foreground"
               )}
             />
           </Link>
-          <Link href="/v2/gallery">
+          <Link href="/gallery">
             <Image
               className={clsx(
                 "h-6 w-6 text-muted-foreground",
-                pathname === "/v2/gallery" && "!text-foreground"
+                pathname === "/gallery" && "!text-foreground"
               )}
             />
           </Link>
@@ -43,22 +43,22 @@ export function Navigation() {
   return (
     <div className="flex-1 flex justify-center">
       <div className="flex space-x-16">
-        <Link href="/v2">
+        <Link href="/">
           <div
             className={clsx(
               "flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors",
-              pathname === "/v2" && "!text-foreground"
+              pathname === "/" && "!text-foreground"
             )}
           >
             <Plus className="h-6 w-6" />
             <span className="text-sm">Create</span>
           </div>
         </Link>
-        <Link href="/v2/gallery">
+        <Link href="/gallery">
           <div
             className={clsx(
               "flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors",
-              pathname === "/v2/gallery" && "!text-foreground"
+              pathname === "/gallery" && "!text-foreground"
             )}
           >
             <Image className="h-6 w-6" />

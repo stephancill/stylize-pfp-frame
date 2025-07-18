@@ -9,6 +9,7 @@ import { config } from "@/lib/wagmi";
 import { Toaster } from "@/components/ui/sonner";
 import { PostHogProvider } from "@/providers/PostHogProvider";
 import { ThemeProvider } from "@/components/theme-provider";
+import NavLayout from "@/components/NavLayout";
 
 const queryClient = new QueryClient();
 

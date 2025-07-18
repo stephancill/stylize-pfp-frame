@@ -68,7 +68,7 @@ export default async function Page({
           }}
         />
         <div className="flex justify-center">
-          <Link href={`/?generationId=${id}`} className="w-full">
+          <Link href={`/?promptId=${id}`} className="w-full">
             <Button variant="outline" size="sm" className="w-full text-xs">
               <Sparkles className="h-3 w-3 mr-1" />
               Use this theme

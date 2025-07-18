@@ -192,7 +192,7 @@ export default function Page() {
         "Your image is being generated. Check back in a few minutes.",
       action: {
         label: "View Queue",
-        onClick: () => router.push("/v2/gallery"),
+        onClick: () => router.push("/gallery"),
       },
       duration: Infinity,
     });

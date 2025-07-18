@@ -49,6 +49,7 @@ export function CreationsGallery() {
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [remixPopoverOpen, setRemixPopoverOpen] = useState(false);
+  const [showFullPrompt, setShowFullPrompt] = useState(false);
 
   const {
     data,
@@ -244,6 +245,37 @@ export function CreationsGallery() {
               />
             </div>
 
+            {/* Prompt display */}
+            {selectedImage.promptText && (
+              <div>
+                <p
+                  className={`text-sm text-muted-foreground whitespace-pre-wrap cursor-pointer ${
+                    !showFullPrompt ? "line-clamp-2" : ""
+                  }`}
+                  onClick={() => {
+                    if (
+                      selectedImage.promptText &&
+                      selectedImage.promptText.length > 100
+                    ) {
+                      setShowFullPrompt(!showFullPrompt);
+                    }
+                  }}
+                >
+                  {selectedImage.promptText}
+                </p>
+                {selectedImage.promptText &&
+                  selectedImage.promptText.length > 100 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowFullPrompt(!showFullPrompt)}
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {showFullPrompt ? "Show less" : "Show more"}
+                    </button>
+                  )}
+              </div>
+            )}
+
             <div className="flex gap-2">
               {selectedImage.imageDataUrl && !isInMiniApp && (
                 <Button
@@ -338,7 +370,7 @@ export function CreationsGallery() {
                 >
                   <div className="space-y-1">
                     <Link
-                      href={`/v2?promptId=${selectedImage.id}`}
+                      href={`/?promptId=${selectedImage.id}`}
                       className="w-full"
                     >
                       <Button
@@ -351,7 +383,7 @@ export function CreationsGallery() {
                       </Button>
                     </Link>
                     <Link
-                      href={`/v2?imageUrl=${encodeURIComponent(
+                      href={`/?imageUrl=${encodeURIComponent(
                         getImageUrl(selectedImage.id)
                       )}`}
                       className="w-full"
@@ -366,7 +398,7 @@ export function CreationsGallery() {
                       </Button>
                     </Link>
                     <Link
-                      href={`/v2?promptId=${
+                      href={`/?promptId=${
                         selectedImage.id
                       }&imageUrl=${encodeURIComponent(
                         getImageUrl(selectedImage.id)

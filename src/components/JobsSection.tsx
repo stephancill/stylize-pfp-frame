@@ -3,9 +3,11 @@
 import { truncateAddress } from "../lib/utils";
 import themes, { type Theme } from "@/lib/themes";
 import Countdown from "react-countdown";
-import { Clock, Loader2 } from "lucide-react";
+import { Clock, Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { usePendingImages } from "@/hooks/usePendingImages";
+import Link from "next/link";
 
 export function JobsSection() {
   const { data: jobs = [], isLoading, error } = usePendingImages();
@@ -34,8 +36,18 @@ export function JobsSection() {
   if (jobs.length === 0) {
     return (
       <div className="text-center py-8">
-        <Clock className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-        <p className="text-gray-500">Pending creations will show up here.</p>
+        <Sparkles className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-500 mb-4">No pending creations yet.</p>
+        <p className="text-sm text-gray-400 mb-6">
+          Start creating your first image to see it here!
+        </p>
+        <Link href="/">
+          <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+            <Sparkles className="h-4 w-4 mr-2" />
+            Create Your First Image
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </Link>
       </div>
     );
   }

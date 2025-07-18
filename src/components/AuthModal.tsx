@@ -19,16 +19,14 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onOpenChange }: AuthModalProps) {
-  const { connect, connectors } = useConnect();
+  const { connect, connectors, isPending: isConnecting } = useConnect();
   const { address, isConnected } = useAccount();
   const { signInWithSiwe, isLoading } = useAuth();
-  const [isConnecting, setIsConnecting] = useState(false);
   const [hasAttemptedSignIn, setHasAttemptedSignIn] = useState(false);
 
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
-      setIsConnecting(false);
       setHasAttemptedSignIn(false);
     }
   }, [isOpen]);
@@ -42,14 +40,8 @@ export function AuthModal({ isOpen, onOpenChange }: AuthModalProps) {
   }, [isConnected, address, hasAttemptedSignIn, isConnecting]);
 
   const handleConnectWallet = async (connector: any) => {
-    setIsConnecting(true);
     setHasAttemptedSignIn(false);
-    try {
-      await connect({ connector });
-    } catch (error) {
-      console.error("Connection failed:", error);
-      setIsConnecting(false);
-    }
+    connect({ connector });
   };
 
   const handleSiweSignIn = async () => {
@@ -60,7 +52,6 @@ export function AuthModal({ isOpen, onOpenChange }: AuthModalProps) {
     } catch (error) {
       console.error("Sign in failed:", error);
     } finally {
-      setIsConnecting(false);
       setHasAttemptedSignIn(false);
     }
   };
@@ -79,7 +70,7 @@ export function AuthModal({ isOpen, onOpenChange }: AuthModalProps) {
           </CredenzaDescription>
         </CredenzaHeader>
 
-        <div className="flex flex-col gap-4 p-6">
+        <div className="flex flex-col gap-4">
           {isConnecting || isLoading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-6 w-6 animate-spin text-gray-500 mr-2" />
