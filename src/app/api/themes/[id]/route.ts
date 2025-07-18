@@ -40,6 +40,7 @@ export async function GET(
           ])
           .where("gi.promptText", "=", image.promptText)
           .where("gi.status", "=", "completed")
+          .where("refs.status", "=", "completed") // Only count completed references
           .where("gi.id", "!=", id) // Exclude the current image
           .groupBy(["gi.id", "gi.userId", "gi.createdAt"])
           .having(sql`count(refs.id)`, ">", 0) // Only include images with references

@@ -4,9 +4,38 @@ import { ThemeModal } from "@/components/ThemeModal";
 import { ThemeRow, type ServerTheme } from "@/components/ThemeRow";
 import { fetchAuth } from "@/lib/fetch-auth";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Card } from "./ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Skeleton component for theme rows
+function ThemeRowSkeleton() {
+  return (
+    <div className="border rounded-lg p-4 space-y-3">
+      {/* Image row skeleton */}
+      <div className="grid grid-cols-3 gap-2">
+        {Array(3)
+          .fill(null)
+          .map((_, i) => (
+            <Skeleton key={i} className="aspect-square rounded-md" />
+          ))}
+      </div>
+
+      {/* Prompt description skeleton */}
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+
+      {/* Author info skeleton */}
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-6 w-20 rounded-full" />
+        <Skeleton className="h-6 w-12 rounded-full" />
+      </div>
+    </div>
+  );
+}
 
 interface ThemeGridProps {
   selectedThemeId: string;
@@ -108,10 +137,12 @@ export function ThemeGrid({
 
       {/* Loading state */}
       {isLoading && (
-        <div className="text-center py-8">
-          <div className="flex items-center justify-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
-          </div>
+        <div className="space-y-6">
+          {Array(3)
+            .fill(null)
+            .map((_, i) => (
+              <ThemeRowSkeleton key={i} />
+            ))}
         </div>
       )}
 

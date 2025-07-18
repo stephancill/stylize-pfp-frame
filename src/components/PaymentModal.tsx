@@ -1,29 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  useSendTransaction,
-  useAccount,
-  useWaitForTransactionReceipt,
-  useSwitchChain,
-} from "wagmi";
-import { Hex, parseEther } from "viem";
-import { base } from "wagmi/chains";
 import { Button } from "@/components/ui/button";
 import {
   Credenza,
+  CredenzaBody,
+  CredenzaClose,
   CredenzaContent,
   CredenzaDescription,
+  CredenzaFooter,
   CredenzaHeader,
   CredenzaTitle,
-  CredenzaBody,
-  CredenzaFooter,
-  CredenzaClose,
 } from "@/components/ui/credenza";
-import { Loader2, Wallet, AlertCircle, CheckCircle } from "lucide-react";
-import { truncateAddress } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { truncateAddress } from "@/lib/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  CheckCircle,
+  CreditCard,
+  Loader2,
+  Wallet,
+} from "lucide-react";
+import { useEffect } from "react";
+import { Hex, parseEther } from "viem";
+import {
+  useAccount,
+  useSendTransaction,
+  useSwitchChain,
+  useWaitForTransactionReceipt,
+} from "wagmi";
+import { base } from "wagmi/chains";
 
 interface GenerationRequestPayload {
   userId: string;
@@ -139,7 +145,14 @@ export function PaymentModal({
     error: sendTxError,
     isPending: isSendingTx,
     sendTransaction,
-  } = useSendTransaction();
+  } = useSendTransaction({
+    mutation: {
+      onError: (error) => {
+        console.error("Error sending transaction:", error);
+        onError?.(error);
+      },
+    },
+  });
 
   const {
     isLoading: isConfirming,
@@ -183,16 +196,6 @@ export function PaymentModal({
       });
     }
   }, [isConfirmed, sendTxData, paymentSubmissionMutation, quoteData]);
-
-  // Handle errors
-  useEffect(() => {
-    if (sendTxError) {
-      onError?.(sendTxError);
-    }
-    if (confirmationError) {
-      onError?.(confirmationError);
-    }
-  }, [sendTxError, confirmationError, onError]);
 
   // Handle chain switching
   useEffect(() => {
@@ -272,6 +275,7 @@ export function PaymentModal({
         text: `Pay`,
         action: handlePayment,
         disabled: false,
+        icon: <CreditCard className="h-4 w-4" />,
       };
     }
 
@@ -364,7 +368,7 @@ export function PaymentModal({
           {paymentSubmissionMutation.isSuccess && (
             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
               <p className="text-sm text-green-800">
-                Payment successful! Your character is being generated.
+                Payment successful! Your image is being generated.
               </p>
             </div>
           )}
@@ -404,6 +408,9 @@ export function PaymentModal({
             className={useIsMobile() ? "w-full" : ""}
           >
             {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            {buttonState.icon && !isLoading && (
+              <span className="mr-2">{buttonState.icon}</span>
+            )}
             {buttonState.text}
           </Button>
         </CredenzaFooter>

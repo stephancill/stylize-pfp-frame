@@ -33,6 +33,7 @@ export function ImageSelector({ displayName, username }: ImageSelectorProps) {
     uploadImage,
     clearUploadedImage,
     setUseUploadedImage,
+    useUploadedImage,
   } = useImageSelection();
 
   const handleClearImage = (e: React.MouseEvent) => {
@@ -55,7 +56,9 @@ export function ImageSelector({ displayName, username }: ImageSelectorProps) {
         {hasProfileImage && (
           <div className="flex flex-col items-center">
             <Card
-              className="cursor-pointer transition-all hover:bg-gray-25 mb-2 w-24 h-24"
+              className={`cursor-pointer transition-all hover:bg-gray-25 mb-2 w-24 h-24 ${
+                !useUploadedImage ? "ring-2 ring-blue-500 ring-offset-2" : ""
+              }`}
               onClick={() => setUseUploadedImage(false)}
             >
               <CardContent className="p-4 flex items-center justify-center h-full">
@@ -76,7 +79,9 @@ export function ImageSelector({ displayName, username }: ImageSelectorProps) {
         {/* Upload Option */}
         <div className="flex flex-col items-center">
           <Card
-            className="cursor-pointer transition-all hover:bg-gray-25 mb-2 w-24 h-24"
+            className={`cursor-pointer transition-all hover:bg-gray-25 mb-2 w-24 h-24 ${
+              useUploadedImage ? "ring-2 ring-blue-500 ring-offset-2" : ""
+            }`}
             onClick={triggerFileInput}
           >
             <CardContent className="p-4 flex items-center justify-center h-full">

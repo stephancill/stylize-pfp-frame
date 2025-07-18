@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
               ])
               .where("gi.promptText", "=", theme.promptText)
               .where("gi.status", "=", "completed")
+              .where("refs.status", "=", "completed") // Only count completed references
               .groupBy(["gi.id", "gi.userId", "gi.createdAt"])
               .having(sql`count(refs.id)`, ">", 0) // Only include images with references
               .orderBy(sql`count(refs.id)`, "desc")
@@ -133,7 +134,7 @@ export async function GET(request: NextRequest) {
           };
         });
       },
-      { ttl: 60 * 60, disableCache: false } // Cache for 1 hour
+      { ttl: 60 * 60, disableCache: true } // Cache for 1 hour
     );
 
     return NextResponse.json({

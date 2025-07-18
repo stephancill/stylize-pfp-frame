@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { useInfiniteImages } from "@/hooks/useInfiniteImages";
@@ -19,7 +20,6 @@ import {
   Download,
   FileText,
   Image,
-  Loader2,
   MessageCircle,
   Plus,
   RefreshCw,
@@ -30,6 +30,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CompletedImage, SimpleCreationItem } from "./SimpleCreationItem";
+
+// Skeleton component for creation items
+function CreationItemSkeleton() {
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <Skeleton className="aspect-square w-full" />
+    </div>
+  );
+}
 
 export function CreationsGallery() {
   const { userId } = useAuth();
@@ -150,7 +159,7 @@ export function CreationsGallery() {
 
     try {
       sdk.actions.composeCast({
-        text: `Check out my new character! ${shareUrl}`,
+        text: `Check out this image I generated! ${shareUrl}`,
         embeds: [shareUrl, getImageUrl(selectedImage!.id)],
       });
       setPopoverOpen(false);
@@ -161,8 +170,12 @@ export function CreationsGallery() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {Array(6)
+          .fill(null)
+          .map((_, i) => (
+            <CreationItemSkeleton key={i} />
+          ))}
       </div>
     );
   }
@@ -179,7 +192,7 @@ export function CreationsGallery() {
   if (allImages.length === 0) {
     return (
       <p className="text-center text-gray-500 py-4">
-        You haven't generated any characters yet.
+        You haven't generated any images yet.
       </p>
     );
   }
@@ -189,7 +202,7 @@ export function CreationsGallery() {
       open={!!selectedImage}
       onOpenChange={(open) => !open && setSelectedImage(null)}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {allImages.map((image, index) => {
           const isLastImage = index === allImages.length - 1;
 
@@ -208,7 +221,13 @@ export function CreationsGallery() {
 
         {isFetchingNextPage && (
           <div className="col-span-full flex justify-center items-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
+              {Array(3)
+                .fill(null)
+                .map((_, i) => (
+                  <CreationItemSkeleton key={i} />
+                ))}
+            </div>
           </div>
         )}
       </div>

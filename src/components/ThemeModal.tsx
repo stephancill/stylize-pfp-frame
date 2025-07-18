@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Users, Upload, User } from "lucide-react";
+import { Star, Users, Upload, User, Image } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type ServerTheme } from "./ThemeRow";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";
@@ -240,6 +240,7 @@ export function ThemeModal({
         <Popover open={showImagePopover} onOpenChange={setShowImagePopover}>
           <PopoverTrigger asChild>
             <Button type="button" className={isMobile ? "w-full" : ""}>
+              <Image className="w-4 h-4" />
               Choose image
             </Button>
           </PopoverTrigger>
@@ -254,6 +255,7 @@ export function ThemeModal({
         onClick={triggerFileInput}
         className={isMobile ? "w-full" : ""}
       >
+        <Image className="w-4 h-4" />
         Choose image
       </Button>
     );

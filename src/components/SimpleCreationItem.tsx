@@ -48,7 +48,7 @@ export function SimpleCreationItem({
           <>
             <img
               src={mainImageSrc}
-              alt={image.promptText || "Generated Character"}
+              alt={image.promptText || "Generated image"}
               className="w-full h-full object-cover"
             />
             {overlaySrc && toggleEnabled && (

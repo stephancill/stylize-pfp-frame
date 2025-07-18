@@ -1,10 +1,9 @@
-import { ImageResponse } from "next/og";
 import { db } from "@/lib/db";
-import themes from "@/lib/themes";
 import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
+import { ImageResponse } from "next/og";
 
 // Image metadata
-export const alt = "Generated Character";
+export const alt = "Generated Image";
 export const size = {
   width: 1200,
   height: 800,

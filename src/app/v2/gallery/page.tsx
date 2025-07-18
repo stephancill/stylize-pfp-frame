@@ -7,8 +7,6 @@ import { UserThemes } from "@/components/UserThemes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function GalleryPage() {
-  const { isAuthenticated, userId } = useAuth();
-
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
       <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-8">
@@ -17,23 +15,12 @@ export default function GalleryPage() {
 
       {/* Desktop Layout - 2 Columns */}
       <div className="hidden lg:grid grid-cols-2 gap-8">
-        {/* Left Column - Pending Jobs & Creations */}
-        <div className="space-y-8">
-          {/* In Progress Jobs Section */}
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              In Progress
-            </h2>
-            <JobsSection />
-          </div>
-
-          {/* Completed Creations Gallery */}
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              My Creations
-            </h2>
-            <CreationsGallery />
-          </div>
+        {/* Completed Creations Gallery */}
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            My Creations
+          </h2>
+          <CreationsGallery />
         </div>
 
         {/* Right Column - User Themes */}
@@ -54,15 +41,7 @@ export default function GalleryPage() {
           </TabsList>
 
           <TabsContent value="images" className="space-y-8">
-            {/* In Progress Jobs Section */}
-            <div>
-              <JobsSection />
-            </div>
-
-            {/* Completed Creations Gallery */}
-            <div>
-              <CreationsGallery />
-            </div>
+            <CreationsGallery />
           </TabsContent>
 
           <TabsContent value="themes">

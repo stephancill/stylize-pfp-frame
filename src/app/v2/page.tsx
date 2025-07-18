@@ -1,25 +1,23 @@
 "use client";
 
 import { ImageSelector } from "@/components/ImageSelector";
+import { PaymentModal } from "@/components/PaymentModal";
 import { ThemeGrid } from "@/components/ThemeGrid";
 import { ThemeModal } from "@/components/ThemeModal";
-import { PaymentModal } from "@/components/PaymentModal";
-import themes from "@/lib/themes";
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { usePendingImages } from "@/hooks/usePendingImages";
+import themes from "@/lib/themes";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";
 import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
-import { useAccount } from "wagmi";
 import { createUnifiedUser } from "@/types/user";
+import { sdk } from "@farcaster/frame-sdk";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import { BaseError, ProviderRpcError, SendTransactionErrorType } from "viem";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { usePendingImages } from "@/hooks/usePendingImages";
+import { BaseError } from "viem";
+import { useAccount } from "wagmi";
 
 export default function Page() {
   const { context, isLoading: isUserLoading } = useMiniAppContext();
@@ -210,12 +208,14 @@ export default function Page() {
             onClick: () => {
               // This would typically open a notification permission dialog
               // For now, we'll just show a message
-              toast.success("Notifications enabled!", {
-                description: "You'll be notified when your image is ready.",
+              sdk.actions.addFrame().then(() => {
+                toast.success("Notifications enabled!", {
+                  description: "You'll be notified when your image is ready.",
+                });
               });
             },
           },
-          duration: 8000,
+          duration: Infinity,
         });
       }, 2000);
     }

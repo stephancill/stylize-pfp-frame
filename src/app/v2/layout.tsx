@@ -5,7 +5,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useDisconnect } from "wagmi";
-import { LogOut, Loader2 } from "lucide-react";
+import { LogOut, Loader2, User } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AuthModal } from "@/components/AuthModal";
@@ -13,9 +13,17 @@ import { useAccount, useConnect } from "wagmi";
 import { useEffect, useState } from "react";
 import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 import { PendingJobsButton } from "@/components/PendingJobsButton";
+import { truncateAddress } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function V2Layout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, signOut, isLoading, signInWithSiwe } = useAuth();
+  const { isAuthenticated, signOut, isLoading, signInWithSiwe, user } =
+    useAuth();
   const { disconnect } = useDisconnect();
   const isMobile = useIsMobile();
 
@@ -129,19 +137,34 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
         {!isMobile && <Navigation />}
 
         <div className="flex items-center space-x-2">
-          <ModeToggle />
           <PendingJobsButton />
+          <ModeToggle />
           {isAuthenticated && (
-            <Button
-              onClick={handleSignOut}
-              variant="ghost"
-              size="sm"
-              disabled={isLoading}
-              className="h-8 px-2 text-xs hover:bg-red-100 hover:text-red-600"
-            >
-              <LogOut className="h-4 w-4 mr-1" />
-              Sign Out
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={isLoading}
+                  className="h-8 px-2 text-xs"
+                >
+                  {context?.user?.username ||
+                    truncateAddress(user?.address || "")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40" align="end">
+                <Button
+                  onClick={handleSignOut}
+                  variant="ghost"
+                  size="sm"
+                  disabled={isLoading}
+                  className="w-full justify-start text-red-600 hover:bg-red-100 hover:text-red-700"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign out
+                </Button>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
       </div>
