@@ -74,12 +74,7 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div
-      className="min-h-screen bg-background"
-      style={{
-        paddingBottom: context?.client.safeAreaInsets?.bottom,
-      }}
-    >
+    <div className="min-h-screen bg-background">
       <AuthModal isOpen={showAuthModal} onOpenChange={setShowAuthModal} />
       {/* Header with logo and navigation */}
       <div className="flex items-center justify-between p-6">
