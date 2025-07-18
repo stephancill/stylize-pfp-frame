@@ -12,6 +12,7 @@ import { AuthModal } from "@/components/AuthModal";
 import { useAccount, useConnect } from "wagmi";
 import { useEffect, useState } from "react";
 import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
+import { PendingJobsButton } from "@/components/PendingJobsButton";
 
 export default function V2Layout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, signOut, isLoading, signInWithSiwe } = useAuth();
@@ -129,6 +130,7 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
 
         <div className="flex items-center space-x-2">
           <ModeToggle />
+          <PendingJobsButton />
           {isAuthenticated && (
             <Button
               onClick={handleSignOut}

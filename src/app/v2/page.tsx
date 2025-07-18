@@ -19,13 +19,14 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { BaseError, ProviderRpcError, SendTransactionErrorType } from "viem";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePendingImages } from "@/hooks/usePendingImages";
 
 export default function Page() {
   const { context, isLoading: isUserLoading } = useMiniAppContext();
   const farcasterUser = context?.user;
   const { address: connectedAddress } = useAccount();
   const router = useRouter();
-  const isMobile = useIsMobile();
+  const { refetch: refetchPendingJobs } = usePendingImages();
 
   // Image selection hook
   const { selectedImage, uploadedImage, useUploadedImage, clearUploadedImage } =
@@ -184,6 +185,9 @@ export default function Page() {
 
     // Clear image selection
     clearUploadedImage();
+
+    // Refetch pending jobs to update the button
+    refetchPendingJobs();
 
     toast.success("Payment successful!", {
       description:

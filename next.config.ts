@@ -2,9 +2,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ["bullmq"],
-  },
+  serverExternalPackages: ["bullmq"],
   async redirects() {
     const redirects = [
       process.env.MAINTENANCE_MODE === "1"

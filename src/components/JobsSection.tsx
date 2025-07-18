@@ -2,44 +2,13 @@
 
 import { truncateAddress } from "../lib/utils";
 import themes, { type Theme } from "@/lib/themes";
-import type { GeneratedImageStatus } from "@/types/db";
 import Countdown from "react-countdown";
 import { Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-import { fetchAuth } from "@/lib/fetch-auth";
-import { useAuth } from "@/hooks/useAuth";
-
-interface InProgressJob {
-  id: string;
-  promptText: string | null;
-  createdAt: string;
-  status: GeneratedImageStatus;
-  quoteId: string;
-  transactionHash: string | null;
-  userPfpUrl: string | null;
-}
+import { usePendingImages } from "@/hooks/usePendingImages";
 
 export function JobsSection() {
-  const { userId } = useAuth();
-
-  const {
-    data: jobs = [],
-    isLoading,
-    error,
-  } = useQuery<InProgressJob[]>({
-    queryKey: ["inProgressJobs", userId],
-    queryFn: async () => {
-      const response = await fetchAuth(`/api/jobs`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch jobs");
-      }
-      const data = await response.json();
-      return data.jobs || [];
-    },
-    enabled: !!userId,
-  });
+  const { data: jobs = [], isLoading, error } = usePendingImages();
 
   // Show loading state
   if (isLoading) {
