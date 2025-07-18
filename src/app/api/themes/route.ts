@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
           };
         });
       },
-      { ttl: 60 * 60, disableCache: true } // Cache for 1 hour
+      { ttl: 60 * 60 } // Cache for 1 hour
     );
 
     return NextResponse.json({
