@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "../providers/UserContextProvider";
+import { useMiniAppContext } from "../providers/MiniAppContextProvider";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
@@ -13,6 +13,7 @@ import {
 import { Hex, parseEther } from "viem";
 import { base } from "wagmi/chains";
 import Image from "next/image";
+import Link from "next/link";
 
 import { CreationsGallery } from "@/components/CreationsGallery";
 import { ImageSelector } from "@/components/ImageSelector";
@@ -100,7 +101,8 @@ const submitPaymentAPI = async (
 };
 
 export default function Home() {
-  const { user: farcasterUser, isLoading: isUserLoading } = useUser();
+  const { context, isLoading: isUserLoading } = useMiniAppContext();
+  const farcasterUser = context?.user;
   const { address: connectedAddress } = useAccount();
   const account = useAccount();
   const searchParams = useSearchParams();
@@ -697,17 +699,28 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-4 flex flex-col items-center space-y-6 max-w-lg relative">
-      {/* Sign Out Button - Top Right */}
-      {unifiedUser && (
-        <Button
-          onClick={handleSignOut}
-          variant="ghost"
-          size="sm"
-          className="absolute top-4 right-4 h-6 px-2 text-xs hover:bg-red-100 hover:text-red-600"
-        >
-          Sign Out
-        </Button>
-      )}
+      {/* Top Right Navigation */}
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <Link href="/v2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs hover:bg-blue-100 hover:text-blue-600"
+          >
+            Try v2
+          </Button>
+        </Link>
+        {unifiedUser && (
+          <Button
+            onClick={handleSignOut}
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs hover:bg-red-100 hover:text-red-600"
+          >
+            Sign Out
+          </Button>
+        )}
+      </div>
 
       {/* Logo */}
       <div className="flex flex-col items-center space-y-4">

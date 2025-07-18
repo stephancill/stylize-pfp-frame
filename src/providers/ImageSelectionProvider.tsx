@@ -15,7 +15,7 @@ import {
   isGifFile,
   resizeImage,
 } from "@/lib/image-utils";
-import { useMiniAppContext } from "@/hooks/use-mini-app";
+import { useMiniAppContext } from "./MiniAppContextProvider";
 
 interface ImageSelectionContextType {
   // State
@@ -51,7 +51,7 @@ export function ImageSelectionProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const context = useMiniAppContext();
+  const { context } = useMiniAppContext();
 
   // Set initial loading state based on context availability
   useEffect(() => {

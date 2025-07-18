@@ -10,18 +10,22 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";
-import { useUser } from "@/providers/UserContextProvider";
+import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 import { useAccount } from "wagmi";
 import { createUnifiedUser } from "@/types/user";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { BaseError, ProviderRpcError, SendTransactionErrorType } from "viem";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Page() {
-  const { user: farcasterUser, isLoading: isUserLoading } = useUser();
+  const { context, isLoading: isUserLoading } = useMiniAppContext();
+  const farcasterUser = context?.user;
   const { address: connectedAddress } = useAccount();
   const router = useRouter();
+  const isMobile = useIsMobile();
 
   // Image selection hook
   const { selectedImage, uploadedImage, useUploadedImage, clearUploadedImage } =
@@ -196,14 +200,14 @@ export default function Page() {
       setTimeout(() => {
         toast.info("Stay updated!", {
           description:
-            "Enable notifications to get updates when your character is ready.",
+            "Enable notifications to get updates when your image is ready.",
           action: {
             label: "Enable",
             onClick: () => {
               // This would typically open a notification permission dialog
               // For now, we'll just show a message
               toast.success("Notifications enabled!", {
-                description: "You'll be notified when your character is ready.",
+                description: "You'll be notified when your image is ready.",
               });
             },
           },
@@ -237,7 +241,7 @@ export default function Page() {
             Authentication Required
           </h3>
           <p className="text-blue-600">
-            To generate characters, please sign in with your wallet or Farcaster
+            To generate images, please sign in with your wallet or Farcaster
             account.
           </p>
         </div>
@@ -305,8 +309,10 @@ export default function Page() {
         referringImageId={paymentModalData.referringImageId}
         onSuccess={handlePaymentComplete}
         onError={(error) => {
+          const casted = error as unknown as BaseError;
+
           toast.error("Payment error", {
-            description: error,
+            description: casted.shortMessage,
           });
         }}
       />

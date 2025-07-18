@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/credenza";
 import { Loader2, Wallet, AlertCircle, CheckCircle } from "lucide-react";
 import { truncateAddress } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface GenerationRequestPayload {
   userId: string;
@@ -57,7 +58,7 @@ interface PaymentModalProps {
   userId: string;
   referringImageId?: string;
   onSuccess?: () => void;
-  onError?: (error: string) => void;
+  onError?: (error: Error) => void;
 }
 
 const getGenerationQuoteAPI = async (
@@ -163,7 +164,7 @@ export function PaymentModal({
     },
     onError: (error) => {
       console.error("Error submitting payment:", error);
-      onError?.(error.message);
+      onError?.(error);
     },
   });
 
@@ -186,10 +187,10 @@ export function PaymentModal({
   // Handle errors
   useEffect(() => {
     if (sendTxError) {
-      onError?.(sendTxError.message);
+      onError?.(sendTxError);
     }
     if (confirmationError) {
-      onError?.(confirmationError.message);
+      onError?.(confirmationError);
     }
   }, [sendTxError, confirmationError, onError]);
 
@@ -268,7 +269,7 @@ export function PaymentModal({
 
     if (quoteData) {
       return {
-        text: `Pay ${parseFloat(quoteData.amountDue).toFixed(4)} ETH`,
+        text: `Pay`,
         action: handlePayment,
         disabled: false,
       };
@@ -292,7 +293,7 @@ export function PaymentModal({
         icon: <CheckCircle className="h-5 w-5 text-green-500" />,
       };
     }
-    if (quoteError || sendTxError || confirmationError) {
+    if (quoteError || confirmationError) {
       return {
         text: "Error",
         icon: <AlertCircle className="h-5 w-5 text-red-500" />,
@@ -312,7 +313,7 @@ export function PaymentModal({
             {title.text}
           </CredenzaTitle>
           <CredenzaDescription>
-            Complete payment to generate your character.
+            Complete payment to generate your image.
           </CredenzaDescription>
         </CredenzaHeader>
 
@@ -333,26 +334,26 @@ export function PaymentModal({
             {/* Prompt Preview */}
             {prompt && (
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">Prompt:</p>
-                <p className="text-sm text-gray-900 dark:text-gray-100 line-clamp-2">
-                  {prompt}
-                </p>
+                <p className="text-sm text-muted-foreground mb-1">Prompt:</p>
+                <p className="text-sm text-foreground line-clamp-2">{prompt}</p>
               </div>
             )}
           </div>
 
           {/* Quote Display */}
-          <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
+          <div className="mb-4 p-4 bg-background/50 border border-border rounded-md">
             <div className="text-center">
-              <p className="text-sm text-gray-600 mb-2">Amount to pay:</p>
+              <p className="text-sm text-muted-foreground mb-2">
+                Amount to pay:
+              </p>
               {isLoadingQuote ? (
-                <div className="h-8 bg-gray-200 rounded animate-pulse" />
+                <div className="h-8 bg-muted rounded animate-pulse" />
               ) : quoteData ? (
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-foreground">
                   {parseFloat(quoteData.amountDue).toFixed(4)} ETH
                 </p>
               ) : (
-                <p className="text-2xl font-bold text-red-500">
+                <p className="text-2xl font-bold text-destructive">
                   Error loading quote
                 </p>
               )}
@@ -376,12 +377,10 @@ export function PaymentModal({
             </div>
           )}
 
-          {(quoteError || sendTxError || confirmationError) && (
+          {(quoteError || confirmationError) && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-sm text-red-800">
-                {quoteError?.message ||
-                  sendTxError?.message ||
-                  confirmationError?.message}
+                {quoteError?.message || confirmationError?.message}
               </p>
             </div>
           )}
@@ -390,7 +389,11 @@ export function PaymentModal({
         <CredenzaFooter className="sm:justify-end">
           {!paymentSubmissionMutation.isSuccess && (
             <CredenzaClose asChild>
-              <Button variant="outline" disabled={isLoading}>
+              <Button
+                variant="outline"
+                disabled={isLoading}
+                className="hidden sm:inline-flex"
+              >
                 Cancel
               </Button>
             </CredenzaClose>
@@ -398,6 +401,7 @@ export function PaymentModal({
           <Button
             onClick={buttonState.action}
             disabled={buttonState.disabled || isLoading}
+            className={useIsMobile() ? "w-full" : ""}
           >
             {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {buttonState.text}

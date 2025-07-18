@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useDisconnect } from "wagmi";
 import { LogOut, Loader2 } from "lucide-react";
-import { MiniAppReady } from "@/components/MiniAppReady";
 import { Navigation } from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AuthModal } from "@/components/AuthModal";
-import { useMiniAppContext } from "@/hooks/use-mini-app";
 import { useAccount, useConnect } from "wagmi";
 import { useEffect, useState } from "react";
+import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 
 export default function V2Layout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, signOut, isLoading, signInWithSiwe } = useAuth();
@@ -22,7 +21,8 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
   // Auth-related state
   const { connect, connectors } = useConnect();
   const { address, isConnected } = useAccount();
-  const isInMiniApp = useMiniAppContext();
+  const { context } = useMiniAppContext();
+  const isInMiniApp = !!context;
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [hasAttemptedSignIn, setHasAttemptedSignIn] = useState(false);
@@ -112,7 +112,6 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <AuthModal isOpen={showAuthModal} onOpenChange={setShowAuthModal} />
-      <MiniAppReady />
       {/* Header with logo and navigation */}
       <div className="flex items-center justify-between p-6">
         <div className="flex items-center space-x-4">

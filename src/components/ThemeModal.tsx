@@ -26,9 +26,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, Users, Upload, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type ServerTheme } from "./ThemeRow";
-import { useMiniAppContext } from "@/hooks/use-mini-app";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ThemeModalProps {
   open: boolean;
@@ -67,7 +68,7 @@ export function ThemeModal({
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [showImagePopover, setShowImagePopover] = useState(false);
 
-  const context = useMiniAppContext();
+  const { context } = useMiniAppContext();
   const isInMiniApp = !!context;
   const userProfileImage = context?.user?.pfpUrl;
   const userDisplayName = context?.user?.displayName;
@@ -86,7 +87,7 @@ export function ThemeModal({
   } = useImageSelection();
 
   // Use the uploadedImage from props if available, otherwise use from hook
-  const imageToUse = uploadedImage || customImage;
+  const imageToUse = selectedImage;
   const hasImage = !!imageToUse;
 
   // Use context user info if available, otherwise fall back to hook data
@@ -148,19 +149,86 @@ export function ThemeModal({
     return nameToUse.substring(0, 2).toUpperCase();
   };
 
+  const renderImageSelectionPopover = () => {
+    if (!isInMiniApp || !hasProfileImageToUse) return null;
+
+    return (
+      <PopoverContent className="w-56 p-2">
+        <div className="space-y-2">
+          <button
+            onClick={() => handleImageSelection(true)}
+            className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+          >
+            <Avatar className="w-6 h-6">
+              <AvatarImage src={profileImageToUse || undefined} alt="Profile" />
+              <AvatarFallback className="text-xs">
+                {getInitials()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Profile image</span>
+              {userUsername && (
+                <span className="text-xs text-muted-foreground">
+                  @{userUsername}
+                </span>
+              )}
+            </div>
+          </button>
+          <button
+            onClick={handleUploadImage}
+            className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+          >
+            <div className="w-6 h-6 flex items-center justify-center">
+              <Upload className="w-4 h-4" />
+            </div>
+            <span className="text-sm">Upload image</span>
+          </button>
+        </div>
+      </PopoverContent>
+    );
+  };
+
   const renderImageSelectionButton = () => {
+    const isMobile = useIsMobile();
+
     if (hasImage) {
       return (
-        <div className="flex items-center gap-3">
-          {/* Image preview */}
-          <div className="w-9 h-9 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
-            <img
-              src={imageToUse}
-              alt="Selected image"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <Button type="button" onClick={handleProceed}>
+        <div className={`flex items-center gap-3 ${isMobile ? "w-full" : ""}`}>
+          {/* Image preview - clickable to change image */}
+          {isInMiniApp && hasProfileImageToUse ? (
+            <Popover open={showImagePopover} onOpenChange={setShowImagePopover}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="w-9 h-9 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700 hover:opacity-80 transition-opacity flex-shrink-0"
+                >
+                  <img
+                    src={imageToUse}
+                    alt="Selected image"
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              </PopoverTrigger>
+              {renderImageSelectionPopover()}
+            </Popover>
+          ) : (
+            <button
+              type="button"
+              onClick={triggerFileInput}
+              className="w-9 h-9 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700 hover:opacity-80 transition-opacity flex-shrink-0"
+            >
+              <img
+                src={imageToUse}
+                alt="Selected image"
+                className="w-full h-full object-cover"
+              />
+            </button>
+          )}
+          <Button
+            type="button"
+            onClick={handleProceed}
+            className={isMobile ? "flex-1" : ""}
+          >
             Proceed
           </Button>
         </div>
@@ -171,49 +239,21 @@ export function ThemeModal({
       return (
         <Popover open={showImagePopover} onOpenChange={setShowImagePopover}>
           <PopoverTrigger asChild>
-            <Button type="button">Choose image</Button>
+            <Button type="button" className={isMobile ? "w-full" : ""}>
+              Choose image
+            </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-56 p-2">
-            <div className="space-y-2">
-              <button
-                onClick={() => handleImageSelection(true)}
-                className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
-              >
-                <Avatar className="w-6 h-6">
-                  <AvatarImage
-                    src={profileImageToUse || undefined}
-                    alt="Profile"
-                  />
-                  <AvatarFallback className="text-xs">
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Profile image</span>
-                  {userUsername && (
-                    <span className="text-xs text-muted-foreground">
-                      @{userUsername}
-                    </span>
-                  )}
-                </div>
-              </button>
-              <button
-                onClick={handleUploadImage}
-                className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
-              >
-                <div className="w-6 h-6 flex items-center justify-center">
-                  <Upload className="w-4 h-4" />
-                </div>
-                <span className="text-sm">Upload image</span>
-              </button>
-            </div>
-          </PopoverContent>
+          {renderImageSelectionPopover()}
         </Popover>
       );
     }
 
     return (
-      <Button type="button" onClick={triggerFileInput}>
+      <Button
+        type="button"
+        onClick={triggerFileInput}
+        className={isMobile ? "w-full" : ""}
+      >
         Choose image
       </Button>
     );
@@ -386,7 +426,7 @@ export function ThemeModal({
             </>
           )}
         </CredenzaBody>
-        <CredenzaFooter className="sm:justify-end">
+        <CredenzaFooter className="justify-end">
           {renderImageSelectionButton()}
         </CredenzaFooter>
       </CredenzaContent>

@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense } from "react";
-import { UserContextProvider } from "@/providers/UserContextProvider";
+import { MiniAppContextProvider } from "@/providers/MiniAppContextProvider";
 import { ImageSelectionProvider } from "@/providers/ImageSelectionProvider";
 import { WagmiProvider } from "wagmi";
 import { config } from "@/lib/wagmi";
@@ -18,7 +18,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
           <Suspense>
-            <UserContextProvider>
+            <MiniAppContextProvider>
               <ImageSelectionProvider>
                 <ThemeProvider
                   attribute="class"
@@ -29,7 +29,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
                   {children}
                 </ThemeProvider>
               </ImageSelectionProvider>
-            </UserContextProvider>
+            </MiniAppContextProvider>
           </Suspense>
           <Toaster />
         </QueryClientProvider>
