@@ -227,6 +227,7 @@ export function ThemeModal({
           <Button
             type="button"
             onClick={handleProceed}
+            disabled={isLoading}
             className={isMobile ? "flex-1" : ""}
           >
             Proceed

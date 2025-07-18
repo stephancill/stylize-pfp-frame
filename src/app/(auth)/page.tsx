@@ -27,8 +27,13 @@ export default function Page() {
   const { refetch: refetchPendingJobs } = usePendingImages();
 
   // Image selection hook
-  const { selectedImage, uploadedImage, useUploadedImage, clearUploadedImage } =
-    useImageSelection();
+  const {
+    selectedImage,
+    uploadedImage,
+    useUploadedImage,
+    clearUploadedImage,
+    setProfileImage,
+  } = useImageSelection();
 
   // Unified Authentication (supports both SIWE and Farcaster)
   const {
@@ -78,6 +83,7 @@ export default function Page() {
 
   const searchParams = useSearchParams();
   const promptId = searchParams.get("promptId");
+  const imageUrl = searchParams.get("imageUrl");
 
   // Fetch theme by promptId if present
   const {
@@ -118,6 +124,13 @@ export default function Page() {
     }
   }, [promptId, fetchedTheme]);
 
+  // Set profile image from URL parameter if present
+  useEffect(() => {
+    if (imageUrl) {
+      setProfileImage(imageUrl);
+    }
+  }, [imageUrl, setProfileImage]);
+
   const handleThemeSelect = (themeId: string) => {
     setSelectedThemeId(themeId);
     setCustomPrompt(""); // Clear custom prompt when a theme is selected
@@ -129,15 +142,6 @@ export default function Page() {
       // Clear selected theme when custom prompt is entered
       setSelectedThemeId("");
     }
-  };
-
-  const getSelectedPrompt = (): string => {
-    if (customPrompt) return customPrompt;
-    if (selectedThemeId) {
-      const selectedTheme = themes.find((t) => t.id === selectedThemeId);
-      return selectedTheme?.prompt || "";
-    }
-    return ""; // No theme selected and no custom prompt
   };
 
   // Centralized proceed function
@@ -259,10 +263,7 @@ export default function Page() {
           </h2>
 
           <div className="max-w-lg">
-            <ImageSelector
-              displayName={unifiedUser?.displayName}
-              username={unifiedUser?.username}
-            />
+            <ImageSelector />
           </div>
         </div>
 

@@ -33,6 +33,7 @@ interface ImageSelectionContextType {
   setUseUploadedImage: (useUploaded: boolean) => void;
   setError: (error: string | null) => void;
   triggerFileInput: () => void;
+  setProfileImage: (imageUrl: string | null) => void;
 
   // Images
   selectedImage: string | null;
@@ -49,6 +50,9 @@ export function ImageSelectionProvider({ children }: { children: ReactNode }) {
   const [useUploadedImage, setUseUploadedImage] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [overrideProfileImage, setOverrideProfileImage] = useState<
+    string | null
+  >(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { context } = useMiniAppContext();
@@ -127,7 +131,7 @@ export function ImageSelectionProvider({ children }: { children: ReactNode }) {
   };
 
   // Image values
-  const profileImage = context?.user?.pfpUrl || null;
+  const profileImage = overrideProfileImage || context?.user?.pfpUrl || null;
   const customImage = uploadedImage;
   const selectedImage = useUploadedImage ? customImage : profileImage;
 
@@ -147,6 +151,7 @@ export function ImageSelectionProvider({ children }: { children: ReactNode }) {
     setUseUploadedImage,
     setError,
     triggerFileInput: () => fileInputRef.current?.click(),
+    setProfileImage: setOverrideProfileImage,
 
     // Images
     selectedImage,

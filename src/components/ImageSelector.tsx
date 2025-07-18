@@ -6,25 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Upload, X } from "lucide-react";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";
 
-const getInitials = (
-  displayName: string | undefined,
-  username: string | undefined
-) => {
-  const nameToUse = displayName || username;
-  if (!nameToUse) return "??";
-  const names = nameToUse.split(" ");
-  if (names.length > 1) {
-    return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-  }
-  return nameToUse.substring(0, 2).toUpperCase();
-};
-
-interface ImageSelectorProps {
-  displayName?: string;
-  username?: string;
-}
-
-export function ImageSelector({ displayName, username }: ImageSelectorProps) {
+export function ImageSelector() {
   const {
     selectedImage,
     uploadedImage,
@@ -65,9 +47,6 @@ export function ImageSelector({ displayName, username }: ImageSelectorProps) {
                 <div className="w-16 h-16 rounded-md overflow-hidden">
                   <Avatar className="w-full h-full">
                     <AvatarImage src={profileImage} alt="Profile" />
-                    <AvatarFallback>
-                      {getInitials(displayName, username)}
-                    </AvatarFallback>
                   </Avatar>
                 </div>
               </CardContent>
