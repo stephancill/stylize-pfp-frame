@@ -63,7 +63,7 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex justify-center items-center">
+      <div className="min-h-screen bg-background flex justify-center items-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
       </div>
     );
@@ -74,7 +74,7 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <AuthModal isOpen={showAuthModal} onOpenChange={setShowAuthModal} />
       {/* Header with logo and navigation */}
       <div className="flex items-center justify-between p-6">

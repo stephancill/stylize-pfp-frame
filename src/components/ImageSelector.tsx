@@ -16,14 +16,13 @@ export function ImageSelector() {
     clearUploadedImage,
     setUseUploadedImage,
     useUploadedImage,
+    triggerFileInput,
   } = useImageSelection();
 
   const handleClearImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     clearUploadedImage();
   };
-
-  const triggerFileInput = () => fileInputRef.current?.click();
   const hasProfileImage = !!profileImage;
   const showBothOptions = hasProfileImage;
 
@@ -61,7 +60,15 @@ export function ImageSelector() {
             className={`cursor-pointer transition-all hover:bg-gray-25 mb-2 w-24 h-24 ${
               useUploadedImage ? "ring-2 ring-blue-500 ring-offset-2" : ""
             }`}
-            onClick={triggerFileInput}
+            onClick={() => {
+              if (uploadedImage) {
+                // If image is uploaded, select it
+                setUseUploadedImage(true);
+              } else {
+                // If no image is uploaded, trigger file input
+                triggerFileInput();
+              }
+            }}
           >
             <CardContent className="p-4 flex items-center justify-center h-full">
               {uploadedImage ? (
@@ -74,7 +81,7 @@ export function ImageSelector() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 bg-black/70 hover:bg-black/90 text-white border border-white/20"
                     onClick={handleClearImage}
                   >
                     <X className="h-3 w-3" />

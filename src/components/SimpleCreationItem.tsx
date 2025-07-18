@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { useState } from "react";
-import { Star } from "lucide-react";
+import { Star, Eye } from "lucide-react";
 
 export interface CompletedImage {
   id: string;
@@ -55,7 +55,7 @@ export function SimpleCreationItem({
               <img
                 src={overlaySrc}
                 alt="Input"
-                className="absolute top-2 right-2 w-16 h-16 object-cover border-2 border-background rounded-md cursor-pointer"
+                className="absolute top-2 right-2 w-1/3 h-1/3 object-cover border-2 border-background rounded-md cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -67,8 +67,14 @@ export function SimpleCreationItem({
               <img
                 src={overlaySrc}
                 alt="Input"
-                className="absolute top-2 right-2 w-16 h-16 object-cover border-2 border-background rounded-md"
+                className="absolute top-2 right-2 w-1/3 h-1/3 object-cover border-2 border-background rounded-md"
               />
+            )}
+            {/* Hover overlay with eye icon */}
+            {!toggleEnabled && (
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                <Eye className="h-8 w-8 text-white" />
+              </div>
             )}
             {/* Reference count badge */}
             {image.referenceCount && image.referenceCount > 0 && (
