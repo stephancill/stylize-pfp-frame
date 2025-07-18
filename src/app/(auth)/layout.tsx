@@ -11,14 +11,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { truncateAddress } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
-import { cn, truncateAddress } from "@/lib/utils";
 import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 import { farcasterMiniApp as miniAppConnector } from "@farcaster/miniapp-wagmi-connector";
 import { Loader2, LogOut } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useConnect, useDisconnect } from "wagmi";
 
 export default function V2Layout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, signOut, isLoading, user } = useAuth();

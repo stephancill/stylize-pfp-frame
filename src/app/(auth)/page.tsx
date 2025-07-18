@@ -202,7 +202,8 @@ export default function Page() {
     });
 
     // Show additional toast for notifications if user is in Farcaster context
-    if (farcasterUser) {
+    // and notifications have not been enabled
+    if (farcasterUser && !context.client.notificationDetails?.token) {
       setTimeout(() => {
         toast.info("Stay updated!", {
           description:
