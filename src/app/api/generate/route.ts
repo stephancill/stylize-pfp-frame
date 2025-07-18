@@ -202,7 +202,7 @@ export async function POST(request: Request) {
         .insertInto("generatedImages")
         .values({
           userId: userId,
-          promptText: prompt,
+          promptText: prompt.trim(),
           quoteId: newQuoteId,
           status: "pending_payment",
           userPfpUrl: userPfpUrl,
