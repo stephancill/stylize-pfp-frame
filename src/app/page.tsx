@@ -24,13 +24,8 @@ import { JobsSection } from "@/components/JobsSection";
 import { FramePromptDialog } from "@/components/FramePromptDialog";
 import { createUnifiedUser, type UnifiedUser } from "@/types/user";
 import { truncateAddress } from "../lib/utils";
-import {
-  resizeImage,
-  checkIfResizeNeeded,
-  convertGifToPng,
-  isGifFile,
-} from "@/lib/image-utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useImageSelection } from "@/providers/ImageSelectionProvider";
 import sdk from "@farcaster/frame-sdk";
 import { fetchAuth } from "../lib/fetch-auth";
 import { useSearchParams } from "next/navigation";
@@ -110,7 +105,14 @@ export default function Home() {
   const account = useAccount();
   const searchParams = useSearchParams();
   const generationId = searchParams.get("generationId");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Image selection hook
+  const {
+    selectedImage,
+    uploadedImage,
+    useUploadedImage,
+    error: imageError,
+    setError: setImageError,
+  } = useImageSelection();
 
   // Unified Authentication (supports both SIWE and Farcaster)
   const {
@@ -149,8 +151,6 @@ export default function Home() {
   const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [selectedThemeId, setSelectedThemeId] = useState<string>("");
   const [customPrompt, setCustomPrompt] = useState<string>("");
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [useUploadedImage, setUseUploadedImage] = useState<boolean>(false);
   const [showFramePromptDialog, setShowFramePromptDialog] =
     useState<boolean>(false);
   const [autoSignInAttempted, setAutoSignInAttempted] =
@@ -459,6 +459,14 @@ export default function Home() {
     // The prompt will be determined by getSelectedPrompt function
   }, [unifiedUser, isUserLoading, selectedThemeId]);
 
+  // Handle image errors
+  useEffect(() => {
+    if (imageError) {
+      setApiMessage(imageError);
+      setImageError(null);
+    }
+  }, [imageError, setImageError]);
+
   // Effect to set prompt when generation data is loaded
   useEffect(() => {
     if (generationImage) {
@@ -604,73 +612,7 @@ export default function Home() {
   };
 
   const getImageToUse = (): string | undefined => {
-    if (useUploadedImage && uploadedImage) return uploadedImage;
-    if (unifiedUser?.profileImage) return unifiedUser.profileImage;
-    return undefined;
-  };
-
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      let dataUrl: string;
-
-      // Check if the file is a GIF and convert it to PNG
-      if (isGifFile(file)) {
-        setApiMessage("Converting GIF to PNG (extracting first frame)...");
-        dataUrl = await convertGifToPng(file);
-        setApiMessage("GIF converted to PNG successfully.");
-      } else {
-        // Check if the image needs to be resized
-        const needsResize = await checkIfResizeNeeded(file, 1024, 1024);
-
-        if (needsResize) {
-          // Show a message that we're processing the image
-          setApiMessage("Processing large image...");
-
-          // Resize the image while maintaining aspect ratio
-          dataUrl = await resizeImage(file, {
-            maxWidth: 1024,
-            maxHeight: 1024,
-            quality: 0.9,
-          });
-
-          setApiMessage("Image resized to optimize for processing.");
-        } else {
-          // For smaller images, read directly as data URL
-          dataUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const result = e.target?.result as string;
-              resolve(result);
-            };
-            reader.onerror = () => reject(new Error("Failed to read file"));
-            reader.readAsDataURL(file);
-          });
-        }
-      }
-
-      setUploadedImage(dataUrl);
-      setUseUploadedImage(true);
-
-      // Clear the processing message after a short delay
-      setTimeout(() => {
-        setApiMessage(null);
-      }, 2000);
-    } catch (error) {
-      console.error("Error processing image:", error);
-      setApiMessage(
-        error instanceof Error ? error.message : "Failed to process image"
-      );
-    }
-  };
-
-  const handleClearUploadedImage = () => {
-    setUploadedImage(null);
-    setUseUploadedImage(false);
+    return selectedImage || undefined;
   };
 
   // Handle theme selection - clear custom prompt when a theme is selected
@@ -741,7 +683,7 @@ export default function Home() {
   const hasValidImage = getImageToUse();
   const hasThemeFromUrl = !!generationImage?.promptText;
   const showWarnings = {
-    noImage: !useUploadedImage && !unifiedUser?.profileImage && !uploadedImage,
+    noImage: !selectedImage,
     noUploadedImage: useUploadedImage && !uploadedImage,
   };
 
@@ -828,15 +770,8 @@ export default function Home() {
         <>
           {/* Image Selection */}
           <ImageSelector
-            profileImageUrl={unifiedUser.profileImage}
             displayName={unifiedUser.displayName}
             username={unifiedUser.username}
-            uploadedImage={uploadedImage}
-            onImageUpload={handleImageUpload}
-            onUseUploadedImageChange={setUseUploadedImage}
-            onClearUploadedImage={handleClearUploadedImage}
-            onError={setApiMessage}
-            fileInputRef={fileInputRef}
           />
 
           {/* Theme Selection - show if user has valid image OR if theme is loaded from URL */}

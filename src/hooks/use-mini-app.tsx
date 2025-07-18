@@ -1,24 +1,23 @@
 import { useState, useEffect } from "react";
 import sdk from "@farcaster/frame-sdk";
 
-export function useMiniApp() {
-  const [isInMiniApp, setIsInMiniApp] = useState<boolean | undefined>(
-    undefined
-  );
+export function useMiniAppContext() {
+  const [context, setContext] = useState<Awaited<typeof sdk.context>>();
 
   useEffect(() => {
-    const checkMiniApp = async () => {
+    const loadContext = async () => {
       try {
-        const result = await sdk.isInMiniApp();
-        setIsInMiniApp(result);
+        const result = await sdk.context;
+        result.user.pfpUrl;
+        setContext(result);
       } catch (error) {
         console.error("Error checking mini app context:", error);
-        setIsInMiniApp(false);
+        setContext(undefined);
       }
     };
 
-    checkMiniApp();
+    loadContext();
   }, []);
 
-  return !!isInMiniApp;
+  return context;
 }

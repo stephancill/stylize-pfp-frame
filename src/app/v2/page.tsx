@@ -4,17 +4,12 @@ import { ImageSelector } from "@/components/ImageSelector";
 import { ThemeGrid } from "@/components/ThemeGrid";
 import { ThemeModal } from "@/components/ThemeModal";
 import { PaymentModal } from "@/components/PaymentModal";
-import {
-  checkIfResizeNeeded,
-  convertGifToPng,
-  isGifFile,
-  resizeImage,
-} from "@/lib/image-utils";
 import themes from "@/lib/themes";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useImageSelection } from "@/providers/ImageSelectionProvider";
 import { useUser } from "@/providers/UserContextProvider";
 import { useAccount } from "wagmi";
 import { createUnifiedUser } from "@/types/user";
@@ -27,7 +22,10 @@ export default function Page() {
   const { user: farcasterUser, isLoading: isUserLoading } = useUser();
   const { address: connectedAddress } = useAccount();
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image selection hook
+  const { selectedImage, uploadedImage, useUploadedImage, clearUploadedImage } =
+    useImageSelection();
 
   // Unified Authentication (supports both SIWE and Farcaster)
   const {
@@ -53,10 +51,6 @@ export default function Page() {
       (!isInFarcasterContext &&
         authUser?.authType === "siwe" &&
         authUser?.address?.toLowerCase() === connectedAddress?.toLowerCase()));
-
-  // Image upload state
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [useUploadedImage, setUseUploadedImage] = useState<boolean>(false);
 
   // Theme selection state
   const [selectedThemeId, setSelectedThemeId] = useState<string>("");
@@ -121,59 +115,6 @@ export default function Page() {
     }
   }, [promptId, fetchedTheme]);
 
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      let dataUrl: string;
-
-      // Check if the file is a GIF and convert it to PNG
-      if (isGifFile(file)) {
-        dataUrl = await convertGifToPng(file);
-      } else {
-        // Check if the image needs to be resized
-        const needsResize = await checkIfResizeNeeded(file, 1024, 1024);
-
-        if (needsResize) {
-          // Resize the image while maintaining aspect ratio
-          dataUrl = await resizeImage(file, {
-            maxWidth: 1024,
-            maxHeight: 1024,
-            quality: 0.9,
-          });
-        } else {
-          // For smaller images, read directly as data URL
-          dataUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const result = e.target?.result as string;
-              resolve(result);
-            };
-            reader.onerror = () => reject(new Error("Failed to read file"));
-            reader.readAsDataURL(file);
-          });
-        }
-      }
-
-      setUploadedImage(dataUrl);
-      setUseUploadedImage(true);
-    } catch (error) {
-      console.error("Error processing image:", error);
-      toast.error("Error processing image", {
-        description:
-          error instanceof Error ? error.message : "Failed to process image",
-      });
-    }
-  };
-
-  const handleClearUploadedImage = () => {
-    setUploadedImage(null);
-    setUseUploadedImage(false);
-  };
-
   const handleThemeSelect = (themeId: string) => {
     setSelectedThemeId(themeId);
     setCustomPrompt(""); // Clear custom prompt when a theme is selected
@@ -204,7 +145,12 @@ export default function Page() {
     prompt: string;
     referrerId?: string;
   }) => {
-    if (!uploadedImage) return; // Don't proceed if no image uploaded
+    if (!selectedImage) {
+      toast.error("Image required", {
+        description: "Please upload an image to stylize.",
+      });
+      return;
+    }
 
     // Check if user is authenticated
     if (!hasValidAuth) {
@@ -215,15 +161,7 @@ export default function Page() {
     }
 
     // Get the image to use
-    const imageToUse = useUploadedImage
-      ? uploadedImage
-      : unifiedUser?.profileImage;
-    if (!imageToUse) {
-      toast.error("Image required", {
-        description: "Please upload an image to stylize.",
-      });
-      return;
-    }
+    const imageToUse = selectedImage;
 
     // Set up payment modal
     setPaymentModalData({
@@ -236,16 +174,12 @@ export default function Page() {
 
   // Handle payment completion
   const handlePaymentComplete = () => {
-    // Clear image and theme selection
-    setUploadedImage(null);
-    setUseUploadedImage(false);
+    // Clear theme selection
     setSelectedThemeId("");
     setCustomPrompt("");
 
-    // Reset the file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    // Clear image selection
+    clearUploadedImage();
 
     toast.success("Payment successful!", {
       description:
@@ -318,15 +252,8 @@ export default function Page() {
 
           <div className="max-w-lg">
             <ImageSelector
-              profileImageUrl={unifiedUser?.profileImage}
               displayName={unifiedUser?.displayName}
               username={unifiedUser?.username}
-              uploadedImage={uploadedImage}
-              onImageUpload={handleImageUpload}
-              onUseUploadedImageChange={setUseUploadedImage}
-              onClearUploadedImage={handleClearUploadedImage}
-              onError={(error) => toast.error("Error", { description: error })}
-              fileInputRef={fileInputRef}
             />
           </div>
         </div>
@@ -360,6 +287,8 @@ export default function Page() {
         onProceed={handleProceed}
         uploadedImage={uploadedImage}
         isLoading={isLoadingTheme}
+        displayName={unifiedUser?.displayName}
+        username={unifiedUser?.username}
       />
 
       {/* Payment Modal */}

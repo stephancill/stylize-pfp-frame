@@ -17,10 +17,18 @@ import {
   CredenzaHeader,
   CredenzaTitle,
 } from "@/components/ui/credenza";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Users } from "lucide-react";
+import { Star, Users, Upload, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type ServerTheme } from "./ThemeRow";
+import { useMiniAppContext } from "@/hooks/use-mini-app";
+import { useImageSelection } from "@/providers/ImageSelectionProvider";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ThemeModalProps {
   open: boolean;
@@ -39,6 +47,8 @@ interface ThemeModalProps {
   onProceed: (params: { prompt: string; referrerId?: string }) => void;
   uploadedImage?: string | null;
   isLoading?: boolean;
+  displayName?: string;
+  username?: string;
 }
 
 export function ThemeModal({
@@ -50,9 +60,38 @@ export function ThemeModal({
   onProceed,
   uploadedImage,
   isLoading = false,
+  displayName,
+  username,
 }: ThemeModalProps) {
   const [showFullPrompt, setShowFullPrompt] = useState(false);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [showImagePopover, setShowImagePopover] = useState(false);
+
+  const context = useMiniAppContext();
+  const isInMiniApp = !!context;
+  const userProfileImage = context?.user?.pfpUrl;
+  const userDisplayName = context?.user?.displayName;
+  const userUsername = context?.user?.username;
+
+  const {
+    selectedImage,
+    profileImage,
+    customImage,
+    useUploadedImage,
+    triggerFileInput,
+    setUseUploadedImage,
+    clearUploadedImage,
+    fileInputRef,
+    uploadImage,
+  } = useImageSelection();
+
+  // Use the uploadedImage from props if available, otherwise use from hook
+  const imageToUse = uploadedImage || customImage;
+  const hasImage = !!imageToUse;
+
+  // Use context user info if available, otherwise fall back to hook data
+  const profileImageToUse = userProfileImage || profileImage;
+  const hasProfileImageToUse = !!profileImageToUse;
 
   // Focus on the initially selected image when credenza opens
   useEffect(() => {
@@ -75,7 +114,7 @@ export function ThemeModal({
   }, [open, selectedTheme, carouselApi]);
 
   const handleProceed = () => {
-    if (!uploadedImage) return; // Don't proceed if no image uploaded
+    if (!hasImage) return; // Don't proceed if no image uploaded
 
     if (selectedTheme?.id === "custom") {
       onProceed({ prompt: tempCustomPrompt });
@@ -86,12 +125,113 @@ export function ThemeModal({
     onOpenChange(false);
   };
 
+  const handleImageSelection = (useProfile: boolean) => {
+    if (useProfile && !profileImageToUse) return;
+    setUseUploadedImage(!useProfile);
+    setShowImagePopover(false);
+  };
+
+  const handleUploadImage = () => {
+    triggerFileInput();
+    setShowImagePopover(false);
+  };
+
+  const getInitials = () => {
+    // Use context user info if available, otherwise fall back to props
+    const nameToUse =
+      userDisplayName || userUsername || displayName || username;
+    if (!nameToUse) return "??";
+    const names = nameToUse.split(" ");
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return nameToUse.substring(0, 2).toUpperCase();
+  };
+
+  const renderImageSelectionButton = () => {
+    if (hasImage) {
+      return (
+        <div className="flex items-center gap-3">
+          {/* Image preview */}
+          <div className="w-9 h-9 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+            <img
+              src={imageToUse}
+              alt="Selected image"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <Button type="button" onClick={handleProceed}>
+            Proceed
+          </Button>
+        </div>
+      );
+    }
+
+    if (isInMiniApp && hasProfileImageToUse) {
+      return (
+        <Popover open={showImagePopover} onOpenChange={setShowImagePopover}>
+          <PopoverTrigger asChild>
+            <Button type="button">Choose image</Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2">
+            <div className="space-y-2">
+              <button
+                onClick={() => handleImageSelection(true)}
+                className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+              >
+                <Avatar className="w-6 h-6">
+                  <AvatarImage
+                    src={profileImageToUse || undefined}
+                    alt="Profile"
+                  />
+                  <AvatarFallback className="text-xs">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Profile image</span>
+                  {userUsername && (
+                    <span className="text-xs text-muted-foreground">
+                      @{userUsername}
+                    </span>
+                  )}
+                </div>
+              </button>
+              <button
+                onClick={handleUploadImage}
+                className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+              >
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <Upload className="w-4 h-4" />
+                </div>
+                <span className="text-sm">Upload image</span>
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      );
+    }
+
+    return (
+      <Button type="button" onClick={triggerFileInput}>
+        Choose image
+      </Button>
+    );
+  };
+
   return (
     <Credenza open={open} onOpenChange={onOpenChange}>
       <CredenzaContent className="sm:max-w-md">
         <CredenzaHeader>
           <CredenzaTitle>Theme</CredenzaTitle>
         </CredenzaHeader>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={uploadImage}
+          className="hidden"
+        />
         <CredenzaBody>
           {/* Loading state with skeletons */}
           {isLoading ? (
@@ -247,13 +387,7 @@ export function ThemeModal({
           )}
         </CredenzaBody>
         <CredenzaFooter className="sm:justify-end">
-          <Button
-            type="button"
-            onClick={handleProceed}
-            disabled={!uploadedImage}
-          >
-            {!uploadedImage ? "Upload input image" : "Proceed"}
-          </Button>
+          {renderImageSelectionButton()}
         </CredenzaFooter>
       </CredenzaContent>
     </Credenza>

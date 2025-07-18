@@ -4,19 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, X } from "lucide-react";
-import { useRef } from "react";
-
-interface ImageSelectorProps {
-  profileImageUrl?: string;
-  displayName?: string;
-  username?: string;
-  uploadedImage: string | null;
-  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-  onUseUploadedImageChange: (useUploaded: boolean) => void;
-  onClearUploadedImage: () => void;
-  onError: (message: string) => void;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-}
+import { useImageSelection } from "@/providers/ImageSelectionProvider";
 
 const getInitials = (
   displayName: string | undefined,
@@ -31,54 +19,29 @@ const getInitials = (
   return nameToUse.substring(0, 2).toUpperCase();
 };
 
-export function ImageSelector({
-  profileImageUrl,
-  displayName,
-  username,
-  uploadedImage,
-  onImageUpload,
-  onUseUploadedImageChange,
-  onClearUploadedImage,
-  onError,
-  fileInputRef,
-}: ImageSelectorProps) {
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+interface ImageSelectorProps {
+  displayName?: string;
+  username?: string;
+}
 
-    // Check file size (limit to 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      onError("Image file size must be less than 5MB");
-      return;
-    }
-
-    // Check file type
-    if (!file.type.startsWith("image/")) {
-      onError("Please select a valid image file");
-      return;
-    }
-
-    try {
-      await onImageUpload(event);
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      onError(
-        error instanceof Error ? error.message : "Failed to upload image"
-      );
-    }
-  };
+export function ImageSelector({ displayName, username }: ImageSelectorProps) {
+  const {
+    selectedImage,
+    uploadedImage,
+    profileImage,
+    fileInputRef,
+    uploadImage,
+    clearUploadedImage,
+    setUseUploadedImage,
+  } = useImageSelection();
 
   const handleClearImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onClearUploadedImage();
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    clearUploadedImage();
   };
 
-  const hasProfileImage = !!profileImageUrl;
+  const triggerFileInput = () => fileInputRef.current?.click();
+  const hasProfileImage = !!profileImage;
   const showBothOptions = hasProfileImage;
 
   return (
@@ -93,12 +56,12 @@ export function ImageSelector({
           <div className="flex flex-col items-center">
             <Card
               className="cursor-pointer transition-all hover:bg-gray-25 mb-2 w-24 h-24"
-              onClick={() => onUseUploadedImageChange(false)}
+              onClick={() => setUseUploadedImage(false)}
             >
               <CardContent className="p-4 flex items-center justify-center h-full">
                 <div className="w-16 h-16 rounded-md overflow-hidden">
                   <Avatar className="w-full h-full">
-                    <AvatarImage src={profileImageUrl} alt="Profile" />
+                    <AvatarImage src={profileImage} alt="Profile" />
                     <AvatarFallback>
                       {getInitials(displayName, username)}
                     </AvatarFallback>
@@ -114,7 +77,7 @@ export function ImageSelector({
         <div className="flex flex-col items-center">
           <Card
             className="cursor-pointer transition-all hover:bg-gray-25 mb-2 w-24 h-24"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={triggerFileInput}
           >
             <CardContent className="p-4 flex items-center justify-center h-full">
               {uploadedImage ? (
@@ -148,7 +111,7 @@ export function ImageSelector({
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        onChange={handleImageUpload}
+        onChange={uploadImage}
         className="hidden"
       />
     </div>

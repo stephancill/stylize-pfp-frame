@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { UserContextProvider } from "@/providers/UserContextProvider";
+import { ImageSelectionProvider } from "@/providers/ImageSelectionProvider";
 import { WagmiProvider } from "wagmi";
 import { config } from "@/lib/wagmi";
 import { Toaster } from "@/components/ui/sonner";
@@ -18,14 +19,16 @@ export function Provider({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <Suspense>
             <UserContextProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
-              >
-                {children}
-              </ThemeProvider>
+              <ImageSelectionProvider>
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="system"
+                  enableSystem
+                  disableTransitionOnChange
+                >
+                  {children}
+                </ThemeProvider>
+              </ImageSelectionProvider>
             </UserContextProvider>
           </Suspense>
           <Toaster />

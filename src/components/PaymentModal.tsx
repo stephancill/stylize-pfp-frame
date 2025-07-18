@@ -317,6 +317,30 @@ export function PaymentModal({
         </CredenzaHeader>
 
         <CredenzaBody>
+          {/* Image and Prompt Preview */}
+          <div className="mb-4 space-y-4">
+            {/* Image Preview */}
+            {imageUrl && (
+              <div className="aspect-square w-24 mx-auto rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700">
+                <img
+                  src={imageUrl}
+                  alt="Input image"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
+            {/* Prompt Preview */}
+            {prompt && (
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-1">Prompt:</p>
+                <p className="text-sm text-gray-900 dark:text-gray-100 line-clamp-2">
+                  {prompt}
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Quote Display */}
           <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
             <div className="text-center">

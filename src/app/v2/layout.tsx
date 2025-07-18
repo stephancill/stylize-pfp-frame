@@ -10,7 +10,7 @@ import { MiniAppReady } from "@/components/MiniAppReady";
 import { Navigation } from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AuthModal } from "@/components/AuthModal";
-import { useMiniApp } from "@/hooks/use-mini-app";
+import { useMiniAppContext } from "@/hooks/use-mini-app";
 import { useAccount, useConnect } from "wagmi";
 import { useEffect, useState } from "react";
 
@@ -22,7 +22,7 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
   // Auth-related state
   const { connect, connectors } = useConnect();
   const { address, isConnected } = useAccount();
-  const isInMiniApp = useMiniApp();
+  const isInMiniApp = useMiniAppContext();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [hasAttemptedSignIn, setHasAttemptedSignIn] = useState(false);
