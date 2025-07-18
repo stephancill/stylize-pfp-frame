@@ -97,8 +97,13 @@ export async function GET(request: NextRequest) {
         // Fetch user data using the utility
         const userDataMaps = await fetchUserDataForIds(Array.from(allUserIds));
 
+        // Filter out themes with no images
+        const themesWithImagesFiltered = themesWithImages.filter(
+          (theme) => theme.images.length > 0
+        );
+
         // Format the final response
-        return themesWithImages.map((theme) => {
+        return themesWithImagesFiltered.map((theme) => {
           const authorData = theme.authorId
             ? getStandardizedUserData(theme.authorId, userDataMaps)
             : null;
