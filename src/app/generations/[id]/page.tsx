@@ -1,5 +1,4 @@
 import { CreationItem } from "@/components/CreationItem";
-import { MiniAppReady } from "@/components/MiniAppReady";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { Sparkles } from "lucide-react";
@@ -47,12 +46,7 @@ export default async function Page({
   // Fetch image from database
   const image = await db
     .selectFrom("generatedImages")
-    .select([
-      "status",
-      "createdAt",
-      "quoteId",
-      "promptText",
-    ])
+    .select(["status", "createdAt", "quoteId", "promptText"])
     .where("id", "=", id)
     .executeTakeFirst();
 
@@ -62,7 +56,6 @@ export default async function Page({
 
   return (
     <div className="flex justify-center items-center min-h-screen p-4">
-      <MiniAppReady />
       <div className="max-w-md w-full space-y-4">
         <CreationItem
           image={{
@@ -75,7 +68,7 @@ export default async function Page({
           }}
         />
         <div className="flex justify-center">
-          <Link href={`/?generationId=${id}`} className="w-full">
+          <Link href={`/?promptId=${id}`} className="w-full">
             <Button variant="outline" size="sm" className="w-full text-xs">
               <Sparkles className="h-3 w-3 mr-1" />
               Use this theme

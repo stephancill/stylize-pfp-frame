@@ -25,11 +25,6 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-// Create Farcaster app client for verification
-const farcasterAppClient = createAppClient({
-  ethereum: viemConnector(),
-});
-
 // JWT Configuration
 const JWT_SECRET =
   process.env.JWT_SECRET ||
@@ -331,6 +326,11 @@ export async function verifyFarcasterMessage(
     ) {
       throw new AuthError("Invalid or expired nonce");
     }
+
+    // Create Farcaster app client for verification
+    const farcasterAppClient = createAppClient({
+      ethereum: viemConnector(),
+    });
 
     // Verify the Farcaster sign-in message
     const verifyResponse = await farcasterAppClient.verifySignInMessage({

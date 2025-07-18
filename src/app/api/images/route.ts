@@ -3,8 +3,9 @@ import { db } from "@/lib/db";
 import { withAuth } from "@/lib/siwe-auth";
 import { NextResponse } from "next/server";
 import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
+import { sql } from "kysely";
 
-export const GET = withAuth(async ({ user }) => {
+export const GET = withAuth(async ({ user, req }) => {
   try {
     if (!user.id) {
       const response = NextResponse.json(
@@ -15,21 +16,47 @@ export const GET = withAuth(async ({ user }) => {
       return response;
     }
 
+    // Parse query parameters for pagination
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "5");
+    const offset = (page - 1) * limit;
+
+    // Get total count for pagination metadata
+    const totalCountResult = await db
+      .selectFrom("generatedImages")
+      .select(db.fn.count("id").as("total"))
+      .where("userId", "ilike", user.id.toString().toLowerCase())
+      .where("status", "=", "completed")
+      .executeTakeFirst();
+
+    const totalCount = Number(totalCountResult?.total || 0);
+    const totalPages = Math.ceil(totalCount / limit);
+
     // Kysely automatically converts camelCase to snake_case for column names
     // if a CamelCasePlugin is used, otherwise ensure your column names match the DB.
     // Assuming camelCase plugin is in use based on user prompt.
+    // Get completed images with reference count using a subquery approach
     const completedImages = await db
       .selectFrom("generatedImages")
       .select([
-        "id", // or quoteId if that's the unique identifier for an image item
+        "id",
         "promptText",
         "createdAt",
-        "status", // good for debugging, or if UI wants to re-verify
+        "status",
         "quoteId",
+        sql<number>`(
+          SELECT count(*)
+          FROM generated_images refs
+          WHERE refs.referring_image_id = generated_images.id
+          AND refs.status = 'completed'
+        )`.as("referenceCount"),
       ])
       .where("userId", "ilike", user.id.toString().toLowerCase())
       .where("status", "=", "completed")
       .orderBy("createdAt", "desc")
+      .limit(limit)
+      .offset(offset)
       .execute();
 
     if (!completedImages || completedImages.length === 0) {
@@ -37,6 +64,14 @@ export const GET = withAuth(async ({ user }) => {
         {
           message: "No completed images found for this user.",
           images: [],
+          pagination: {
+            page,
+            limit,
+            totalCount,
+            totalPages,
+            hasNextPage: false,
+            hasPreviousPage: page > 1,
+          },
           authenticatedUser: user.address, // Include for debugging
         },
         { status: 200 } // 200 or 404 depends on desired behavior for "no results"
@@ -44,14 +79,23 @@ export const GET = withAuth(async ({ user }) => {
     }
 
     // Transform the images to include URLs instead of raw data
-    const imagesWithUrls = completedImages.map(image => ({
+    const imagesWithUrls = completedImages.map((image) => ({
       ...image,
       imageDataUrl: getImageUrl(image.id),
       userPfpUrl: getInputImageUrl(image.id),
+      referenceCount: Number(image.referenceCount),
     }));
 
     return NextResponse.json({
       images: imagesWithUrls,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
       authenticatedUser: user.address, // Include for debugging
     });
   } catch (error) {

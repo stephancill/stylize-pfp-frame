@@ -18,10 +18,13 @@ export const redisQueue = getRedisClient(REDIS_QUEUE_URL);
 export async function withCache<T>(
   key: string,
   fetcher: () => Promise<T>,
-  { ttl = 60 * 60 * 24 }: { ttl?: number } = {}
+  {
+    ttl = 60 * 60 * 24,
+    disableCache = false,
+  }: { ttl?: number; disableCache?: boolean } = {}
 ) {
   const cached = await redisCache.get(key);
-  if (cached) {
+  if (cached && !disableCache) {
     return JSON.parse(cached) as T;
   }
 
