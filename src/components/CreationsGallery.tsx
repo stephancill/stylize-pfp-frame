@@ -48,7 +48,7 @@ export function CreationsGallery() {
   );
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [remixPopoverOpen, setRemixPopoverOpen] = useState(false);
+  const [reusePopoverOpen, setReusePopoverOpen] = useState(false);
   const [showFullPrompt, setShowFullPrompt] = useState(false);
 
   const {
@@ -350,8 +350,8 @@ export function CreationsGallery() {
                 </PopoverContent>
               </Popover>
               <Popover
-                open={remixPopoverOpen}
-                onOpenChange={setRemixPopoverOpen}
+                open={reusePopoverOpen}
+                onOpenChange={setReusePopoverOpen}
                 modal
               >
                 <PopoverTrigger asChild>
@@ -379,7 +379,7 @@ export function CreationsGallery() {
                         className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
                       >
                         <FileText className="h-4 w-4 mr-2" />
-                        Remix prompt
+                        Use prompt
                       </Button>
                     </Link>
                     <Link
@@ -394,7 +394,7 @@ export function CreationsGallery() {
                         className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
                       >
                         <Image className="h-4 w-4 mr-2" />
-                        Remix image
+                        Use image
                       </Button>
                     </Link>
                     <Link
@@ -411,7 +411,7 @@ export function CreationsGallery() {
                         className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Remix both
+                        Use both
                       </Button>
                     </Link>
                   </div>

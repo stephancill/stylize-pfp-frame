@@ -97,14 +97,6 @@ export function ImageSelector() {
           <p className="text-sm font-medium text-center">Upload</p>
         </div>
       </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={uploadImage}
-        className="hidden"
-      />
     </div>
   );
 }

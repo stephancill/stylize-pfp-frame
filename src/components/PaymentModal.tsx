@@ -374,8 +374,8 @@ export function PaymentModal({
           )}
 
           {sendTxData && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-sm text-blue-800">
+            <div className="mb-4 p-3 bg-muted/50 border border-border rounded-md">
+              <p className="text-sm text-muted-foreground">
                 Transaction: {truncateAddress(sendTxData)}
               </p>
             </div>

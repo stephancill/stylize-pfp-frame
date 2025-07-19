@@ -161,6 +161,13 @@ export function ImageSelectionProvider({ children }: { children: ReactNode }) {
 
   return (
     <ImageSelectionContext.Provider value={value}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={uploadImage}
+        className="hidden"
+      />
       {children}
     </ImageSelectionContext.Provider>
   );

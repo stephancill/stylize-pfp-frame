@@ -268,13 +268,6 @@ export function ThemeModal({
         <CredenzaHeader>
           <CredenzaTitle>Theme</CredenzaTitle>
         </CredenzaHeader>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={uploadImage}
-          className="hidden"
-        />
         <CredenzaBody>
           {/* Loading state with skeletons */}
           {isLoading ? (
