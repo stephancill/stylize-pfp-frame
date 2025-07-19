@@ -157,6 +157,20 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
       // Convert resized buffer back to base64
       const resizedImageB64Json = resizedImageBuffer.toString("base64");
 
+      // Get the actual id from the generatedImages table using quoteId
+      const generatedImage = await db
+        .selectFrom("generatedImages")
+        .select("id")
+        .where("quoteId", "=", quoteId)
+        .executeTakeFirst();
+
+      if (!generatedImage) {
+        console.error(
+          `Job ID ${job.id} for quoteId ${quoteId}: Could not find generated image record`
+        );
+        throw new Error("Generated image record not found");
+      }
+
       await db
         .updateTable("generatedImages")
         .set({
@@ -175,7 +189,7 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
               fid: parsedUserId,
               title: "Stylize complete",
               body: "Your profile picture has been stylized",
-              targetUrl: `${process.env.APP_URL}/gallery?imageId=${quoteId}`,
+              targetUrl: `${process.env.APP_URL}/gallery?imageId=${generatedImage.id}`,
             });
           } catch (error) {
             console.error(
