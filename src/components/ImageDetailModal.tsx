@@ -16,15 +16,18 @@ import sdk from "@farcaster/frame-sdk";
 import {
   Copy,
   Download,
+  FileText,
+  Image,
   MessageCircle,
+  Plus,
+  RefreshCw,
   Share2,
-  Sparkles,
   Twitter,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CompletedImage, SimpleCreationItem } from "./SimpleCreationItem";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface ImageDetailModalProps {
   image: CompletedImage | null;
@@ -40,9 +43,9 @@ export function ImageDetailModal({
   onOpenChange,
 }: ImageDetailModalProps) {
   const isMobile = useIsMobile();
-  const router = useRouter();
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [reusePopoverOpen, setReusePopoverOpen] = useState(false);
   const [showFullPrompt, setShowFullPrompt] = useState(false);
 
   // Check if we're in a Farcaster mini app context
@@ -120,16 +123,6 @@ export function ImageDetailModal({
     }
   };
 
-  const handleRemix = () => {
-    if (!image) return;
-    
-    // Close the modal
-    onOpenChange(false);
-    
-    // Navigate to the main page with the promptId parameter
-    router.push(`/?promptId=${image.id}`);
-  };
-
   return (
     <Credenza open={open} onOpenChange={onOpenChange}>
       <CredenzaContent className="max-w-md">
@@ -199,14 +192,74 @@ export function ImageDetailModal({
                 )}
 
                 <div className="flex gap-2">
-                  <Button
-                    variant="default"
-                    className="flex-1"
-                    onClick={handleRemix}
+                  <Popover
+                    open={reusePopoverOpen}
+                    onOpenChange={setReusePopoverOpen}
+                    modal
                   >
-                    <Sparkles className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`} />
-                    {!isMobile && "Remix"}
-                  </Button>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex-1">
+                        <RefreshCw
+                          className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`}
+                        />
+                        {!isMobile && "Remix"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-56 p-2 z-[100]"
+                      align="end"
+                      side="top"
+                      sideOffset={5}
+                    >
+                      <div className="space-y-1">
+                        <Link
+                          href={`/?promptId=${image.id}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Use prompt
+                          </Button>
+                        </Link>
+                        <Link
+                          href={`/?imageUrl=${encodeURIComponent(
+                            getImageUrl(image.id)
+                          )}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Image className="h-4 w-4 mr-2" />
+                            Use image
+                          </Button>
+                        </Link>
+                        <Link
+                          href={`/?promptId=${
+                            image.id
+                          }&imageUrl=${encodeURIComponent(
+                            getImageUrl(image.id)
+                          )}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Use both
+                          </Button>
+                        </Link>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   {image.imageDataUrl && !isInMiniApp && (
                     <Button
                       variant="outline"
