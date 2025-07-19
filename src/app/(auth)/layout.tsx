@@ -21,6 +21,8 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useConnect, useDisconnect } from "wagmi";
 
+const INFO_MODAL_SEEN_KEY = "info-modal-seen";
+
 export default function V2Layout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, signOut, isLoading, user } = useAuth();
   const { disconnect } = useDisconnect();
@@ -29,6 +31,7 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
   const { context } = useMiniAppContext();
   const isInMiniApp = !!context;
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -38,6 +41,14 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
       disconnect();
     } catch (error) {
       console.error("Sign out failed:", error);
+    }
+  };
+
+  const handleInfoModalChange = (open: boolean) => {
+    setShowInfoModal(open);
+    // Mark as seen when the modal is closed
+    if (!open) {
+      localStorage.setItem(INFO_MODAL_SEEN_KEY, "true");
     }
   };
 
@@ -60,6 +71,17 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
       setShowAuthModal(false);
     }
   }, [isAuthenticated, showAuthModal]);
+
+  // Auto-show info modal for first-time users
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      const hasSeenInfoModal =
+        localStorage.getItem(INFO_MODAL_SEEN_KEY) === "true";
+      if (!hasSeenInfoModal && !showInfoModal) {
+        setShowInfoModal(true);
+      }
+    }
+  }, [isAuthenticated, isLoading, showInfoModal]);
 
   // Show loading state
   if (isLoading) {
@@ -93,7 +115,10 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
         {!isMobile && <Navigation />}
 
         <div className="flex items-center space-x-2">
-          <InfoModal />
+          <InfoModal
+            isOpen={showInfoModal}
+            onOpenChange={handleInfoModalChange}
+          />
           <PendingJobsButton />
           <ModeToggle />
           {isAuthenticated && (

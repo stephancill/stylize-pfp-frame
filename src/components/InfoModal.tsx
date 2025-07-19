@@ -11,9 +11,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Info, Palette, Share2, Crown } from "lucide-react";
 
-export function InfoModal() {
+interface InfoModalProps {
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function InfoModal({ isOpen, onOpenChange }: InfoModalProps = {}) {
   return (
-    <Credenza>
+    <Credenza open={isOpen} onOpenChange={onOpenChange}>
       <CredenzaTrigger asChild>
         <Button variant="ghost" size="sm" className="h-8 px-2">
           <Info className="h-4 w-4" />
