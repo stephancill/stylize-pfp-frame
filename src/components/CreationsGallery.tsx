@@ -44,13 +44,11 @@ function CreationItemSkeleton() {
 interface CreationsGalleryProps {
   selectedImageFromUrl?: CreationItemCompletedImage | null;
   isLoadingImageFromUrl?: boolean;
-  onImageModalClose?: () => void;
 }
 
 export function CreationsGallery({
   selectedImageFromUrl,
   isLoadingImageFromUrl = false,
-  onImageModalClose,
 }: CreationsGalleryProps = {}) {
   const { userId } = useAuth();
   const isMobile = useIsMobile();
@@ -228,7 +226,6 @@ export function CreationsGallery({
   const handleModalClose = (open: boolean) => {
     if (!open) {
       setSelectedImage(null);
-      onImageModalClose?.();
     }
   };
 
