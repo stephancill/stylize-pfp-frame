@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sql } from "kysely";
 import { withCache } from "@/lib/redis";
-import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
+import { getBaseUrl, getImageUrl, getInputImageUrl } from "@/lib/image-utils";
 import { fetchUserDataForIds, getStandardizedUserData } from "@/lib/user-data";
 
 export async function GET(
@@ -12,8 +12,10 @@ export async function GET(
   try {
     const { id } = await params;
 
+    const domain = new URL(getBaseUrl()).hostname;
+
     const theme = await withCache(
-      `theme:${id}`,
+      `${domain}:theme:${id}`,
       async () => {
         // Get the specific image and its prompt
         const imageQuery = db
