@@ -14,27 +14,92 @@ This is an opinionated starter for building v2 frames with AI-powered image gene
 - **Monitoring**: Sentry for error tracking, PostHog for analytics
 - **Deployment**: Docker support
 
-## Features
+## What Users Can Do
 
-### Core Features
-- **Farcaster Authentication**: Sign in with Farcaster accounts
-- **AI Image Generation**: Create images using AI with customizable themes
-- **Payment Integration**: Built-in payment system for premium features
-- **Job Queue System**: Background processing with BullMQ and Redis
-- **Real-time Updates**: Live status updates for image generation jobs
-- **Gallery System**: Browse and manage generated images
-- **Theme System**: Customizable themes for image generation
+### 🎨 AI Image Stylization
+- **Upload Any Image**: Users can upload any photo (profile picture, artwork, etc.)
+- **Choose from Preset Themes**: Select from curated artistic styles like:
+  - **Studio Ghibli**: Transform images into iconic anime-style artwork
+  - **Higher Buddy**: Convert characters into animal representations with retro photography effects
+  - **Cinematic Fantasy**: Create mythical/fantasy versions with dramatic lighting and epic backgrounds
+- **Custom Prompts**: Write your own detailed prompts for unique transformations
+- **Real-time Processing**: Watch as your image is generated with live status updates
 
-### Technical Features
-- **Authenticated API Endpoints**: Secure endpoints with Lucia Auth
-- **Database Migrations**: Version-controlled schema changes
-- **Background Workers**: Scalable job processing system
-- **Notification System**: Built-in notification utilities
-- **Social Graph Integration**: Farcaster social graph helpers
-- **Error Monitoring**: Comprehensive error tracking with Sentry
-- **Analytics**: User behavior tracking with PostHog
-- **Responsive Design**: Mobile-first design with drawer components
-- **Dark/Light Mode**: Theme switching support
+### 💰 Crypto Payment System
+- **Base Network Integration**: Pay for image generation using cryptocurrency on Base
+- **Transparent Pricing**: Clear pricing displayed before generation (default: 0.00001 ETH)
+- **Instant Processing**: Payments are verified on-chain and generation starts immediately
+- **Referral Rewards**: Earn royalties when others use your successful generations as themes
+
+### 🖼️ Personal Gallery & Sharing
+- **Image Gallery**: Browse all your generated images in a beautiful grid layout
+- **Infinite Scroll**: Seamlessly load more images as you browse
+- **Detailed View**: Click any image to see full details, prompts used, and creation date
+- **Download Images**: Save your creations locally in high quality
+- **Social Sharing**: Share individual images or use them as templates for others
+
+### 🔄 Theme Discovery & Reuse
+- **Community Themes**: Browse themes created by other users based on popular generations
+- **Theme Templates**: Use successful generations from others as starting points
+- **Usage Analytics**: See how popular your themes are in the community
+- **Deep Linking**: Share specific themes via URLs for easy access
+
+### 📱 Multi-Platform Experience
+- **Farcaster Frames**: Full integration with Farcaster social network
+- **Mini App Support**: Works seamlessly within Farcaster's mobile app
+- **Web Interface**: Complete functionality available on desktop browsers
+- **Responsive Design**: Optimized experience across all device sizes
+
+### ⚡ Real-time Job Tracking
+- **Pending Jobs Monitor**: See all your active image generations in progress
+- **Status Updates**: Real-time updates on generation progress and completion
+- **Job History**: Track all your past generations and their status
+- **Notification System**: Get notified when images are ready (in Farcaster context)
+
+### 🔐 Flexible Authentication
+- **Farcaster Login**: Sign in with your Farcaster account for social features
+- **Wallet Connection**: Connect Ethereum wallets for direct payment
+- **Unified Experience**: Seamless experience regardless of authentication method
+- **Secure Sessions**: Lucia Auth provides secure, persistent sessions
+
+## Technical Features
+
+### For Developers
+- **Modern Stack**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Database**: PostgreSQL with Kysely query builder and migrations
+- **Queue System**: BullMQ with Redis for reliable background processing
+- **Monitoring**: Sentry error tracking and PostHog analytics integration
+- **Payment Processing**: On-chain payment verification with viem
+- **Image Storage**: Efficient image handling and URL generation
+- **API Design**: RESTful APIs with proper authentication and error handling
+
+## How It Works - User Journey
+
+### 1. **Sign In & Upload**
+   - Connect your Farcaster account or Ethereum wallet
+   - Upload any image you want to transform (profile pic, photo, artwork)
+
+### 2. **Choose Your Style**
+   - **Browse Themes**: Select from popular community-created themes
+   - **Use Presets**: Pick from curated styles (Studio Ghibli, Fantasy, etc.)
+   - **Custom Prompt**: Write your own detailed transformation instructions
+   - **Preview**: See example outputs before committing
+
+### 3. **Pay & Generate**
+   - Review the prompt and pricing (typically 0.00001 ETH on Base)
+   - Complete payment through your connected wallet
+   - Watch real-time status updates as your image is generated
+
+### 4. **View & Share**
+   - Download your high-quality generated image
+   - Share individual creations on social media
+   - Browse your personal gallery of all generated images
+   - Let others use your successful generations as themes (earn referral rewards)
+
+### 5. **Discover & Iterate**
+   - Explore themes created by other users
+   - Use popular generations as starting points for your own creations
+   - Build on successful styles and contribute to the community
 
 ## Getting Started
 
