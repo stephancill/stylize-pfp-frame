@@ -73,15 +73,15 @@ function V2Layout({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated, showAuthModal]);
 
   // Auto-show info modal for first-time users
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      const hasSeenInfoModal =
-        localStorage.getItem(INFO_MODAL_SEEN_KEY) === "true";
-      if (!hasSeenInfoModal && !showInfoModal) {
-        setShowInfoModal(true);
-      }
-    }
-  }, [isAuthenticated, isLoading, showInfoModal]);
+  // useEffect(() => {
+  //   if (isAuthenticated && !isLoading) {
+  //     const hasSeenInfoModal =
+  //       localStorage.getItem(INFO_MODAL_SEEN_KEY) === "true";
+  //     if (!hasSeenInfoModal && !showInfoModal) {
+  //       setShowInfoModal(true);
+  //     }
+  //   }
+  // }, [isAuthenticated, isLoading, showInfoModal]);
 
   // Show loading state
   if (isLoading) {
