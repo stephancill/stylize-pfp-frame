@@ -135,6 +135,29 @@ export async function POST(request: Request) {
         );
       }
 
+      // Get the generation ID from the database
+      const generationRecord = await db
+        .selectFrom("generatedImages")
+        .select("id")
+        .where("quoteId", "=", generationRequest.quoteId)
+        .executeTakeFirst();
+
+      if (!generationRecord) {
+        console.error(
+          "Critical error: Could not find generation record for quoteId:",
+          generationRequest.quoteId
+        );
+        await db
+          .updateTable("generatedImages")
+          .set({ status: "error" })
+          .where("quoteId", "=", generationRequest.quoteId)
+          .execute();
+        return NextResponse.json(
+          { error: "Internal error: Could not find generation record." },
+          { status: 500 }
+        );
+      }
+
       const jobData: StylizeImageJobData = {
         userId: generationRequest.userId,
         prompt: generationRequest.promptText,
@@ -143,6 +166,7 @@ export async function POST(request: Request) {
             ? undefined
             : generationRequest.userPfpUrl, // Convert null to undefined
         quoteId: generationRequest.quoteId, // Add quoteId to job data
+        generationId: generationRecord.id, // Add the actual generation ID
       };
 
       const job = await stylizeImageQueue.add("stylizeImage", jobData);
@@ -198,7 +222,7 @@ export async function POST(request: Request) {
         referringImageId,
       });
 
-      await db
+      const insertedRecord = await db
         .insertInto("generatedImages")
         .values({
           userId: userId,
@@ -208,6 +232,7 @@ export async function POST(request: Request) {
           userPfpUrl: userPfpUrl,
           referringImageId,
         })
+        .returning("id")
         .executeTakeFirstOrThrow();
 
       const calldata = encodeFunctionData({
