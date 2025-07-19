@@ -10,6 +10,7 @@ import clsx from "clsx";
 export function Navigation() {
   const isMobile = useIsMobile();
   const pathname = usePathname();
+  const { context } = useMiniAppContext();
 
   // Wait for mobile detection to complete before rendering
   if (isMobile === undefined) {
@@ -17,14 +18,15 @@ export function Navigation() {
   }
 
   if (isMobile) {
-    const { context } = useMiniAppContext();
     const isMiniApp = !!context;
-    
+
     return (
-      <div className={clsx(
-        "fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700",
-        isMiniApp && `pb-[${context?.client?.safeAreaInsets?.bottom ?? 4}px]`
-      )}>
+      <div
+        className={clsx(
+          "fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700",
+          isMiniApp && `pb-[${context?.client?.safeAreaInsets?.bottom ?? 4}px]`
+        )}
+      >
         <div className="flex justify-around items-center py-4">
           <Link href="/">
             <Plus

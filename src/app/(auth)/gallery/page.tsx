@@ -7,14 +7,17 @@ import { UserThemes } from "@/components/UserThemes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageDetailModal } from "@/components/ImageDetailModal";
 import type { CompletedImage } from "@/components/CreationItem";
 
 export default function GalleryPage() {
   const searchParams = useSearchParams();
   const imageId = searchParams.get("imageId");
-  const [selectedImage, setSelectedImage] = useState<CompletedImage | null>(null);
+  const [selectedImage, setSelectedImage] = useState<CompletedImage | null>(
+    null
+  );
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Fetch specific image when imageId is present
   const {
@@ -36,18 +39,20 @@ export default function GalleryPage() {
   // Set selected image when fetched
   const handleImageClick = (image: CompletedImage) => {
     setSelectedImage(image);
+    setShowDetailModal(true);
   };
 
-  const handleModalClose = (open: boolean) => {
-    if (!open) {
-      setSelectedImage(null);
+  useEffect(() => {
+    if (fetchedImage) {
+      setSelectedImage(fetchedImage);
     }
-  };
+  }, [fetchedImage]);
 
-  // Handle URL parameter - set selected image when fetched
-  if (fetchedImage && !selectedImage) {
-    setSelectedImage(fetchedImage);
-  }
+  useEffect(() => {
+    if (imageId) {
+      setShowDetailModal(true);
+    }
+  }, [imageId]);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
@@ -96,8 +101,8 @@ export default function GalleryPage() {
       <ImageDetailModal
         image={selectedImage}
         isLoading={isLoadingImage}
-        open={!!selectedImage || isLoadingImage}
-        onOpenChange={handleModalClose}
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
       />
     </div>
   );
