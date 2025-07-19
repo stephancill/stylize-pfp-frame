@@ -1,6 +1,6 @@
-# Stephan's Frames v2 Starter
+# AI Image Stylizer
 
-This is an opinionated starter for building v2 frames with AI-powered image generation capabilities.
+A fully-featured AI-powered image stylization platform built with Farcaster Frames v2 integration, cryptocurrency payments, and community-driven themes.
 
 ## Stack
 
@@ -274,16 +274,34 @@ Ensure all environment variables are properly configured for production, especia
 - API keys for OpenAI, Sentry, PostHog
 - Authentication secrets
 
-## Contributing
+## Live Application
 
-1. Follow the coding conventions outlined in `AGENTS.md`
+This is a production-ready AI image stylization platform. Users can:
+- Transform any image using AI with various artistic styles
+- Pay with cryptocurrency on the Base network
+- Share creations and earn referral rewards
+- Access through Farcaster frames or web interface
+
+## Development & Contributing
+
+### Local Development
+1. Follow the setup instructions above to run locally
 2. Use PNPM for package management
 3. Run tests: `pnpm test`
-4. Ensure migrations are included for database changes
-5. Update this README for significant feature additions
+4. Follow coding conventions in `AGENTS.md`
+
+### Database Changes
+- Create migrations in `src/migrations/` for schema changes
+- Update `src/types/db.ts` to reflect new schema
+- Run `pnpm run migrate` to apply changes
+
+### Adding New Features
+- Ensure proper authentication using `withAuth` helper
+- Add background job processing for long-running tasks
+- Update this README for user-facing feature additions
 
 ## Additional Documentation
 
 - `AGENTS.md` - Comprehensive development guide
-- `SIWE_AUTH_README.md` - Sign-In with Ethereum documentation
+- `SIWE_AUTH_README.md` - Sign-In with Ethereum documentation  
 - `UNIFIED_AUTH_README.md` - Unified authentication system guide
