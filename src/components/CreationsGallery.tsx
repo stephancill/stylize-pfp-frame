@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/providers/AuthProvider";
 import { useInfiniteImages } from "@/hooks/useInfiniteImages";
+import { useAuth } from "@/providers/AuthProvider";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { CompletedImage, SimpleCreationItem } from "./SimpleCreationItem";
 
@@ -77,7 +77,7 @@ export function CreationsGallery({ onImageClick }: CreationsGalleryProps) {
 
   if (error) {
     return (
-      <p className="text-center text-red-500 py-4">
+      <p className="text-red-500 py-4">
         Error loading images:{" "}
         {error instanceof Error ? error.message : String(error)}
       </p>
@@ -86,7 +86,7 @@ export function CreationsGallery({ onImageClick }: CreationsGalleryProps) {
 
   if (allImages.length === 0) {
     return (
-      <p className="text-center text-gray-500 py-4">
+      <p className="text-gray-500 py-4">
         You haven't generated any images yet.
       </p>
     );

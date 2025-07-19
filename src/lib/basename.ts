@@ -1,15 +1,14 @@
+import { L2ResolverABI } from "@/abi/L2ResolverABI";
 import {
   Address,
   ContractFunctionParameters,
-  createPublicClient,
   encodePacked,
-  http,
   keccak256,
   namehash,
 } from "viem";
 import { multicall } from "viem/actions";
 import { base, mainnet } from "viem/chains";
-import { L2ResolverABI } from "@/abi/L2ResolverABI";
+import { publicClient } from "./public-client";
 
 export type Basename = `${string}.base.eth`;
 
@@ -30,11 +29,6 @@ export enum BasenameTextRecordKeys {
   Discord = "com.discord",
   Avatar = "avatar",
 }
-
-const baseClient = createPublicClient({
-  chain: base,
-  transport: http(),
-});
 
 /**
  * Convert an chainId to a coinType hex for reverse chain resolution
@@ -71,7 +65,7 @@ export const convertReverseNodeToBytes = (
 export async function getBasename(address: Address): Promise<Basename | null> {
   try {
     const addressReverseNode = convertReverseNodeToBytes(address, base.id);
-    const basename = await baseClient.readContract({
+    const basename = await publicClient.readContract({
       abi: L2ResolverABI,
       address: BASENAME_L2_RESOLVER_ADDRESS,
       functionName: "name",
@@ -91,7 +85,7 @@ export async function getBasenameAvatar(
   basename: Basename
 ): Promise<string | null> {
   try {
-    const avatar = await baseClient.getEnsAvatar({
+    const avatar = await publicClient.getEnsAvatar({
       name: basename,
       universalResolverAddress: BASENAME_L2_RESOLVER_ADDRESS,
     });
@@ -138,7 +132,7 @@ export async function getBasenameDataBatch(addresses: Address[]): Promise<
       } as const;
     });
 
-    const nameResults = await multicall(baseClient, {
+    const nameResults = await multicall(publicClient, {
       contracts: nameContracts,
     });
 
@@ -166,7 +160,7 @@ export async function getBasenameDataBatch(addresses: Address[]): Promise<
     // Step 3: Batch get avatars for addresses with basenames using getEnsAvatar
     const avatarPromises = addressesWithNames.map(async ({ name }) => {
       try {
-        const avatar = await baseClient.getEnsAvatar({
+        const avatar = await publicClient.getEnsAvatar({
           name,
           universalResolverAddress: BASENAME_L2_RESOLVER_ADDRESS,
         });

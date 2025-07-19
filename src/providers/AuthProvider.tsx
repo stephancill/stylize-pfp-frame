@@ -1,22 +1,22 @@
 "use client";
 
+import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
+import sdk from "@farcaster/frame-sdk";
+import * as Sentry from "@sentry/nextjs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import posthog from "posthog-js";
 import {
   createContext,
-  useContext,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { useAccount, useSignMessage } from "wagmi";
 import { createSiweMessage } from "viem/siwe";
+import { useAccount, useSignMessage } from "wagmi";
 import { base } from "wagmi/chains";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAuth } from "../lib/fetch-auth";
-import posthog from "posthog-js";
-import * as Sentry from "@sentry/nextjs";
-import sdk from "@farcaster/frame-sdk";
-import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 
 // Unified auth user interface
 interface AuthUser {
@@ -249,6 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   // SIWE sign in mutation
+  // TODO: Try wallet_connect and fall back to manual message signing
   const siweSignInMut = useMutation({
     mutationFn: siweSignInMutation,
     onSuccess: () => {

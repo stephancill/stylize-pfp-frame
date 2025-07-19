@@ -1,10 +1,10 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
+import { fetchAuth } from "@/lib/fetch-auth";
 import { useAuth } from "@/providers/AuthProvider";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAuth } from "@/lib/fetch-auth";
 import { ThemeRow, type ServerTheme } from "./ThemeRow";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserThemesProps {
   onThemeClick?: (
@@ -75,7 +75,7 @@ export function UserThemes({ onThemeClick }: UserThemesProps) {
 
   if (error) {
     return (
-      <div className="text-center py-8">
+      <div className="py-4">
         <p className="text-red-500">Failed to load themes</p>
       </div>
     );
@@ -83,7 +83,7 @@ export function UserThemes({ onThemeClick }: UserThemesProps) {
 
   if (userThemes.length === 0) {
     return (
-      <div className="text-center py-8">
+      <div className="py-4">
         <p className="text-gray-500">You haven't created any themes yet.</p>
       </div>
     );

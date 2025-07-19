@@ -1,22 +1,12 @@
-import { getUserDatasCached, getFidsFromAddresses } from "@/lib/farcaster";
-import { createPublicClient, http, isHex } from "viem";
-import { base, mainnet } from "viem/chains";
+import {
+  filterAddressesForBasename,
+  getBasenameDataBatch,
+} from "@/lib/basename";
+import { getFidsFromAddresses, getUserDatasCached } from "@/lib/farcaster";
 import { addEnsContracts } from "@ensdomains/ensjs";
 import { batch, getName, getTextRecord } from "@ensdomains/ensjs/public";
-import {
-  getBasenameDataBatch,
-  filterAddressesForBasename,
-} from "@/lib/basename";
-
-const mainnetClient = createPublicClient({
-  chain: mainnet,
-  transport: http(),
-});
-
-const baseClient = createPublicClient({
-  chain: base,
-  transport: http(),
-});
+import { createPublicClient, http, isHex } from "viem";
+import { mainnet } from "viem/chains";
 
 // Create ENS-enabled client
 const ensClient = createPublicClient({

@@ -2,8 +2,7 @@ import { createAppClient, viemConnector } from "@farcaster/auth-client";
 import * as Sentry from "@sentry/nextjs";
 import jwt from "jsonwebtoken";
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, http } from "viem";
-import { base } from "viem/chains";
+import posthog from "posthog-js";
 import {
   generateSiweNonce,
   parseSiweMessage,
@@ -16,14 +15,8 @@ import {
   SIWE_NONCE_REDIS_PREFIX,
 } from "./constants";
 import { AuthError } from "./errors";
+import { publicClient } from "./public-client";
 import { redisCache } from "./redis";
-import posthog from "posthog-js";
-
-// Create a public client for SIWE verification
-const publicClient = createPublicClient({
-  chain: base,
-  transport: http(),
-});
 
 // JWT Configuration
 const JWT_SECRET =

@@ -1,9 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/providers/AuthProvider";
-import { useConnect, useAccount } from "wagmi";
 import {
   Credenza,
   CredenzaContent,
@@ -11,7 +8,10 @@ import {
   CredenzaHeader,
   CredenzaTitle,
 } from "@/components/ui/credenza";
-import { Loader2, Wallet, User } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
+import { Loader2, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useAccount, useConnect } from "wagmi";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -84,15 +84,24 @@ export function AuthModal({ isOpen, onOpenChange }: AuthModalProps) {
                 <Button
                   key={connector.id}
                   onClick={() => handleConnectWallet(connector)}
-                  className="w-full"
+                  className="w-full justify-start"
                 >
-                  {connector.icon && (
-                    <img
-                      src={connector.icon}
-                      alt={connector.name}
-                      className="w-4 h-4 mr-2"
-                    />
-                  )}
+                  <div className="rounded-sm overflow-hidden">
+                    {connector.icon && (
+                      <img
+                        src={connector.icon}
+                        alt={connector.name}
+                        className="w-4 h-4"
+                      />
+                    )}
+                    {connector.id === "baseAccountSDK" && !connector.icon && (
+                      <img
+                        src={"/base-logo.png"}
+                        alt={connector.name}
+                        className="w-4 h-4"
+                      />
+                    )}
+                  </div>
                   {connector.name}
                 </Button>
               ))}

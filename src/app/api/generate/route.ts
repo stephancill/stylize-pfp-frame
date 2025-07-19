@@ -1,24 +1,16 @@
-import { NextResponse } from "next/server";
+import { DelegateABI } from "@/abi/DelegateABI";
 import { db } from "@/lib/db";
+import { getAddressForFid } from "@/lib/farcaster";
+import { publicClient } from "@/lib/public-client";
 import { stylizeImageQueue } from "@/lib/queue";
-import { StylizeImageJobData } from "@/types/jobs";
-import { randomUUID } from "crypto";
-import {
-  createPublicClient,
-  http,
-  parseEther,
-  Hex,
-  toHex,
-  encodeFunctionData,
-  isHex,
-} from "viem";
-import { base } from "viem/chains"; // Assuming Ethereum Mainnet. Change if using a different chain.
 import {
   calculateRoyalties,
   verifyPaymentTransaction,
 } from "@/lib/transactions";
-import { DelegateABI } from "@/abi/DelegateABI";
-import { getAddressForFid } from "@/lib/farcaster";
+import { StylizeImageJobData } from "@/types/jobs";
+import { randomUUID } from "crypto";
+import { NextResponse } from "next/server";
+import { encodeFunctionData, Hex, isHex, parseEther } from "viem";
 
 // Environment variables for payment
 const PAYMENT_ADDRESS = process.env.PAYMENT_ADDRESS! as Hex;
@@ -75,11 +67,6 @@ export async function POST(request: Request) {
         console.log(
           `Verifying transaction: ${transactionHash} for quoteId: ${quoteId}`
         );
-
-        const publicClient = createPublicClient({
-          chain: base,
-          transport: http(),
-        });
 
         isPaymentVerified = await verifyPaymentTransaction({
           transactionHash,
