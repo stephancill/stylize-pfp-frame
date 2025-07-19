@@ -5,8 +5,40 @@ import { JobsSection } from "@/components/JobsSection";
 import { CreationsGallery } from "@/components/CreationsGallery";
 import { UserThemes } from "@/components/UserThemes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { CompletedImage } from "@/components/CreationItem";
 
 export default function GalleryPage() {
+  const searchParams = useSearchParams();
+  const imageId = searchParams.get("imageId");
+  const [selectedImage, setSelectedImage] = useState<CompletedImage | null>(null);
+
+  // Fetch specific image when imageId is present
+  const {
+    data: fetchedImage,
+    isLoading: isLoadingImage,
+    error: imageError,
+  } = useQuery({
+    queryKey: ["image", imageId],
+    queryFn: async () => {
+      if (!imageId) return null;
+      const res = await fetch(`/api/images/${imageId}?json=true`);
+      if (!res.ok) throw new Error("Failed to fetch image");
+      const data = await res.json();
+      return data as CompletedImage;
+    },
+    enabled: !!imageId,
+  });
+
+  // Set selected image when fetched
+  useEffect(() => {
+    if (fetchedImage) {
+      setSelectedImage(fetchedImage);
+    }
+  }, [fetchedImage]);
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
       <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-8">
@@ -20,7 +52,11 @@ export default function GalleryPage() {
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
             My Creations
           </h2>
-          <CreationsGallery />
+          <CreationsGallery 
+            selectedImageFromUrl={selectedImage}
+            isLoadingImageFromUrl={isLoadingImage}
+            onImageModalClose={() => setSelectedImage(null)}
+          />
         </div>
 
         {/* Right Column - User Themes */}
@@ -41,7 +77,11 @@ export default function GalleryPage() {
           </TabsList>
 
           <TabsContent value="images" className="space-y-8">
-            <CreationsGallery />
+            <CreationsGallery 
+              selectedImageFromUrl={selectedImage}
+              isLoadingImageFromUrl={isLoadingImage}
+              onImageModalClose={() => setSelectedImage(null)}
+            />
           </TabsContent>
 
           <TabsContent value="themes">

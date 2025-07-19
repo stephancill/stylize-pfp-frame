@@ -30,6 +30,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CompletedImage, SimpleCreationItem } from "./SimpleCreationItem";
+import type { CompletedImage as CreationItemCompletedImage } from "./CreationItem";
 
 // Skeleton component for creation items
 function CreationItemSkeleton() {
@@ -40,7 +41,17 @@ function CreationItemSkeleton() {
   );
 }
 
-export function CreationsGallery() {
+interface CreationsGalleryProps {
+  selectedImageFromUrl?: CreationItemCompletedImage | null;
+  isLoadingImageFromUrl?: boolean;
+  onImageModalClose?: () => void;
+}
+
+export function CreationsGallery({
+  selectedImageFromUrl,
+  isLoadingImageFromUrl = false,
+  onImageModalClose,
+}: CreationsGalleryProps = {}) {
   const { userId } = useAuth();
   const isMobile = useIsMobile();
   const [selectedImage, setSelectedImage] = useState<CompletedImage | null>(
@@ -106,6 +117,22 @@ export function CreationsGallery() {
       }
     };
   }, []);
+
+  // Handle selectedImageFromUrl prop
+  useEffect(() => {
+    if (selectedImageFromUrl) {
+      // Convert CreationItemCompletedImage to CompletedImage format
+      const convertedImage: CompletedImage = {
+        id: selectedImageFromUrl.id,
+        imageDataUrl: selectedImageFromUrl.imageDataUrl,
+        promptText: selectedImageFromUrl.promptText,
+        createdAt: selectedImageFromUrl.createdAt,
+        quoteId: selectedImageFromUrl.quoteId,
+        userPfpUrl: selectedImageFromUrl.userPfpUrl,
+      };
+      setSelectedImage(convertedImage);
+    }
+  }, [selectedImageFromUrl]);
 
   const shareUrl = useMemo(
     () =>
@@ -198,10 +225,17 @@ export function CreationsGallery() {
     );
   }
 
+  const handleModalClose = (open: boolean) => {
+    if (!open) {
+      setSelectedImage(null);
+      onImageModalClose?.();
+    }
+  };
+
   return (
     <Credenza
-      open={!!selectedImage}
-      onOpenChange={(open) => !open && setSelectedImage(null)}
+      open={!!selectedImage || isLoadingImageFromUrl}
+      onOpenChange={handleModalClose}
     >
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {allImages.map((image, index) => {
@@ -233,191 +267,217 @@ export function CreationsGallery() {
         )}
       </div>
 
-      {selectedImage && (
+      {(selectedImage || isLoadingImageFromUrl) && (
         <CredenzaContent className="max-w-md">
           <CredenzaTitle className="sr-only">Image</CredenzaTitle>
           <div className="space-y-4 p-4">
-            <div className="aspect-square relative">
-              <SimpleCreationItem
-                image={selectedImage}
-                onClick={() => {}}
-                toggleEnabled={true}
-              />
-            </div>
+            {/* Loading state with skeletons */}
+            {isLoadingImageFromUrl ? (
+              <div className="space-y-4">
+                {/* Image skeleton */}
+                <div className="aspect-square relative">
+                  <Skeleton className="w-full h-full rounded-md" />
+                </div>
 
-            {/* Prompt display */}
-            {selectedImage.promptText && (
-              <div>
-                <p
-                  className={`text-sm text-muted-foreground whitespace-pre-wrap cursor-pointer ${
-                    !showFullPrompt ? "line-clamp-2" : ""
-                  }`}
-                  onClick={() => {
-                    if (
-                      selectedImage.promptText &&
-                      selectedImage.promptText.length > 100
-                    ) {
-                      setShowFullPrompt(!showFullPrompt);
-                    }
-                  }}
-                >
-                  {selectedImage.promptText}
-                </p>
-                {selectedImage.promptText &&
-                  selectedImage.promptText.length > 100 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowFullPrompt(!showFullPrompt)}
-                      className="text-sm text-blue-600 hover:text-blue-800 underline"
-                    >
-                      {showFullPrompt ? "Show less" : "Show more"}
-                    </button>
-                  )}
+                {/* Prompt skeleton */}
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+
+                {/* Action buttons skeleton */}
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 flex-1" />
+                </div>
               </div>
-            )}
+            ) : (
+              <>
+                <div className="aspect-square relative">
+                  <SimpleCreationItem
+                    image={selectedImage}
+                    onClick={() => {}}
+                    toggleEnabled={true}
+                  />
+                </div>
 
-            <div className="flex gap-2">
-              {selectedImage.imageDataUrl && !isInMiniApp && (
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() =>
-                    handleDownloadImage(
-                      selectedImage.imageDataUrl!,
-                      selectedImage.id
-                    )
-                  }
-                >
-                  <Download className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`} />
-                  {!isMobile && "Download"}
-                </Button>
-              )}
-              <Popover open={popoverOpen} onOpenChange={setPopoverOpen} modal>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex-1">
-                    <Share2 className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`} />
-                    {!isMobile && "Share"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-56 p-2 z-[100]"
-                  align="end"
-                  side="top"
-                  sideOffset={5}
-                >
-                  <div className="space-y-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopyUrl();
+                {/* Prompt display */}
+                {selectedImage.promptText && (
+                  <div>
+                    <p
+                      className={`text-sm text-muted-foreground whitespace-pre-wrap cursor-pointer ${
+                        !showFullPrompt ? "line-clamp-2" : ""
+                      }`}
+                      onClick={() => {
+                        if (
+                          selectedImage.promptText &&
+                          selectedImage.promptText.length > 100
+                        ) {
+                          setShowFullPrompt(!showFullPrompt);
+                        }
                       }}
                     >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copy link
+                      {selectedImage.promptText}
+                    </p>
+                    {selectedImage.promptText &&
+                      selectedImage.promptText.length > 100 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowFullPrompt(!showFullPrompt)}
+                          className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {showFullPrompt ? "Show less" : "Show more"}
+                        </button>
+                      )}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  {selectedImage.imageDataUrl && !isInMiniApp && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() =>
+                        handleDownloadImage(
+                          selectedImage.imageDataUrl!,
+                          selectedImage.id
+                        )
+                      }
+                    >
+                      <Download className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`} />
+                      {!isMobile && "Download"}
                     </Button>
-                    {!isInMiniApp && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDraftTweet();
-                        }}
-                      >
-                        <Twitter className="h-4 w-4 mr-2" />
-                        Draft Tweet
+                  )}
+                  <Popover open={popoverOpen} onOpenChange={setPopoverOpen} modal>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex-1">
+                        <Share2 className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`} />
+                        {!isMobile && "Share"}
                       </Button>
-                    )}
-                    {isInMiniApp && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDraftCast();
-                        }}
-                      >
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Draft Cast
-                      </Button>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <Popover
-                open={reusePopoverOpen}
-                onOpenChange={setReusePopoverOpen}
-                modal
-              >
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex-1">
-                    <RefreshCw
-                      className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`}
-                    />
-                    {!isMobile && "Remix"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-56 p-2 z-[100]"
-                  align="end"
-                  side="top"
-                  sideOffset={5}
-                >
-                  <div className="space-y-1">
-                    <Link
-                      href={`/?promptId=${selectedImage.id}`}
-                      className="w-full"
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-56 p-2 z-[100]"
+                      align="end"
+                      side="top"
+                      sideOffset={5}
                     >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Use prompt
+                      <div className="space-y-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyUrl();
+                          }}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy link
+                        </Button>
+                        {!isInMiniApp && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDraftTweet();
+                            }}
+                          >
+                            <Twitter className="h-4 w-4 mr-2" />
+                            Draft Tweet
+                          </Button>
+                        )}
+                        {isInMiniApp && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDraftCast();
+                            }}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Draft Cast
+                          </Button>
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Popover
+                    open={reusePopoverOpen}
+                    onOpenChange={setReusePopoverOpen}
+                    modal
+                  >
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex-1">
+                        <RefreshCw
+                          className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`}
+                        />
+                        {!isMobile && "Remix"}
                       </Button>
-                    </Link>
-                    <Link
-                      href={`/?imageUrl=${encodeURIComponent(
-                        getImageUrl(selectedImage.id)
-                      )}`}
-                      className="w-full"
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-56 p-2 z-[100]"
+                      align="end"
+                      side="top"
+                      sideOffset={5}
                     >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
-                      >
-                        <Image className="h-4 w-4 mr-2" />
-                        Use image
-                      </Button>
-                    </Link>
-                    <Link
-                      href={`/?promptId=${
-                        selectedImage.id
-                      }&imageUrl=${encodeURIComponent(
-                        getImageUrl(selectedImage.id)
-                      )}`}
-                      className="w-full"
-                    >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Use both
-                      </Button>
-                    </Link>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
+                      <div className="space-y-1">
+                        <Link
+                          href={`/?promptId=${selectedImage.id}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Use prompt
+                          </Button>
+                        </Link>
+                        <Link
+                          href={`/?imageUrl=${encodeURIComponent(
+                            getImageUrl(selectedImage.id)
+                          )}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Image className="h-4 w-4 mr-2" />
+                            Use image
+                          </Button>
+                        </Link>
+                        <Link
+                          href={`/?promptId=${
+                            selectedImage.id
+                          }&imageUrl=${encodeURIComponent(
+                            getImageUrl(selectedImage.id)
+                          )}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Use both
+                          </Button>
+                        </Link>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </>
+            )}
           </div>
         </CredenzaContent>
       )}

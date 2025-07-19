@@ -175,7 +175,7 @@ export const stylizeImageWorker = new Worker<StylizeImageJobData>(
               fid: parsedUserId,
               title: "Stylize complete",
               body: "Your profile picture has been stylized",
-              targetUrl: process.env.APP_URL,
+              targetUrl: `${process.env.APP_URL}/gallery?imageId=${quoteId}`,
             });
           } catch (error) {
             console.error(
