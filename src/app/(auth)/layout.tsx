@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthModal } from "@/components/AuthModal";
+import { InfoModal } from "@/components/InfoModal";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Navigation } from "@/components/Navigation";
 import { PendingJobsButton } from "@/components/PendingJobsButton";
@@ -92,6 +93,7 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
         {!isMobile && <Navigation />}
 
         <div className="flex items-center space-x-2">
+          <InfoModal />
           <PendingJobsButton />
           <ModeToggle />
           {isAuthenticated && (
