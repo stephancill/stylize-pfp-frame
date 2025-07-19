@@ -16,13 +16,18 @@ import sdk from "@farcaster/frame-sdk";
 import {
   Copy,
   Download,
+  FileText,
+  Image,
   MessageCircle,
+  Plus,
+  RefreshCw,
   Share2,
   Twitter,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CompletedImage, SimpleCreationItem } from "./SimpleCreationItem";
+import Link from "next/link";
 
 interface ImageDetailModalProps {
   image: CompletedImage | null;
@@ -40,6 +45,7 @@ export function ImageDetailModal({
   const isMobile = useIsMobile();
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [reusePopoverOpen, setReusePopoverOpen] = useState(false);
   const [showFullPrompt, setShowFullPrompt] = useState(false);
 
   // Check if we're in a Farcaster mini app context
@@ -252,6 +258,74 @@ export function ImageDetailModal({
                             Draft Cast
                           </Button>
                         )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Popover
+                    open={reusePopoverOpen}
+                    onOpenChange={setReusePopoverOpen}
+                    modal
+                  >
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex-1">
+                        <RefreshCw
+                          className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`}
+                        />
+                        {!isMobile && "Remix"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-56 p-2 z-[100]"
+                      align="end"
+                      side="top"
+                      sideOffset={5}
+                    >
+                      <div className="space-y-1">
+                        <Link
+                          href={`/?promptId=${image.id}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Use prompt
+                          </Button>
+                        </Link>
+                        <Link
+                          href={`/?imageUrl=${encodeURIComponent(
+                            getImageUrl(image.id)
+                          )}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Image className="h-4 w-4 mr-2" />
+                            Use image
+                          </Button>
+                        </Link>
+                        <Link
+                          href={`/?promptId=${
+                            image.id
+                          }&imageUrl=${encodeURIComponent(
+                            getImageUrl(image.id)
+                          )}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Use both
+                          </Button>
+                        </Link>
                       </div>
                     </PopoverContent>
                   </Popover>
