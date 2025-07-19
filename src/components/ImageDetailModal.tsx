@@ -192,74 +192,6 @@ export function ImageDetailModal({
                 )}
 
                 <div className="flex gap-2">
-                  <Popover
-                    open={reusePopoverOpen}
-                    onOpenChange={setReusePopoverOpen}
-                    modal
-                  >
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="flex-1">
-                        <RefreshCw
-                          className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`}
-                        />
-                        {!isMobile && "Remix"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-56 p-2 z-[100]"
-                      align="end"
-                      side="top"
-                      sideOffset={5}
-                    >
-                      <div className="space-y-1">
-                        <Link
-                          href={`/?promptId=${image.id}`}
-                          className="w-full"
-                        >
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Use prompt
-                          </Button>
-                        </Link>
-                        <Link
-                          href={`/?imageUrl=${encodeURIComponent(
-                            getImageUrl(image.id)
-                          )}`}
-                          className="w-full"
-                        >
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
-                          >
-                            <Image className="h-4 w-4 mr-2" />
-                            Use image
-                          </Button>
-                        </Link>
-                        <Link
-                          href={`/?promptId=${
-                            image.id
-                          }&imageUrl=${encodeURIComponent(
-                            getImageUrl(image.id)
-                          )}`}
-                          className="w-full"
-                        >
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Use both
-                          </Button>
-                        </Link>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
                   {image.imageDataUrl && !isInMiniApp && (
                     <Button
                       variant="outline"
@@ -326,6 +258,74 @@ export function ImageDetailModal({
                             Draft Cast
                           </Button>
                         )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Popover
+                    open={reusePopoverOpen}
+                    onOpenChange={setReusePopoverOpen}
+                    modal
+                  >
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex-1">
+                        <RefreshCw
+                          className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`}
+                        />
+                        {!isMobile && "Remix"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-56 p-2 z-[100]"
+                      align="end"
+                      side="top"
+                      sideOffset={5}
+                    >
+                      <div className="space-y-1">
+                        <Link
+                          href={`/?promptId=${image.id}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Use prompt
+                          </Button>
+                        </Link>
+                        <Link
+                          href={`/?imageUrl=${encodeURIComponent(
+                            getImageUrl(image.id)
+                          )}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Image className="h-4 w-4 mr-2" />
+                            Use image
+                          </Button>
+                        </Link>
+                        <Link
+                          href={`/?promptId=${
+                            image.id
+                          }&imageUrl=${encodeURIComponent(
+                            getImageUrl(image.id)
+                          )}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Use both
+                          </Button>
+                        </Link>
                       </div>
                     </PopoverContent>
                   </Popover>
