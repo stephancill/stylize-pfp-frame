@@ -5,7 +5,7 @@ import { JobsSection } from "@/components/JobsSection";
 import { CreationsGallery } from "@/components/CreationsGallery";
 import { UserThemes } from "@/components/UserThemes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ImageDetailModal } from "@/components/ImageDetailModal";
@@ -13,6 +13,7 @@ import type { CompletedImage } from "@/components/CreationItem";
 
 export default function GalleryPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const imageId = searchParams.get("imageId");
   const [selectedImage, setSelectedImage] = useState<CompletedImage | null>(null);
 
@@ -41,6 +42,12 @@ export default function GalleryPage() {
   const handleModalClose = (open: boolean) => {
     if (!open) {
       setSelectedImage(null);
+      // Clean up the URL parameter when modal is closed
+      if (imageId) {
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete("imageId");
+        router.replace(`/gallery?${newSearchParams.toString()}`);
+      }
     }
   };
 

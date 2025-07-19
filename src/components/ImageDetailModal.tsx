@@ -3,6 +3,7 @@ import {
   Credenza,
   CredenzaContent,
   CredenzaTitle,
+  CredenzaClose,
 } from "@/components/ui/credenza";
 import {
   Popover,
@@ -23,6 +24,7 @@ import {
   RefreshCw,
   Share2,
   Twitter,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -125,7 +127,11 @@ export function ImageDetailModal({
 
   return (
     <Credenza open={open} onOpenChange={onOpenChange}>
-      <CredenzaContent className="max-w-md">
+      <CredenzaContent className="max-w-md relative">
+        <CredenzaClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </CredenzaClose>
         <CredenzaTitle className="sr-only">Image</CredenzaTitle>
         <div className="space-y-4 p-4">
           {/* Loading state with skeletons */}
