@@ -1,6 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 import { Plus, Image } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,8 +17,14 @@ export function Navigation() {
   }
 
   if (isMobile) {
+    const { context } = useMiniAppContext();
+    const isMiniApp = !!context;
+    
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pb-4">
+      <div className={clsx(
+        "fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700",
+        isMiniApp && "pb-4"
+      )}>
         <div className="flex justify-around items-center py-4">
           <Link href="/">
             <Plus
