@@ -23,7 +23,7 @@ export function Navigation() {
     return (
       <div className={clsx(
         "fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700",
-        isMiniApp && "pb-4"
+        isMiniApp && `pb-[${context?.client?.safeAreaInsets?.bottom ?? 4}px]`
       )}>
         <div className="flex justify-around items-center py-4">
           <Link href="/">

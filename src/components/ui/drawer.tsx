@@ -78,7 +78,7 @@ const DrawerFooter = ({
     <div
       className={cn(
         "mt-auto flex flex-col gap-2 p-4",
-        isMiniApp && "mb-4",
+        isMiniApp && `mb-[${context?.client?.safeAreaInsets?.bottom ?? 4}px]`,
         className
       )}
       {...props}
