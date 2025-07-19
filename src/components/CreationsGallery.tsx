@@ -31,6 +31,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CompletedImage, SimpleCreationItem } from "./SimpleCreationItem";
 import type { CompletedImage as CreationItemCompletedImage } from "./CreationItem";
+import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 // Skeleton component for creation items
 function CreationItemSkeleton() {
@@ -41,17 +43,12 @@ function CreationItemSkeleton() {
   );
 }
 
-interface CreationsGalleryProps {
-  selectedImageFromUrl?: CreationItemCompletedImage | null;
-  isLoadingImageFromUrl?: boolean;
-}
-
-export function CreationsGallery({
-  selectedImageFromUrl,
-  isLoadingImageFromUrl = false,
-}: CreationsGalleryProps = {}) {
+export function CreationsGallery() {
   const { userId } = useAuth();
   const isMobile = useIsMobile();
+  const searchParams = useSearchParams();
+  const imageId = searchParams.get("imageId");
+  
   const [selectedImage, setSelectedImage] = useState<CompletedImage | null>(
     null
   );
@@ -59,6 +56,23 @@ export function CreationsGallery({
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [reusePopoverOpen, setReusePopoverOpen] = useState(false);
   const [showFullPrompt, setShowFullPrompt] = useState(false);
+
+  // Fetch specific image when imageId is present
+  const {
+    data: fetchedImage,
+    isLoading: isLoadingImage,
+    error: imageError,
+  } = useQuery({
+    queryKey: ["image", imageId],
+    queryFn: async () => {
+      if (!imageId) return null;
+      const res = await fetch(`/api/images/${imageId}?json=true`);
+      if (!res.ok) throw new Error("Failed to fetch image");
+      const data = await res.json();
+      return data as CompletedImage;
+    },
+    enabled: !!imageId,
+  });
 
   const {
     data,
@@ -116,21 +130,12 @@ export function CreationsGallery({
     };
   }, []);
 
-  // Handle selectedImageFromUrl prop
+  // Handle fetchedImage from URL parameter
   useEffect(() => {
-    if (selectedImageFromUrl) {
-      // Convert CreationItemCompletedImage to CompletedImage format
-      const convertedImage: CompletedImage = {
-        id: selectedImageFromUrl.id,
-        imageDataUrl: selectedImageFromUrl.imageDataUrl,
-        promptText: selectedImageFromUrl.promptText,
-        createdAt: selectedImageFromUrl.createdAt,
-        quoteId: selectedImageFromUrl.quoteId,
-        userPfpUrl: selectedImageFromUrl.userPfpUrl,
-      };
-      setSelectedImage(convertedImage);
+    if (fetchedImage) {
+      setSelectedImage(fetchedImage);
     }
-  }, [selectedImageFromUrl]);
+  }, [fetchedImage]);
 
   const shareUrl = useMemo(
     () =>
@@ -231,7 +236,7 @@ export function CreationsGallery({
 
   return (
     <Credenza
-      open={!!selectedImage || isLoadingImageFromUrl}
+      open={!!selectedImage || isLoadingImage}
       onOpenChange={handleModalClose}
     >
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -264,12 +269,12 @@ export function CreationsGallery({
         )}
       </div>
 
-      {(selectedImage || isLoadingImageFromUrl) && (
+      {(selectedImage || isLoadingImage) && (
         <CredenzaContent className="max-w-md">
           <CredenzaTitle className="sr-only">Image</CredenzaTitle>
           <div className="space-y-4 p-4">
             {/* Loading state with skeletons */}
-            {isLoadingImageFromUrl ? (
+            {isLoadingImage ? (
               <div className="space-y-4">
                 {/* Image skeleton */}
                 <div className="aspect-square relative">

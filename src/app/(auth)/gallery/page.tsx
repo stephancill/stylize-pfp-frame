@@ -5,30 +5,8 @@ import { JobsSection } from "@/components/JobsSection";
 import { CreationsGallery } from "@/components/CreationsGallery";
 import { UserThemes } from "@/components/UserThemes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import type { CompletedImage } from "@/components/CreationItem";
 
 export default function GalleryPage() {
-  const searchParams = useSearchParams();
-  const imageId = searchParams.get("imageId");
-
-  // Fetch specific image when imageId is present
-  const {
-    data: fetchedImage,
-    isLoading: isLoadingImage,
-    error: imageError,
-  } = useQuery({
-    queryKey: ["image", imageId],
-    queryFn: async () => {
-      if (!imageId) return null;
-      const res = await fetch(`/api/images/${imageId}?json=true`);
-      if (!res.ok) throw new Error("Failed to fetch image");
-      const data = await res.json();
-      return data as CompletedImage;
-    },
-    enabled: !!imageId,
-  });
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
@@ -43,10 +21,7 @@ export default function GalleryPage() {
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
             My Creations
           </h2>
-          <CreationsGallery 
-            selectedImageFromUrl={fetchedImage}
-            isLoadingImageFromUrl={isLoadingImage}
-          />
+          <CreationsGallery />
         </div>
 
         {/* Right Column - User Themes */}
@@ -67,10 +42,7 @@ export default function GalleryPage() {
           </TabsList>
 
           <TabsContent value="images" className="space-y-8">
-            <CreationsGallery 
-              selectedImageFromUrl={fetchedImage}
-              isLoadingImageFromUrl={isLoadingImage}
-            />
+            <CreationsGallery />
           </TabsContent>
 
           <TabsContent value="themes">
