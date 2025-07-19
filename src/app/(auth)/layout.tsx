@@ -18,6 +18,7 @@ import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 import { farcasterMiniApp as miniAppConnector } from "@farcaster/miniapp-wagmi-connector";
 import { Loader2, LogOut } from "lucide-react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useConnect, useDisconnect } from "wagmi";
 
@@ -29,6 +30,7 @@ function V2Layout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const { connect } = useConnect();
   const { context } = useMiniAppContext();
+  const searchParams = useSearchParams();
   const isInMiniApp = !!context;
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -72,16 +74,17 @@ function V2Layout({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, showAuthModal]);
 
-  // Auto-show info modal for first-time users
-  // useEffect(() => {
-  //   if (isAuthenticated && !isLoading) {
-  //     const hasSeenInfoModal =
-  //       localStorage.getItem(INFO_MODAL_SEEN_KEY) === "true";
-  //     if (!hasSeenInfoModal && !showInfoModal) {
-  //       setShowInfoModal(true);
-  //     }
-  //   }
-  // }, [isAuthenticated, isLoading, showInfoModal]);
+  // Auto-show info modal for first-time users not being redirected
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      const hasSeenInfoModal =
+        localStorage.getItem(INFO_MODAL_SEEN_KEY) === "true";
+      const hasSearchParams = searchParams.toString().length > 0;
+      if (!hasSeenInfoModal && !showInfoModal && !hasSearchParams) {
+        setShowInfoModal(true);
+      }
+    }
+  }, [isAuthenticated, isLoading, showInfoModal, searchParams]);
 
   // Show loading state
   if (isLoading) {
