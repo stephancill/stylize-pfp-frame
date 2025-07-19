@@ -18,11 +18,13 @@ import {
   Download,
   MessageCircle,
   Share2,
+  Sparkles,
   Twitter,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CompletedImage, SimpleCreationItem } from "./SimpleCreationItem";
+import { useRouter } from "next/navigation";
 
 interface ImageDetailModalProps {
   image: CompletedImage | null;
@@ -38,6 +40,7 @@ export function ImageDetailModal({
   onOpenChange,
 }: ImageDetailModalProps) {
   const isMobile = useIsMobile();
+  const router = useRouter();
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [showFullPrompt, setShowFullPrompt] = useState(false);
@@ -117,6 +120,16 @@ export function ImageDetailModal({
     }
   };
 
+  const handleRemix = () => {
+    if (!image) return;
+    
+    // Close the modal
+    onOpenChange(false);
+    
+    // Navigate to the main page with the promptId parameter
+    router.push(`/?promptId=${image.id}`);
+  };
+
   return (
     <Credenza open={open} onOpenChange={onOpenChange}>
       <CredenzaContent className="max-w-md">
@@ -186,6 +199,14 @@ export function ImageDetailModal({
                 )}
 
                 <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={handleRemix}
+                  >
+                    <Sparkles className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`} />
+                    {!isMobile && "Remix"}
+                  </Button>
                   {image.imageDataUrl && !isInMiniApp && (
                     <Button
                       variant="outline"
