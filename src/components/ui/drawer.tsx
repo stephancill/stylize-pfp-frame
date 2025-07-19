@@ -4,6 +4,7 @@ import * as React from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
 
 import { cn } from "@/lib/utils";
+import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 
 const Drawer = ({
   shouldScaleBackground = true,
@@ -69,12 +70,21 @@ DrawerHeader.displayName = "DrawerHeader";
 const DrawerFooter = ({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn("mt-auto flex flex-col gap-2 p-4 mb-4", className)}
-    {...props}
-  />
-);
+}: React.HTMLAttributes<HTMLDivElement>) => {
+  const { context } = useMiniAppContext();
+  const isMiniApp = !!context;
+  
+  return (
+    <div
+      className={cn(
+        "mt-auto flex flex-col gap-2 p-4",
+        isMiniApp && "mb-4",
+        className
+      )}
+      {...props}
+    />
+  );
+};
 DrawerFooter.displayName = "DrawerFooter";
 
 const DrawerTitle = React.forwardRef<
