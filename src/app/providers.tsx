@@ -20,18 +20,16 @@ export function Provider({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <Suspense>
             <MiniAppContextProvider>
-              <AuthProvider>
-                <ImageSelectionProvider>
-                  <ThemeProvider
-                    attribute="class"
-                    defaultTheme="system"
-                    enableSystem
-                    disableTransitionOnChange
-                  >
-                    {children}
-                  </ThemeProvider>
-                </ImageSelectionProvider>
-              </AuthProvider>
+              <ImageSelectionProvider>
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="system"
+                  enableSystem
+                  disableTransitionOnChange
+                >
+                  {children}
+                </ThemeProvider>
+              </ImageSelectionProvider>
             </MiniAppContextProvider>
           </Suspense>
           <Toaster />

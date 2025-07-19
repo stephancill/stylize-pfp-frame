@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { truncateAddress } from "@/lib/utils";
-import { useAuth } from "@/providers/AuthProvider";
+import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 import { farcasterMiniApp as miniAppConnector } from "@farcaster/miniapp-wagmi-connector";
 import { Loader2, LogOut } from "lucide-react";
@@ -23,7 +23,7 @@ import { useConnect, useDisconnect } from "wagmi";
 
 const INFO_MODAL_SEEN_KEY = "info-modal-seen";
 
-export default function V2Layout({ children }: { children: React.ReactNode }) {
+function V2Layout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, signOut, isLoading, user } = useAuth();
   const { disconnect } = useDisconnect();
   const isMobile = useIsMobile();
@@ -155,5 +155,17 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile Navigation */}
       {isMobile && <Navigation />}
     </div>
+  );
+}
+
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AuthProvider>
+      <V2Layout>{children}</V2Layout>
+    </AuthProvider>
   );
 }
