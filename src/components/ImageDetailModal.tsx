@@ -195,7 +195,9 @@ export function ImageDetailModal({
                 <div className="aspect-square relative">
                   <SimpleCreationItem
                     image={image}
-                    onClick={() => {}}
+                    onClick={() => {
+                      // No-op for modal context - toggle is handled internally
+                    }}
                     toggleEnabled={true}
                   />
                 </div>

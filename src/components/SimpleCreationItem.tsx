@@ -201,6 +201,16 @@ export function SimpleCreationItem({
     }
   };
 
+  const handleOverlayTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Only toggle if it wasn't a drag
+    if (!hasDraggedRef.current) {
+      setShowInputFirst((prev) => !prev);
+    }
+  };
+
   useEffect(() => {
     if (isDragging) {
       const handleMove = (e: MouseEvent | TouchEvent) => handleDragMove(e);
@@ -263,6 +273,7 @@ export function SimpleCreationItem({
                 style={overlayStyle}
                 onMouseDown={handleDragStart}
                 onTouchStart={handleDragStart}
+                onTouchEnd={handleOverlayTouchEnd}
                 onClick={handleOverlayClick}
                 draggable={false}
               />
