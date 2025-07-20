@@ -226,6 +226,23 @@ export default function Page() {
     }
   };
 
+  // Handle fork functionality
+  const handleFork = (prompt: string) => {
+    setCustomPrompt(prompt);
+    setSelectedThemeId("custom"); // Set to custom theme
+    // The modal will stay open and show the custom prompt
+  };
+
+  // Handle theme change within modal
+  const handleThemeChange = (theme: any) => {
+    if (theme?.id === "custom") {
+      setSelectedThemeId("custom");
+      setCustomPrompt(theme.prompt);
+      // Update the modal's selected theme state
+      setSelectedThemeForCredenza(theme);
+    }
+  };
+
   // Show loading state while authentication is being checked
   if (isUserLoading || isAuthLoading) {
     return (
@@ -282,6 +299,8 @@ export default function Page() {
               onCustomPromptChange={handleCustomPromptChange}
               uploadedImage={uploadedImage}
               handleProceed={handleProceed}
+              onFork={handleFork}
+              onThemeChange={handleThemeChange}
             />
           </div>
         </div>
@@ -295,6 +314,8 @@ export default function Page() {
         tempCustomPrompt={tempCustomPrompt}
         onTempCustomPromptChange={setTempCustomPrompt}
         onProceed={handleProceed}
+        onFork={handleFork}
+        onThemeChange={handleThemeChange}
         uploadedImage={uploadedImage}
         isLoading={isLoadingTheme}
         displayName={unifiedUser?.displayName}

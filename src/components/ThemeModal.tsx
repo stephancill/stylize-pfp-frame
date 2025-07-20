@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Users, Upload, User, Image, Pencil } from "lucide-react";
+import { Star, Users, Upload, User, Image, Pencil, GitBranch } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type ServerTheme } from "./ThemeRow";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";
@@ -46,6 +46,8 @@ interface ThemeModalProps {
   tempCustomPrompt: string;
   onTempCustomPromptChange: (prompt: string) => void;
   onProceed: (params: { prompt: string; referrerId?: string }) => void;
+  onFork?: (prompt: string) => void;
+  onThemeChange?: (theme: ThemeModalProps["selectedTheme"]) => void;
   uploadedImage?: string | null;
   isLoading?: boolean;
   displayName?: string;
@@ -59,6 +61,8 @@ export function ThemeModal({
   tempCustomPrompt,
   onTempCustomPromptChange,
   onProceed,
+  onFork,
+  onThemeChange,
   uploadedImage,
   isLoading = false,
   displayName,
@@ -124,6 +128,27 @@ export function ThemeModal({
       onProceed({ prompt: selectedTheme.prompt, referrerId });
     }
     onOpenChange(false);
+  };
+
+  const handleFork = () => {
+    if (!selectedTheme) return;
+    
+    const promptToFork = selectedTheme.id === "custom" 
+      ? tempCustomPrompt 
+      : selectedTheme.prompt;
+    
+    // Switch to custom theme mode within the same modal
+    const customTheme = {
+      id: "custom",
+      name: "Custom",
+      prompt: promptToFork,
+    };
+    
+    // Update the selected theme to custom mode and populate the custom prompt
+    if (onThemeChange && promptToFork) {
+      onThemeChange(customTheme);
+      onTempCustomPromptChange(promptToFork);
+    }
   };
 
   const handleImageSelection = (useProfile: boolean) => {
@@ -425,7 +450,22 @@ export function ThemeModal({
           )}
         </CredenzaBody>
         <CredenzaFooter className="justify-end">
-          {renderImageSelectionButton()}
+          <div className="flex items-center gap-2">
+            {renderImageSelectionButton()}
+            {onFork && selectedTheme && selectedTheme.id !== "custom" && (
+              <Button
+                type="button"
+                onClick={handleFork}
+                disabled={isLoading}
+                variant="outline"
+                size="icon"
+                className="flex-shrink-0"
+                title="Fork this prompt"
+              >
+                <GitBranch className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </CredenzaFooter>
       </CredenzaContent>
     </Credenza>
