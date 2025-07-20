@@ -451,7 +451,7 @@ export function ThemeModal({
         </CredenzaBody>
         <CredenzaFooter className="justify-end">
           <div className="flex items-center gap-2">
-            {onFork && selectedTheme && (
+            {onFork && selectedTheme && selectedTheme.id !== "custom" && (
               <Button
                 type="button"
                 onClick={handleFork}
