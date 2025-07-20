@@ -331,6 +331,21 @@ export function ImageDetailModal({
                             Use both
                           </Button>
                         </Link>
+                        <Link
+                          href={`/?imageUrl=${encodeURIComponent(
+                            getImageUrl(image.id)
+                          )}&original=true`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Image className="h-4 w-4 mr-2" />
+                            Use original image
+                          </Button>
+                        </Link>
                       </div>
                     </PopoverContent>
                   </Popover>
