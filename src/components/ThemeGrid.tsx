@@ -44,6 +44,7 @@ interface ThemeGridProps {
   onCustomPromptChange: (prompt: string) => void;
   uploadedImage?: string | null;
   handleProceed: (params: { prompt: string; referrerId?: string }) => void;
+  onFork?: (prompt: string) => void;
 }
 
 export function ThemeGrid({
@@ -53,6 +54,7 @@ export function ThemeGrid({
   onCustomPromptChange,
   uploadedImage,
   handleProceed,
+  onFork,
 }: ThemeGridProps) {
   const [showCredenza, setShowCredenza] = useState(false);
   const [selectedTheme, setSelectedThemeForCredenza] = useState<{
@@ -164,6 +166,7 @@ export function ThemeGrid({
         tempCustomPrompt={tempCustomPrompt}
         onTempCustomPromptChange={setTempCustomPrompt}
         onProceed={handleProceedFromModal}
+        onFork={onFork}
         uploadedImage={uploadedImage}
       />
     </div>

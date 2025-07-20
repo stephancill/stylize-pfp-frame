@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Users, Upload, User, Image, Pencil } from "lucide-react";
+import { Star, Users, Upload, User, Image, Pencil, GitBranch } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type ServerTheme } from "./ThemeRow";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";
@@ -46,6 +46,7 @@ interface ThemeModalProps {
   tempCustomPrompt: string;
   onTempCustomPromptChange: (prompt: string) => void;
   onProceed: (params: { prompt: string; referrerId?: string }) => void;
+  onFork?: (prompt: string) => void;
   uploadedImage?: string | null;
   isLoading?: boolean;
   displayName?: string;
@@ -59,6 +60,7 @@ export function ThemeModal({
   tempCustomPrompt,
   onTempCustomPromptChange,
   onProceed,
+  onFork,
   uploadedImage,
   isLoading = false,
   displayName,
@@ -124,6 +126,19 @@ export function ThemeModal({
       onProceed({ prompt: selectedTheme.prompt, referrerId });
     }
     onOpenChange(false);
+  };
+
+  const handleFork = () => {
+    if (!selectedTheme) return;
+    
+    const promptToFork = selectedTheme.id === "custom" 
+      ? tempCustomPrompt 
+      : selectedTheme.prompt;
+    
+    if (onFork && promptToFork) {
+      onFork(promptToFork);
+      onOpenChange(false);
+    }
   };
 
   const handleImageSelection = (useProfile: boolean) => {
@@ -232,14 +247,29 @@ export function ThemeModal({
               </div>
             </button>
           )}
-          <Button
-            type="button"
-            onClick={handleProceed}
-            disabled={isLoading}
-            className={isMobile ? "flex-1" : ""}
-          >
-            Proceed
-          </Button>
+          <div className="flex items-center gap-2">
+            {onFork && selectedTheme && (
+              <Button
+                type="button"
+                onClick={handleFork}
+                disabled={isLoading}
+                variant="outline"
+                size="icon"
+                className="flex-shrink-0"
+                title="Fork this prompt"
+              >
+                <GitBranch className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              type="button"
+              onClick={handleProceed}
+              disabled={isLoading}
+              className={isMobile ? "flex-1" : ""}
+            >
+              Proceed
+            </Button>
+          </div>
         </div>
       );
     }

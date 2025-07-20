@@ -226,6 +226,13 @@ export default function Page() {
     }
   };
 
+  // Handle fork functionality
+  const handleFork = (prompt: string) => {
+    setCustomPrompt(prompt);
+    setSelectedThemeId(""); // Clear selected theme to show custom prompt
+    setShowCredenza(false); // Close the current modal
+  };
+
   // Show loading state while authentication is being checked
   if (isUserLoading || isAuthLoading) {
     return (
@@ -282,6 +289,7 @@ export default function Page() {
               onCustomPromptChange={handleCustomPromptChange}
               uploadedImage={uploadedImage}
               handleProceed={handleProceed}
+              onFork={handleFork}
             />
           </div>
         </div>
@@ -295,6 +303,7 @@ export default function Page() {
         tempCustomPrompt={tempCustomPrompt}
         onTempCustomPromptChange={setTempCustomPrompt}
         onProceed={handleProceed}
+        onFork={handleFork}
         uploadedImage={uploadedImage}
         isLoading={isLoadingTheme}
         displayName={unifiedUser?.displayName}
