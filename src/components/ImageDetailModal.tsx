@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getImageUrl } from "@/lib/image-utils";
+import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
 import sdk from "@farcaster/frame-sdk";
 import {
   Copy,
@@ -23,6 +23,7 @@ import {
   Share2,
   Shuffle,
   Twitter,
+  Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -329,6 +330,21 @@ export function ImageDetailModal({
                           >
                             <Plus className="h-4 w-4 mr-2" />
                             Use both
+                          </Button>
+                        </Link>
+                        <Link
+                          href={`/?imageUrl=${encodeURIComponent(
+                            getInputImageUrl(image.id)
+                          )}`}
+                          className="w-full"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Use original image
                           </Button>
                         </Link>
                       </div>
