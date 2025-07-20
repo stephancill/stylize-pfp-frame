@@ -117,6 +117,17 @@ export function ThemeGrid({
     setShowCredenza(false);
   };
 
+  const handleThemeChangeFromModal = (theme: any) => {
+    if (theme?.id === "custom") {
+      setSelectedThemeForCredenza(theme);
+      setTempCustomPrompt(theme.prompt);
+    }
+    // Also call the parent's onThemeChange if provided
+    if (onThemeChange) {
+      onThemeChange(theme);
+    }
+  };
+
   return (
     <div className="w-full space-y-6">
       {/* Custom Option */}
@@ -169,7 +180,7 @@ export function ThemeGrid({
         onTempCustomPromptChange={setTempCustomPrompt}
         onProceed={handleProceedFromModal}
         onFork={onFork}
-        onThemeChange={onThemeChange}
+        onThemeChange={handleThemeChangeFromModal}
         uploadedImage={uploadedImage}
       />
     </div>

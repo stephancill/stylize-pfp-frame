@@ -238,6 +238,8 @@ export default function Page() {
     if (theme?.id === "custom") {
       setSelectedThemeId("custom");
       setCustomPrompt(theme.prompt);
+      // Update the modal's selected theme state
+      setSelectedThemeForCredenza(theme);
     }
   };
 
