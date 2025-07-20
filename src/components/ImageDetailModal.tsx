@@ -334,7 +334,7 @@ export function ImageDetailModal({
                         <Link
                           href={`/?imageUrl=${encodeURIComponent(
                             getImageUrl(image.id)
-                          )}&original=true`}
+                          )}`}
                           className="w-full"
                         >
                           <Button
