@@ -247,86 +247,41 @@ export function ThemeModal({
               </div>
             </button>
           )}
-          <div className="flex items-center gap-2">
-            {onFork && selectedTheme && (
-              <Button
-                type="button"
-                onClick={handleFork}
-                disabled={isLoading}
-                variant="outline"
-                size="icon"
-                className="flex-shrink-0"
-                title="Fork this prompt"
-              >
-                <GitBranch className="h-4 w-4" />
-              </Button>
-            )}
-            <Button
-              type="button"
-              onClick={handleProceed}
-              disabled={isLoading}
-              className={isMobile ? "flex-1" : ""}
-            >
-              Proceed
-            </Button>
-          </div>
+          <Button
+            type="button"
+            onClick={handleProceed}
+            disabled={isLoading}
+            className={isMobile ? "flex-1" : ""}
+          >
+            Proceed
+          </Button>
         </div>
       );
     }
 
     if (isInMiniApp && hasProfileImageToUse) {
       return (
-        <div className={`flex items-center gap-2 ${isMobile ? "w-full" : ""}`}>
-          {onFork && selectedTheme && (
-            <Button
-              type="button"
-              onClick={handleFork}
-              disabled={isLoading}
-              variant="outline"
-              size="icon"
-              className="flex-shrink-0"
-              title="Fork this prompt"
-            >
-              <GitBranch className="h-4 w-4" />
+        <Popover open={showImagePopover} onOpenChange={setShowImagePopover}>
+          <PopoverTrigger asChild>
+            <Button type="button" className={isMobile ? "w-full" : ""}>
+              <Image className="w-4 h-4" />
+              Choose image
             </Button>
-          )}
-          <Popover open={showImagePopover} onOpenChange={setShowImagePopover}>
-            <PopoverTrigger asChild>
-              <Button type="button" className={isMobile ? "flex-1" : ""}>
-                <Image className="w-4 h-4" />
-                Choose image
-              </Button>
-            </PopoverTrigger>
-            {renderImageSelectionPopover()}
-          </Popover>
-        </div>
+          </PopoverTrigger>
+          {renderImageSelectionPopover()}
+        </Popover>
       );
     }
 
     return (
-      <div className={`flex items-center gap-2 ${isMobile ? "w-full" : ""}`}>
-        {onFork && selectedTheme && (
-          <Button
-            type="button"
-            onClick={handleFork}
-            disabled={isLoading}
-            variant="outline"
-            size="icon"
-            className="flex-shrink-0"
-            title="Fork this prompt"
-          >
-            <GitBranch className="h-4 w-4" />
-          </Button>
-        )}
-        <Button
-          type="button"
-          onClick={triggerFileInput}
-          className={isMobile ? "flex-1" : ""}
-        >
-          <Image className="w-4 h-4" />
-          Choose image
-        </Button>
-      </div>
+      <Button
+        type="button"
+        onClick={triggerFileInput}
+        className={isMobile ? "w-full" : ""}
+      >
+        <Image className="w-4 h-4" />
+        Choose image
+      </Button>
     );
   };
 
@@ -485,7 +440,22 @@ export function ThemeModal({
           )}
         </CredenzaBody>
         <CredenzaFooter className="justify-end">
-          {renderImageSelectionButton()}
+          <div className="flex items-center gap-2">
+            {onFork && selectedTheme && (
+              <Button
+                type="button"
+                onClick={handleFork}
+                disabled={isLoading}
+                variant="outline"
+                size="icon"
+                className="flex-shrink-0"
+                title="Fork this prompt"
+              >
+                <GitBranch className="h-4 w-4" />
+              </Button>
+            )}
+            {renderImageSelectionButton()}
+          </div>
         </CredenzaFooter>
       </CredenzaContent>
     </Credenza>
