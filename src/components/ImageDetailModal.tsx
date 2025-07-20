@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getImageUrl } from "@/lib/image-utils";
+import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
 import sdk from "@farcaster/frame-sdk";
 import {
   Copy,
@@ -333,7 +333,7 @@ export function ImageDetailModal({
                         </Link>
                         <Link
                           href={`/?imageUrl=${encodeURIComponent(
-                            getImageUrl(image.id)
+                            getInputImageUrl(image.id)
                           )}`}
                           className="w-full"
                         >
