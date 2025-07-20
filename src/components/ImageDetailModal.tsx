@@ -23,6 +23,7 @@ import {
   Share2,
   Shuffle,
   Twitter,
+  Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -342,7 +343,7 @@ export function ImageDetailModal({
                             size="sm"
                             className="w-full justify-start hover:bg-accent hover:text-accent-foreground"
                           >
-                            <Image className="h-4 w-4 mr-2" />
+                            <Upload className="h-4 w-4 mr-2" />
                             Use original image
                           </Button>
                         </Link>
