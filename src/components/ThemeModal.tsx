@@ -451,6 +451,7 @@ export function ThemeModal({
         </CredenzaBody>
         <CredenzaFooter className="justify-end">
           <div className="flex items-center gap-2">
+            {renderImageSelectionButton()}
             {onFork && selectedTheme && selectedTheme.id !== "custom" && (
               <Button
                 type="button"
@@ -464,7 +465,6 @@ export function ThemeModal({
                 <GitBranch className="h-4 w-4" />
               </Button>
             )}
-            {renderImageSelectionButton()}
           </div>
         </CredenzaFooter>
       </CredenzaContent>
