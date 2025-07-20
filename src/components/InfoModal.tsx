@@ -42,10 +42,10 @@ export function InfoModal({ isOpen, onOpenChange }: InfoModalProps = {}) {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Create images
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Create images using existing themes or your own custom prompts.
                 Upload any image and transform it with AI-powered styling.
               </p>
@@ -60,10 +60,10 @@ export function InfoModal({ isOpen, onOpenChange }: InfoModalProps = {}) {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Referral fees for sharing
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Earn 10% referral fees for users that use images shared by you.
                 Share your creations and earn passive income.
               </p>
@@ -78,10 +78,10 @@ export function InfoModal({ isOpen, onOpenChange }: InfoModalProps = {}) {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Royalties on viral themes
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Earn 10% royalties when others use your image prompts. Create
                 viral themes and earn ongoing revenue.
               </p>
