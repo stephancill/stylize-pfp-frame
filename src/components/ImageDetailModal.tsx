@@ -20,8 +20,8 @@ import {
   Image,
   MessageCircle,
   Plus,
-  RefreshCw,
   Share2,
+  Shuffle,
   Twitter,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -169,10 +169,7 @@ export function ImageDetailModal({
                         !showFullPrompt ? "line-clamp-2" : ""
                       }`}
                       onClick={() => {
-                        if (
-                          image.promptText &&
-                          image.promptText.length > 100
-                        ) {
+                        if (image.promptText && image.promptText.length > 100) {
                           setShowFullPrompt(!showFullPrompt);
                         }
                       }}
@@ -200,14 +197,22 @@ export function ImageDetailModal({
                         handleDownloadImage(image.imageDataUrl!, image.id)
                       }
                     >
-                      <Download className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`} />
+                      <Download
+                        className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`}
+                      />
                       {!isMobile && "Download"}
                     </Button>
                   )}
-                  <Popover open={popoverOpen} onOpenChange={setPopoverOpen} modal>
+                  <Popover
+                    open={popoverOpen}
+                    onOpenChange={setPopoverOpen}
+                    modal
+                  >
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="flex-1">
-                        <Share2 className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`} />
+                        <Share2
+                          className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`}
+                        />
                         {!isMobile && "Share"}
                       </Button>
                     </PopoverTrigger>
@@ -268,7 +273,7 @@ export function ImageDetailModal({
                   >
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="flex-1">
-                        <RefreshCw
+                        <Shuffle
                           className={`h-4 w-4 ${!isMobile ? "mr-2" : ""}`}
                         />
                         {!isMobile && "Remix"}
