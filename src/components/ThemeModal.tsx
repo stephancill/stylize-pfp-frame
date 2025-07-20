@@ -137,7 +137,6 @@ export function ThemeModal({
     
     if (onFork && promptToFork) {
       onFork(promptToFork);
-      onOpenChange(false);
     }
   };
 
