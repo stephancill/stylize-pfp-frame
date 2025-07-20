@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Users, Upload, User, Image } from "lucide-react";
+import { Star, Users, Upload, User, Image, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type ServerTheme } from "./ThemeRow";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";
@@ -200,13 +200,17 @@ export function ThemeModal({
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="w-9 h-9 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700 hover:opacity-80 transition-opacity flex-shrink-0"
+                  className="w-9 h-9 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0 relative group"
                 >
                   <img
                     src={imageToUse}
                     alt="Selected image"
                     className="w-full h-full object-cover"
                   />
+                  {/* Hover overlay with pencil icon */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                    <Pencil className="h-3 w-3 text-white" />
+                  </div>
                 </button>
               </PopoverTrigger>
               {renderImageSelectionPopover()}
@@ -215,13 +219,17 @@ export function ThemeModal({
             <button
               type="button"
               onClick={triggerFileInput}
-              className="w-9 h-9 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700 hover:opacity-80 transition-opacity flex-shrink-0"
+              className="w-9 h-9 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0 relative group"
             >
               <img
                 src={imageToUse}
                 alt="Selected image"
                 className="w-full h-full object-cover"
               />
+              {/* Hover overlay with pencil icon */}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                <Pencil className="h-3 w-3 text-white" />
+              </div>
             </button>
           )}
           <Button
