@@ -6,10 +6,11 @@ import { CreationsGallery } from "@/components/CreationsGallery";
 import { UserThemes } from "@/components/UserThemes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ImageDetailModal } from "@/components/ImageDetailModal";
 import type { CompletedImage } from "@/components/CreationItem";
+import { fetchAuth } from "@/lib/fetch-auth";
 
 export default function GalleryPage() {
   const searchParams = useSearchParams();
@@ -18,6 +19,8 @@ export default function GalleryPage() {
     null
   );
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const queryClient = useQueryClient();
+  const { userId } = useAuth();
 
   // Fetch specific image when imageId is present
   const {
@@ -35,6 +38,36 @@ export default function GalleryPage() {
     },
     enabled: !!imageId,
   });
+
+  // Delete image mutation
+  const deleteImageMutation = useMutation({
+    mutationFn: async (imageId: string) => {
+      const response = await fetchAuth(`/api/images/${imageId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to delete image");
+      }
+
+      return response;
+    },
+    onSuccess: (_, deletedImageId) => {
+      // Invalidate and refetch the images list to update the UI
+      queryClient.invalidateQueries({ queryKey: ["infiniteImages", userId] });
+
+      // If the deleted image was the selected image, clear the selection
+      if (selectedImage?.id === deletedImageId) {
+        setSelectedImage(null);
+      }
+    },
+  });
+
+  // Handle image deletion
+  const handleDelete = async (imageId: string) => {
+    await deleteImageMutation.mutateAsync(imageId);
+  };
 
   // Set selected image when fetched
   const handleImageClick = (image: CompletedImage) => {
@@ -103,6 +136,7 @@ export default function GalleryPage() {
         isLoading={isLoadingImage}
         open={showDetailModal}
         onOpenChange={setShowDetailModal}
+        onDelete={handleDelete}
       />
     </div>
   );

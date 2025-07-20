@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
+import { withAuth } from "@/lib/siwe-auth";
 
 export async function GET(
   request: NextRequest,
@@ -87,3 +88,35 @@ export async function GET(
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
+
+export const DELETE = withAuth(async ({ user, req, context }) => {
+  try {
+    const params = await context.params;
+    const imageId = params.id as string;
+
+    if (!user.id) {
+      return NextResponse.json({ error: "Invalid user" }, { status: 401 });
+    }
+
+    const result = await db
+      .deleteFrom("generatedImages")
+      .where("id", "=", imageId)
+      .where("userId", "=", user.id)
+      .execute();
+
+    if (result.length === 0) {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(
+      { message: "Image deleted successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+});
