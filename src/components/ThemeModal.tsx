@@ -47,6 +47,7 @@ interface ThemeModalProps {
   onTempCustomPromptChange: (prompt: string) => void;
   onProceed: (params: { prompt: string; referrerId?: string }) => void;
   onFork?: (prompt: string) => void;
+  onThemeChange?: (theme: ThemeModalProps["selectedTheme"]) => void;
   uploadedImage?: string | null;
   isLoading?: boolean;
   displayName?: string;
@@ -61,6 +62,7 @@ export function ThemeModal({
   onTempCustomPromptChange,
   onProceed,
   onFork,
+  onThemeChange,
   uploadedImage,
   isLoading = false,
   displayName,
@@ -135,8 +137,17 @@ export function ThemeModal({
       ? tempCustomPrompt 
       : selectedTheme.prompt;
     
-    if (onFork && promptToFork) {
-      onFork(promptToFork);
+    // Switch to custom theme mode within the same modal
+    const customTheme = {
+      id: "custom",
+      name: "Custom",
+      prompt: promptToFork,
+    };
+    
+    // Update the selected theme to custom mode and populate the custom prompt
+    if (onThemeChange && promptToFork) {
+      onThemeChange(customTheme);
+      onTempCustomPromptChange(promptToFork);
     }
   };
 
