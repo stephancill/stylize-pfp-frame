@@ -276,27 +276,57 @@ export function ThemeModal({
 
     if (isInMiniApp && hasProfileImageToUse) {
       return (
-        <Popover open={showImagePopover} onOpenChange={setShowImagePopover}>
-          <PopoverTrigger asChild>
-            <Button type="button" className={isMobile ? "w-full" : ""}>
-              <Image className="w-4 h-4" />
-              Choose image
+        <div className={`flex items-center gap-2 ${isMobile ? "w-full" : ""}`}>
+          {onFork && selectedTheme && (
+            <Button
+              type="button"
+              onClick={handleFork}
+              disabled={isLoading}
+              variant="outline"
+              size="icon"
+              className="flex-shrink-0"
+              title="Fork this prompt"
+            >
+              <GitBranch className="h-4 w-4" />
             </Button>
-          </PopoverTrigger>
-          {renderImageSelectionPopover()}
-        </Popover>
+          )}
+          <Popover open={showImagePopover} onOpenChange={setShowImagePopover}>
+            <PopoverTrigger asChild>
+              <Button type="button" className={isMobile ? "flex-1" : ""}>
+                <Image className="w-4 h-4" />
+                Choose image
+              </Button>
+            </PopoverTrigger>
+            {renderImageSelectionPopover()}
+          </Popover>
+        </div>
       );
     }
 
     return (
-      <Button
-        type="button"
-        onClick={triggerFileInput}
-        className={isMobile ? "w-full" : ""}
-      >
-        <Image className="w-4 h-4" />
-        Choose image
-      </Button>
+      <div className={`flex items-center gap-2 ${isMobile ? "w-full" : ""}`}>
+        {onFork && selectedTheme && (
+          <Button
+            type="button"
+            onClick={handleFork}
+            disabled={isLoading}
+            variant="outline"
+            size="icon"
+            className="flex-shrink-0"
+            title="Fork this prompt"
+          >
+            <GitBranch className="h-4 w-4" />
+          </Button>
+        )}
+        <Button
+          type="button"
+          onClick={triggerFileInput}
+          className={isMobile ? "flex-1" : ""}
+        >
+          <Image className="w-4 h-4" />
+          Choose image
+        </Button>
+      </div>
     );
   };
 
