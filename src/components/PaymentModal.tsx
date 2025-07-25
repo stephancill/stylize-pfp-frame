@@ -330,7 +330,7 @@ export function PaymentModal({
                 <img
                   src={imageUrl}
                   alt="Input image"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
             )}

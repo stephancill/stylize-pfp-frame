@@ -156,7 +156,7 @@ export function CreationItem({ image }: { image: CompletedImage }) {
               <img
                 src={overlaySrc}
                 alt="Input"
-                className="absolute top-2 right-2 w-16 h-16 object-cover border-2 border-background rounded-md cursor-pointer"
+                className="absolute top-2 right-2 w-16 h-16 object-contain border-2 border-background rounded-md cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

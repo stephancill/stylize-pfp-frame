@@ -230,7 +230,7 @@ export function ThemeModal({
                   <img
                     src={imageToUse}
                     alt="Selected image"
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full ${useUploadedImage ? 'object-contain' : 'object-cover'}`}
                   />
                   {/* Hover overlay with pencil icon */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
@@ -249,7 +249,7 @@ export function ThemeModal({
               <img
                 src={imageToUse}
                 alt="Selected image"
-                className="w-full h-full object-cover"
+                className={`w-full h-full ${useUploadedImage ? 'object-contain' : 'object-cover'}`}
               />
               {/* Hover overlay with pencil icon */}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">

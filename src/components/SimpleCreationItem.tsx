@@ -259,7 +259,7 @@ export function SimpleCreationItem({
                 ref={overlayRef}
                 src={overlaySrc}
                 alt="Input"
-                className="absolute w-1/3 h-1/3 object-cover border-2 border-background rounded-md select-none"
+                className="absolute w-1/3 h-1/3 object-contain border-2 border-background rounded-md select-none"
                 style={overlayStyle}
                 onMouseDown={handleDragStart}
                 onTouchStart={handleDragStart}
@@ -271,7 +271,7 @@ export function SimpleCreationItem({
               <img
                 src={overlaySrc}
                 alt="Input"
-                className="absolute top-2 right-2 w-1/3 h-1/3 object-cover border-2 border-background rounded-md"
+                className="absolute top-2 right-2 w-1/3 h-1/3 object-contain border-2 border-background rounded-md"
               />
             )}
             {/* Hover overlay with eye icon */}

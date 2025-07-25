@@ -76,7 +76,7 @@ export function ImageSelector() {
                   <img
                     src={uploadedImage}
                     alt="Uploaded"
-                    className="w-16 h-16 rounded-md object-cover"
+                    className="w-16 h-16 rounded-md object-contain"
                   />
                   <Button
                     variant="ghost"
