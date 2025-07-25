@@ -204,9 +204,25 @@ export async function POST(request: Request) {
 
       const newQuoteId = randomUUID();
 
+      // Check if referring image exists and belongs to the same user
+      let finalReferringImageId = null;
+      if (referringImageId) {
+        const referringImage = await db
+          .selectFrom("generatedImages")
+          .select("userId")
+          .where("id", "=", referringImageId)
+          .where("status", "=", "completed")
+          .executeTakeFirst();
+
+        // Only set referringImageId if the image exists and doesn't belong to the same user
+        if (referringImage && referringImage.userId !== userId) {
+          finalReferringImageId = referringImageId;
+        }
+      }
+
       const royalties = await calculateRoyalties({
         prompt,
-        referringImageId,
+        referringImageId: finalReferringImageId,
       });
 
       const insertedRecord = await db
@@ -217,7 +233,7 @@ export async function POST(request: Request) {
           quoteId: newQuoteId,
           status: "pending_payment",
           userPfpUrl: userPfpUrl,
-          referringImageId,
+          referringImageId: finalReferringImageId,
         })
         .returning("id")
         .executeTakeFirstOrThrow();
