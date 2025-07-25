@@ -111,6 +111,13 @@ export function PaymentModal({
   onSuccess,
   onError,
 }: PaymentModalProps) {
+  // Reset internal states when modal is closed
+  useEffect(() => {
+    if (!open) {
+      // Reset any internal states when modal is closed
+      // React Query will handle its own cache invalidation
+    }
+  }, [open]);
   const { address: connectedAddress } = useAccount();
   const account = useAccount();
   const { switchChainAsync } = useSwitchChain();

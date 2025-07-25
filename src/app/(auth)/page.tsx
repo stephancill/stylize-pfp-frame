@@ -226,6 +226,20 @@ export default function Page() {
     }
   };
 
+  // Handle payment modal state reset
+  const handlePaymentModalChange = (open: boolean) => {
+    setShowPaymentModal(open);
+    
+    // Reset payment state when modal is dismissed
+    if (!open) {
+      setPaymentModalData({
+        prompt: undefined,
+        imageUrl: undefined,
+        referringImageId: undefined,
+      });
+    }
+  };
+
   // Handle fork functionality
   const handleFork = (prompt: string) => {
     setCustomPrompt(prompt);
@@ -325,7 +339,7 @@ export default function Page() {
       {/* Payment Modal */}
       <PaymentModal
         open={showPaymentModal}
-        onOpenChange={setShowPaymentModal}
+        onOpenChange={handlePaymentModalChange}
         prompt={paymentModalData.prompt || ""}
         imageUrl={paymentModalData.imageUrl}
         userId={
