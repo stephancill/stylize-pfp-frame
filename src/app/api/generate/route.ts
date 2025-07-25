@@ -205,7 +205,7 @@ export async function POST(request: Request) {
       const newQuoteId = randomUUID();
 
       // Check if referring image exists and belongs to the same user
-      let finalReferringImageId = referringImageId;
+      let finalReferringImageId = null;
       if (referringImageId) {
         const referringImage = await db
           .selectFrom("generatedImages")
@@ -214,9 +214,9 @@ export async function POST(request: Request) {
           .where("status", "=", "completed")
           .executeTakeFirst();
 
-        // If referring image belongs to the same user, don't set referringImageId
-        if (referringImage && referringImage.userId === userId) {
-          finalReferringImageId = null;
+        // Only set referringImageId if the image exists and doesn't belong to the same user
+        if (referringImage && referringImage.userId !== userId) {
+          finalReferringImageId = referringImageId;
         }
       }
 
