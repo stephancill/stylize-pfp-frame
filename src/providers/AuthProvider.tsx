@@ -13,9 +13,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { createSiweMessage } from "viem/siwe";
-import { useAccount, useSignMessage } from "wagmi";
-import { base } from "wagmi/chains";
+import { useAccount, useDisconnect } from "wagmi";
 import { fetchAuth } from "../lib/fetch-auth";
 
 // Unified auth user interface
@@ -38,13 +36,19 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   error: string | null;
-  signInWithSiwe: () => Promise<AuthUser>;
+  signInWithSiwe: (args: {
+    message: string;
+    signature: string;
+    address: string;
+    nonce: string;
+  }) => Promise<AuthUser>;
   signInWithFarcaster: () => Promise<AuthUser>;
   signOut: () => Promise<void>;
   checkAuth: () => Promise<AuthResponse>;
   isWalletAuthenticated: boolean;
   getToken: () => string | null;
   userId: string | null;
+  nonce: string | null;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -108,38 +112,33 @@ const fetchAuthStatus = async (): Promise<AuthResponse> => {
   return { authenticated: false, user: null };
 };
 
+async function fetchAuthNonce(): Promise<string> {
+  const response = await fetch("/api/auth/nonce");
+  if (!response.ok) {
+    throw new Error("Failed to get nonce");
+  }
+  const { nonce } = await response.json();
+
+  if (!nonce) {
+    throw new Error("Nonce is undefined");
+  }
+
+  return nonce;
+}
+
 // SIWE sign in mutation
 const siweSignInMutation = async ({
   address,
-  signMessageAsync,
+  nonce,
+  message,
+  signature,
 }: {
   address: string;
-  signMessageAsync: (args: { message: string }) => Promise<string>;
+  nonce: string;
+  message: string;
+  signature: string;
 }) => {
-  // 1. Get nonce from server
-  const nonceResponse = await fetch("/api/auth/nonce");
-  if (!nonceResponse.ok) {
-    throw new Error("Failed to get nonce");
-  }
-  const { nonce } = await nonceResponse.json();
-
-  // 2. Create SIWE message with base.id as chain ID
-  const messageString = createSiweMessage({
-    domain: window.location.host,
-    address: address as `0x${string}`,
-    statement: "Sign in with Ethereum to the app.",
-    uri: window.location.origin,
-    version: "1",
-    chainId: base.id,
-    nonce,
-    issuedAt: new Date(),
-  });
-
-  // 3. Sign the message with wallet
-  const signature = await signMessageAsync({
-    message: messageString,
-  });
-
+  console.log("siweSignInMutation", { address, nonce });
   // 4. Submit to server for verification
   const signInResponse = await fetch("/api/auth/signin", {
     method: "POST",
@@ -147,7 +146,7 @@ const siweSignInMutation = async ({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message: messageString,
+      message,
       signature,
     }),
   });
@@ -168,14 +167,7 @@ const siweSignInMutation = async ({
 };
 
 // Farcaster sign in mutation
-const farcasterSignIn = async () => {
-  // 1. Get nonce from server
-  const nonceResponse = await fetch("/api/auth/nonce");
-  if (!nonceResponse.ok) {
-    throw new Error("Failed to get authentication nonce");
-  }
-  const { nonce } = await nonceResponse.json();
-
+const farcasterSignIn = async ({ nonce }: { nonce: string }) => {
   // 2. Use Farcaster SDK to sign in
   const result = await sdk.actions.signIn({
     nonce: nonce,
@@ -225,7 +217,7 @@ const signOutMutation = async () => {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { address, isConnected } = useAccount();
-  const { signMessageAsync } = useSignMessage();
+  const { disconnect } = useDisconnect();
   const queryClient = useQueryClient();
   const { context } = useMiniAppContext();
 
@@ -238,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Query for authentication status
   const {
     data: authData,
-    isLoading,
+    isLoading: isLoadingAuth,
     error,
     refetch: checkAuth,
   } = useQuery({
@@ -248,8 +240,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     retry: 1,
   });
 
+  const {
+    data: authNonce,
+    isLoading: isLoadingNonce,
+    error: nonceError,
+  } = useQuery({
+    queryKey: ["authNonce"],
+    queryFn: fetchAuthNonce,
+    retry: 1,
+    enabled: !authData?.authenticated && !isLoadingAuth,
+  });
+
   // SIWE sign in mutation
-  // TODO: Try wallet_connect and fall back to manual message signing
   const siweSignInMut = useMutation({
     mutationFn: siweSignInMutation,
     onSuccess: () => {
@@ -257,6 +259,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     onError: (error) => {
       console.error("SIWE sign in error:", error);
+      disconnect();
     },
   });
 
@@ -277,6 +280,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOutMut = useMutation({
     mutationFn: signOutMutation,
     onSuccess: () => {
+      disconnect();
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
     },
     onError: (error) => {
@@ -284,20 +288,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  // SIWE sign in handler
-  const signInWithSiwe = useCallback(async () => {
-    if (!address || !isConnected) {
-      throw new Error("Wallet not connected");
-    }
-
-    return siweSignInMut.mutateAsync({
-      address,
-      signMessageAsync,
-    });
-  }, [address, isConnected, signMessageAsync, siweSignInMut]);
-
   // Farcaster sign in handler
   const signInWithFarcaster = useCallback(async () => {
+    if (!authNonce) {
+      throw new Error("No nonce found");
+    }
+
     // Prevent concurrent Farcaster sign in attempts
     if (farcasterSignInInProgress.current || farcasterSignInMut.isPending) {
       throw new Error("Farcaster sign in already in progress");
@@ -306,7 +302,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     farcasterSignInInProgress.current = true;
 
     try {
-      return await farcasterSignInMut.mutateAsync();
+      return await farcasterSignInMut.mutateAsync({
+        nonce: authNonce,
+      });
     } catch (error) {
       farcasterSignInInProgress.current = false;
       throw error;
@@ -344,11 +342,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (
       context &&
       !authData?.authenticated &&
-      !isLoading &&
+      !isLoadingAuth &&
       !farcasterSignInMut.isPending &&
       !farcasterSignInMut.isSuccess &&
       !farcasterSignInInProgress.current &&
-      !hasAttemptedAutoSignIn
+      !hasAttemptedAutoSignIn &&
+      authNonce
     ) {
       console.log("Triggering Farcaster sign in from AuthProvider", {
         context,
@@ -359,33 +358,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setHasAttemptedAutoSignIn(true);
 
       // Call the mutation immediately
-      farcasterSignInMut.mutate();
+      farcasterSignInMut.mutate({
+        nonce: authNonce,
+      });
     }
   }, [
     context,
     authData?.authenticated,
-    isLoading,
+    isLoadingAuth,
     farcasterSignInMut.isPending,
     farcasterSignInMut.isSuccess,
     hasAttemptedAutoSignIn,
     farcasterSignInMut,
+    authNonce,
   ]);
 
   const contextValue: AuthContextType = {
     isAuthenticated: authData?.authenticated || false,
     user: authData?.user || null,
     isLoading:
-      isLoading ||
+      isLoadingAuth ||
       siweSignInMut.isPending ||
       farcasterSignInMut.isPending ||
-      signOutMut.isPending,
+      signOutMut.isPending ||
+      isLoadingNonce,
     error:
       error?.message ||
       siweSignInMut.error?.message ||
       farcasterSignInMut.error?.message ||
       signOutMut.error?.message ||
+      nonceError?.message ||
       null,
-    signInWithSiwe,
+    signInWithSiwe: siweSignInMut.mutateAsync,
     signInWithFarcaster,
     signOut,
     checkAuth: async () => {
@@ -401,6 +405,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getToken: getAuthToken,
     // Utility to get the current user ID
     userId: getUserId(authData?.user || null),
+    nonce: authNonce || null,
   };
 
   return (

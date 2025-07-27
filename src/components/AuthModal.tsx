@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/providers/AuthProvider";
 import { Loader2, User } from "lucide-react";
 import { useEffect, useState } from "react";
+import { base } from "viem/chains";
 import { useAccount, useConnect } from "wagmi";
 
 interface AuthModalProps {
@@ -22,7 +23,7 @@ interface AuthModalProps {
 export function AuthModal({ isOpen, onOpenChange }: AuthModalProps) {
   const { connect, connectors, isPending: isConnecting } = useConnect();
   const { address, isConnected } = useAccount();
-  const { signInWithSiwe, isLoading } = useAuth();
+  const { signInWithSiwe, isLoading, nonce } = useAuth();
   const [hasAttemptedSignIn, setHasAttemptedSignIn] = useState(false);
 
   // Reset state when modal opens/closes
@@ -32,29 +33,38 @@ export function AuthModal({ isOpen, onOpenChange }: AuthModalProps) {
     }
   }, [isOpen]);
 
-  // Auto-trigger SIWE when wallet connects
-  useEffect(() => {
-    if (isConnected && address && !hasAttemptedSignIn && isConnecting) {
-      setHasAttemptedSignIn(true);
-      handleSiweSignIn();
-    }
-  }, [isConnected, address, hasAttemptedSignIn, isConnecting]);
-
   const handleConnectWallet = async (connector: any) => {
-    setHasAttemptedSignIn(false);
-    connect({ connector });
-  };
-
-  const handleSiweSignIn = async () => {
-    try {
-      await signInWithSiwe();
-      // Close modal on successful sign in
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Sign in failed:", error);
-    } finally {
-      setHasAttemptedSignIn(false);
+    if (!nonce) {
+      throw new Error("Nonce not ready");
     }
+
+    setHasAttemptedSignIn(false);
+    connect(
+      {
+        connector,
+        capabilities: {
+          signInWithEthereum: {
+            nonce,
+            chainId: base.id,
+            issuedAt: new Date().toISOString(),
+            version: "1",
+          },
+        },
+      },
+      {
+        onSuccess: ({ capabilities, accounts }) => {
+          if (capabilities?.signInWithEthereum && accounts.length > 0) {
+            setHasAttemptedSignIn(false);
+            signInWithSiwe({
+              message: capabilities.signInWithEthereum.message,
+              signature: capabilities.signInWithEthereum.signature,
+              address: accounts[0],
+              nonce,
+            });
+          }
+        },
+      }
+    );
   };
 
   return (
