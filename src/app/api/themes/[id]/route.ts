@@ -30,6 +30,15 @@ export async function GET(
           return null;
         }
 
+        // Get the total usage count for this prompt
+        const totalUsageQuery = db
+          .selectFrom("generatedImages")
+          .select([db.fn.countAll().as("totalUsage")])
+          .where("promptText", "=", image.promptText)
+          .where("status", "=", "completed");
+
+        const totalUsage = await totalUsageQuery.executeTakeFirst();
+
         // Get the 2 most referenced images using the same prompt (excluding the current image)
         const topReferencedImagesQuery = db
           .selectFrom("generatedImages as gi")
@@ -83,6 +92,7 @@ export async function GET(
         // Format the response
         return {
           promptText: image.promptText,
+          usageCount: Number(totalUsage?.totalUsage || 1),
           originalImage: {
             id: image.id,
             creator: {
