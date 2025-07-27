@@ -1,8 +1,7 @@
 import { ThemeContent } from "@/components/ThemeContent";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { db } from "@/lib/db";
-import { getBaseUrl } from "@/lib/image-utils";
+import { getThemeById } from "@/lib/themes";
 import { Shuffle } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
@@ -45,51 +44,33 @@ export default async function Page({
 }) {
   const { id } = await params;
 
-  // Fetch theme data from our API
-  let themeData = null;
-  try {
-    const baseUrl = getBaseUrl();
-    const response = await fetch(`${baseUrl}/api/themes/${id}`);
-
-    if (response.ok) {
-      const data = await response.json();
-      themeData = data.theme;
-    }
-  } catch (error) {
-    console.error("Failed to fetch theme data:", error);
-  }
+  // Fetch theme data directly using the extracted function
+  const themeData = await getThemeById(id);
 
   if (!themeData) {
-    return notFound();
+    notFound();
   }
 
-  const selectedTheme = themeData
-    ? {
-        id: `theme-${id}`,
-        name: themeData.author?.username || "Community",
-        prompt: themeData.promptText,
-        usageCount: themeData.usageCount,
-        author: themeData.author,
-        selectedImage: themeData.originalImage,
-        images: [
-          themeData.originalImage,
-          ...(themeData.topReferencedImages || []),
-        ],
-      }
-    : null;
+  const selectedTheme = {
+    id: `theme-${id}`,
+    name: themeData.author?.username || "Community",
+    prompt: themeData.promptText,
+    usageCount: themeData.usageCount,
+    author: themeData.author,
+    selectedImage: themeData.images[0], // First image is the original
+    images: themeData.images,
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen p-4">
       <div className="max-w-md w-full">
         <Card>
           <CardContent className="p-6">
-            {selectedTheme && (
-              <ThemeContent
-                selectedTheme={selectedTheme}
-                showForkButton={false}
-                className="mb-6"
-              />
-            )}
+            <ThemeContent
+              selectedTheme={selectedTheme}
+              showForkButton={false}
+              className="mb-6"
+            />
 
             <div className="flex justify-center">
               <Link href={`/?promptId=${id}`} className="w-full">
