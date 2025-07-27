@@ -9,9 +9,9 @@ import {
 import { usePendingImages } from "@/hooks/usePendingImages";
 import { Clock, Loader2 } from "lucide-react";
 import { truncateAddress } from "@/lib/utils";
-import themes from "@/lib/themes";
 import Countdown from "react-countdown";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PromptDisplay } from "./PromptDisplay";
 
 export function PendingJobsButton() {
   const { data: jobs = [], isLoading, refetch } = usePendingImages();
@@ -47,101 +47,100 @@ export function PendingJobsButton() {
           </div>
 
           <div className="space-y-2 max-h-60 overflow-y-auto">
-            {jobs.map((job) => {
-              // Find if the prompt matches any theme
-              const matchingTheme = themes.find((theme) =>
-                job.promptText?.includes(theme.prompt)
-              );
-
+            {jobs.map((job, index) => {
               return (
-                <Card key={job.id} className="border-gray-200">
-                  <CardContent className="p-3">
-                    <div className="flex gap-3">
-                      {/* Input Image Preview */}
-                      <div className="w-16 h-16 flex-shrink-0">
-                        <img
-                          src={job.userPfpUrl || "/placeholder.png"}
-                          alt="Input"
-                          className="w-full h-full object-cover rounded-md"
-                        />
-                      </div>
-
-                      {/* Job Details */}
-                      <div className="flex-grow min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <CardTitle className="text-sm font-medium truncate">
-                            {matchingTheme
-                              ? matchingTheme.name
-                              : "Custom Prompt"}
-                          </CardTitle>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
-                              job.status === "generating"
-                                ? "bg-blue-100 text-blue-700"
-                                : job.status === "queued"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : job.status === "paid"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-700"
-                            }`}
-                          >
-                            {job.status.replace("_", " ")}
-                          </span>
+                <div key={job.id}>
+                  <Card className="border-0 shadow-none">
+                    <CardContent className="p-3">
+                      <div className="flex gap-3">
+                        {/* Input Image Preview */}
+                        <div className="w-16 h-16 flex-shrink-0">
+                          <img
+                            src={job.userPfpUrl || "/placeholder.png"}
+                            alt="Input"
+                            className="w-full h-full object-cover rounded-md"
+                          />
                         </div>
 
-                        {/* Show full prompt if custom, otherwise just theme name */}
-                        {!matchingTheme && job.promptText && (
-                          <p className="text-xs text-gray-600 mb-1 line-clamp-2">
-                            {job.promptText}
-                          </p>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">
-                            <Countdown
-                              date={new Date(job.createdAt).getTime()}
-                              overtime={true}
-                              renderer={({ total }) => {
-                                // Since creation time is always in the past, total will be negative
-                                // We want to show the elapsed time since creation
-                                const elapsedTotal = Math.abs(total);
-                                const elapsedHours = Math.floor(
-                                  elapsedTotal / (1000 * 60 * 60)
-                                );
-                                const elapsedMinutes = Math.floor(
-                                  (elapsedTotal % (1000 * 60 * 60)) /
-                                    (1000 * 60)
-                                );
-                                const elapsedSeconds = Math.floor(
-                                  (elapsedTotal % (1000 * 60)) / 1000
-                                );
-
-                                if (elapsedHours > 0) {
-                                  return `${elapsedHours}h ${elapsedMinutes}m ago`;
-                                } else if (elapsedMinutes > 0) {
-                                  return `${elapsedMinutes}m ${elapsedSeconds}s ago`;
-                                } else {
-                                  return `${elapsedSeconds}s ago`;
-                                }
-                              }}
-                            />
-                          </span>
-
-                          {job.transactionHash && (
-                            <a
-                              href={`https://basescan.org/tx/${job.transactionHash}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-500 hover:underline"
+                        {/* Job Details */}
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ${
+                                job.status === "generating"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : job.status === "queued"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : job.status === "paid"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
                             >
-                              {truncateAddress(job.transactionHash)}
-                            </a>
+                              {job.status.replace("_", " ")}
+                            </span>
+                          </div>
+
+                          {/* Show full prompt if custom, otherwise just theme name */}
+                          {job.promptText && (
+                            <PromptDisplay
+                              promptText={
+                                "simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum"
+                              }
+                              className="mb-1"
+                              maxLength={80}
+                            />
                           )}
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500">
+                              <Countdown
+                                date={new Date(job.createdAt).getTime()}
+                                overtime={true}
+                                renderer={({ total }) => {
+                                  // Since creation time is always in the past, total will be negative
+                                  // We want to show the elapsed time since creation
+                                  const elapsedTotal = Math.abs(total);
+                                  const elapsedHours = Math.floor(
+                                    elapsedTotal / (1000 * 60 * 60)
+                                  );
+                                  const elapsedMinutes = Math.floor(
+                                    (elapsedTotal % (1000 * 60 * 60)) /
+                                      (1000 * 60)
+                                  );
+                                  const elapsedSeconds = Math.floor(
+                                    (elapsedTotal % (1000 * 60)) / 1000
+                                  );
+
+                                  if (elapsedHours > 0) {
+                                    return `${elapsedHours}h ${elapsedMinutes}m ago`;
+                                  } else if (elapsedMinutes > 0) {
+                                    return `${elapsedMinutes}m ${elapsedSeconds}s ago`;
+                                  } else {
+                                    return `${elapsedSeconds}s ago`;
+                                  }
+                                }}
+                              />
+                            </span>
+
+                            {job.transactionHash && (
+                              <a
+                                href={`https://basescan.org/tx/${job.transactionHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-500 hover:underline"
+                              >
+                                {truncateAddress(job.transactionHash)}
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                  {index < jobs.length - 1 && (
+                    <div className="h-px bg-border mx-3" />
+                  )}
+                </div>
               );
             })}
           </div>

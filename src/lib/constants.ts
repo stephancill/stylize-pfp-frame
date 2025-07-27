@@ -1,4 +1,3 @@
-export const CHALLENGE_DURATION_SECONDS = 60;
 export const AUTH_SESSION_COOKIE_NAME = "auth_session";
 
 // SIWE Authentication constants
@@ -16,6 +15,9 @@ export const STYLIZE_IMAGE_QUEUE_NAME = "stylize-image";
 // Royalties
 export const ROYALTY_PROMPT_AUTHOR_BASIS_POINTS = 1000; // 10%
 export const ROYALTY_REFERRER_BASIS_POINTS = 1000; // 10%
+
+// State
+export const INFO_MODAL_SEEN_KEY = "info-modal-seen";
 
 export const FRAME_METADATA = {
   version: "next",

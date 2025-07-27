@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Carousel,
@@ -23,13 +24,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Users, Upload, User, Image, Pencil, GitBranch } from "lucide-react";
-import { useEffect, useState } from "react";
-import { type ServerTheme } from "./ThemeRow";
-import { useImageSelection } from "@/providers/ImageSelectionProvider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useImageSelection } from "@/providers/ImageSelectionProvider";
+import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
+import { GitBranch, Image, Pencil, Star, Upload, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { PromptDisplay } from "./PromptDisplay";
+import { type ServerTheme } from "./ThemeRow";
 
 interface ThemeModalProps {
   open: boolean;
@@ -68,7 +69,6 @@ export function ThemeModal({
   displayName,
   username,
 }: ThemeModalProps) {
-  const [showFullPrompt, setShowFullPrompt] = useState(false);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [showImagePopover, setShowImagePopover] = useState(false);
 
@@ -132,18 +132,17 @@ export function ThemeModal({
 
   const handleFork = () => {
     if (!selectedTheme) return;
-    
-    const promptToFork = selectedTheme.id === "custom" 
-      ? tempCustomPrompt 
-      : selectedTheme.prompt;
-    
+
+    const promptToFork =
+      selectedTheme.id === "custom" ? tempCustomPrompt : selectedTheme.prompt;
+
     // Switch to custom theme mode within the same modal
     const customTheme = {
       id: "custom",
       name: "Custom",
       prompt: promptToFork,
     };
-    
+
     // Update the selected theme to custom mode and populate the custom prompt
     if (onThemeChange && promptToFork) {
       onThemeChange(customTheme);
@@ -393,33 +392,7 @@ export function ThemeModal({
                   className="w-full p-3 border border-gray-300 rounded-md min-h-[120px] resize-none"
                 />
               ) : (
-                <div>
-                  <p
-                    className={`text-sm text-muted-foreground whitespace-pre-wrap cursor-pointer ${
-                      !showFullPrompt ? "line-clamp-2" : ""
-                    }`}
-                    onClick={() => {
-                      if (
-                        selectedTheme?.prompt &&
-                        selectedTheme.prompt.length > 100
-                      ) {
-                        setShowFullPrompt(!showFullPrompt);
-                      }
-                    }}
-                  >
-                    {selectedTheme?.prompt}
-                  </p>
-                  {selectedTheme?.prompt &&
-                    selectedTheme.prompt.length > 100 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowFullPrompt(!showFullPrompt)}
-                        className="text-sm text-blue-600 hover:text-blue-800 underline"
-                      >
-                        {showFullPrompt ? "Show less" : "Show more"}
-                      </button>
-                    )}
-                </div>
+                <PromptDisplay promptText={selectedTheme?.prompt || ""} />
               )}
 
               {/* Creator and usage info row */}

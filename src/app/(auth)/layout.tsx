@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { INFO_MODAL_SEEN_KEY } from "@/lib/constants";
 import { truncateAddress } from "@/lib/utils";
 import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
@@ -21,8 +22,6 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useConnect, useDisconnect } from "wagmi";
-
-const INFO_MODAL_SEEN_KEY = "info-modal-seen";
 
 function V2Layout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, signOut, isLoading, user } = useAuth();

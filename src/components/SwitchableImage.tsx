@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 import { Star, Eye } from "lucide-react";
 
 export interface CompletedImage {
@@ -16,8 +16,9 @@ export interface CompletedImage {
 
 interface SimpleCreationItemProps {
   image: CompletedImage;
-  onClick: () => void;
   toggleEnabled?: boolean;
+  fallbackComponent?: ReactNode;
+  hoverOverlay?: ReactNode;
 }
 
 type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
@@ -44,10 +45,11 @@ const getCornerPosition = (
   }
 };
 
-export function SimpleCreationItem({
+export function SwitchableImage({
   image,
-  onClick,
   toggleEnabled = false,
+  fallbackComponent,
+  hoverOverlay,
 }: SimpleCreationItemProps) {
   const [showInputFirst, setShowInputFirst] = useState(false);
   const [corner, setCorner] = useState<Corner>("top-right");
@@ -81,12 +83,8 @@ export function SimpleCreationItem({
     }
   }, [hasInitialized]);
 
-  const mainImageSrc = showInputFirst
-    ? image.userPfpUrl || image.imageDataUrl || ""
-    : image.imageDataUrl || image.userPfpUrl || "";
-  const overlaySrc = showInputFirst
-    ? image.imageDataUrl || ""
-    : image.userPfpUrl || "";
+  const primarySrc = showInputFirst ? image.userPfpUrl : image.imageDataUrl;
+  const secondarySrc = showInputFirst ? image.imageDataUrl : image.userPfpUrl;
 
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
     if (!toggleEnabled) return;
@@ -241,56 +239,84 @@ export function SimpleCreationItem({
           ? "cursor-default"
           : "cursor-pointer hover:opacity-90 transition-opacity"
       }`}
-      onClick={toggleEnabled ? undefined : onClick}
     >
       <CardContent
         className="p-0 aspect-square flex-grow relative group overflow-hidden"
         ref={containerRef}
       >
-        {mainImageSrc ? (
-          <>
-            <img
-              src={mainImageSrc}
-              alt={image.promptText || "Generated image"}
-              className="w-full h-full object-cover"
-            />
-            {overlaySrc && toggleEnabled && containerSize.width > 0 && (
-              <img
-                ref={overlayRef}
-                src={overlaySrc}
-                alt="Input"
-                className="absolute w-1/3 h-1/3 object-cover border-2 border-background rounded-md select-none"
-                style={overlayStyle}
-                onMouseDown={handleDragStart}
-                onTouchStart={handleDragStart}
-                onClick={handleOverlayClick}
-                draggable={false}
-              />
-            )}
-            {overlaySrc && !toggleEnabled && (
-              <img
-                src={overlaySrc}
-                alt="Input"
-                className="absolute top-2 right-2 w-1/3 h-1/3 object-cover border-2 border-background rounded-md"
-              />
-            )}
-            {/* Hover overlay with eye icon */}
-            {!toggleEnabled && (
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                <Eye className="h-8 w-8 text-white" />
-              </div>
-            )}
-            {/* Reference count badge */}
-            {image.referenceCount && image.referenceCount > 0 && (
-              <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded flex items-center gap-1">
-                <Star className="h-3 w-3" />
-                <span>{image.referenceCount}</span>
-              </div>
-            )}
-          </>
+        {/* Primary image */}
+        {primarySrc ? (
+          <img
+            src={primarySrc}
+            alt={image.promptText || "Generated image"}
+            className="w-full h-full object-cover"
+          />
+        ) : fallbackComponent ? (
+          fallbackComponent
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
             <p className="text-muted-foreground">Image not available</p>
+          </div>
+        )}
+
+        {/* Secondary image overlay - draggable when toggleEnabled */}
+        {toggleEnabled && containerSize.width > 0 && (
+          <div
+            ref={overlayRef}
+            className="absolute w-1/3 h-1/3 border-2 border-background rounded-md select-none overflow-hidden"
+            style={overlayStyle}
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+            onClick={handleOverlayClick}
+          >
+            {secondarySrc ? (
+              <img
+                src={secondarySrc}
+                alt="Input"
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
+            ) : fallbackComponent ? (
+              <div className="w-full h-full scale-[0.33] origin-top-left">
+                {fallbackComponent}
+              </div>
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <p className="text-muted-foreground text-xs">No image</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Secondary image overlay - static when not toggleEnabled */}
+        {!toggleEnabled && (
+          <div className="absolute top-2 right-2 w-1/3 h-1/3 border-2 border-background rounded-md overflow-hidden">
+            {secondarySrc ? (
+              <img
+                src={secondarySrc}
+                alt="Input"
+                className="w-full h-full object-cover"
+              />
+            ) : fallbackComponent ? (
+              <div className="w-full h-full scale-[0.33] origin-top-left">
+                {fallbackComponent}
+              </div>
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <p className="text-muted-foreground text-xs">No image</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Hover overlay with eye icon */}
+        {!toggleEnabled && hoverOverlay ? hoverOverlay : <></>}
+
+        {/* Reference count badge */}
+        {image.referenceCount && image.referenceCount > 0 && (
+          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded flex items-center gap-1">
+            <Star className="h-3 w-3" />
+            <span>{image.referenceCount}</span>
           </div>
         )}
       </CardContent>

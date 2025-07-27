@@ -1,14 +1,13 @@
 "use client";
 
 import { useAuth } from "@/providers/AuthProvider";
-import { JobsSection } from "@/components/JobsSection";
 import { CreationsGallery } from "@/components/CreationsGallery";
 import { UserThemes } from "@/components/UserThemes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ImageDetailModal } from "@/components/ImageDetailModal";
+import { CreationDetailModal } from "@/components/CreationDetailModal";
 import type { CompletedImage } from "@/components/CreationItem";
 import { fetchAuth } from "@/lib/fetch-auth";
 
@@ -131,7 +130,7 @@ export default function GalleryPage() {
       </div>
 
       {/* Image Detail Modal */}
-      <ImageDetailModal
+      <CreationDetailModal
         image={selectedImage}
         isLoading={isLoadingImage}
         open={showDetailModal}
