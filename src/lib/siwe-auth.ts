@@ -231,17 +231,18 @@ export async function verifySiweMessage(
   signature: string
 ): Promise<SiweMessage> {
   try {
-    // Parse the SIWE message first to get the nonce
     const parsedMessage = parseSiweMessage(message);
 
-    // Get expected domain from APP_URL
     const appUrl =
       process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL
         ? `https://${process.env.VERCEL_BRANCH_URL}`
         : process.env.APP_URL!;
-    const expectedDomain = new URL(appUrl).host;
+    const expectedDomain = new URL(appUrl).hostname;
 
-    // First validate the nonce exists in Redis and consume it
+    if (parsedMessage.domain !== expectedDomain) {
+      throw new AuthError("Invalid domain");
+    }
+
     if (
       !parsedMessage.nonce ||
       !(await validateAndConsumeNonce(parsedMessage.nonce))
@@ -249,19 +250,16 @@ export async function verifySiweMessage(
       throw new AuthError("Invalid or expired nonce");
     }
 
-    // Use viem's built-in verifySiweMessage function with domain and nonce validation
     const isValid = await publicClient.verifySiweMessage({
-      message,
+      ...parsedMessage,
+      message: message,
       signature: signature as `0x${string}`,
-      domain: expectedDomain,
-      nonce: parsedMessage.nonce,
     });
 
     if (!isValid) {
       throw new AuthError("Invalid SIWE message or signature");
     }
 
-    // Ensure we have the required fields for our SiweMessage type
     if (
       !parsedMessage.address ||
       !parsedMessage.chainId ||
@@ -271,7 +269,6 @@ export async function verifySiweMessage(
       throw new AuthError("Incomplete SIWE message");
     }
 
-    // Return a properly typed SiweMessage
     const siweMessage: SiweMessage = {
       address: parsedMessage.address,
       chainId: parsedMessage.chainId,
