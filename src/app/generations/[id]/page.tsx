@@ -1,11 +1,12 @@
-import { CreationItem } from "@/components/CreationItem";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
-import { Sparkles } from "lucide-react";
+import { Shuffle } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getImageUrl, getInputImageUrl } from "@/lib/image-utils";
+import { SwitchableImage } from "@/components/SwitchableImage";
+import { PromptDisplay } from "@/components/PromptDisplay";
 
 export async function generateMetadata({
   params,
@@ -54,23 +55,28 @@ export default async function Page({
     return notFound();
   }
 
+  const imageData = {
+    createdAt: image.createdAt.toISOString(),
+    id,
+    imageDataUrl: getImageUrl(id),
+    promptText: image.promptText,
+    quoteId: image.quoteId,
+    userPfpUrl: getInputImageUrl(id),
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen p-4">
       <div className="max-w-md w-full space-y-4">
-        <CreationItem
-          image={{
-            createdAt: image.createdAt.toISOString(),
-            id,
-            imageDataUrl: getImageUrl(id),
-            promptText: image.promptText,
-            quoteId: image.quoteId,
-            userPfpUrl: getInputImageUrl(id),
-          }}
-        />
+        <div className="aspect-square relative">
+          <SwitchableImage image={imageData} toggleEnabled={true} />
+        </div>
+
+        <PromptDisplay promptText={imageData.promptText || ""} />
+
         <div className="flex justify-center">
           <Link href={`/?promptId=${id}`} className="w-full">
             <Button variant="default" size="lg" className="w-full">
-              <Sparkles className="h-3 w-3 mr-1" />
+              <Shuffle className="h-4 w-4" />
               Use this theme
             </Button>
           </Link>
