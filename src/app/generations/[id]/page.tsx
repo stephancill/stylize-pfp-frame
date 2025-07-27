@@ -45,28 +45,6 @@ export default async function Page({
 }) {
   const { id } = await params;
 
-  let image:
-    | {
-        status: string;
-        createdAt: Date;
-        quoteId: string;
-        promptText: string | null;
-      }
-    | undefined;
-  try {
-    image = await db
-      .selectFrom("generatedImages")
-      .select(["status", "createdAt", "quoteId", "promptText"])
-      .where("id", "=", id)
-      .executeTakeFirst();
-  } catch (error) {
-    console.error("Failed to fetch image:", error);
-  }
-
-  if (!image) {
-    return notFound();
-  }
-
   // Fetch theme data from our API
   let themeData = null;
   try {
@@ -79,6 +57,10 @@ export default async function Page({
     }
   } catch (error) {
     console.error("Failed to fetch theme data:", error);
+  }
+
+  if (!themeData) {
+    return notFound();
   }
 
   const selectedTheme = themeData
