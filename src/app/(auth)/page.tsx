@@ -98,7 +98,7 @@ export default function Page() {
       const res = await fetch(`/api/themes/${promptId}`);
       if (!res.ok) throw new Error("Failed to fetch theme");
       const data = await res.json();
-      return data.theme;
+      return data;
     },
     enabled: !!promptId,
   });
@@ -115,11 +115,8 @@ export default function Page() {
           prompt: fetchedTheme.promptText,
           usageCount: fetchedTheme.usageCount,
           author: fetchedTheme.author,
-          selectedImage: fetchedTheme.originalImage,
-          images: [
-            fetchedTheme.originalImage,
-            ...(fetchedTheme.topReferencedImages || []),
-          ],
+          selectedImage: fetchedTheme.images[0], // First image is the original
+          images: fetchedTheme.images,
         });
       }
     }
