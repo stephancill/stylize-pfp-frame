@@ -15,6 +15,29 @@ export interface UnifiedUser {
   profileImage?: string; // pfpUrl if available
 }
 
+export interface Cast {
+  hash: string;
+  text: string;
+  timestamp: string;
+  author: {
+    username: string;
+    display_name: string;
+    pfp_url: string;
+    fid: number;
+  };
+  generationId: string;
+  castUrl?: string;
+  promptText?: string; // Actual prompt from database
+  userId?: string; // User ID from database
+}
+
+export interface CastsResponse {
+  casts: Cast[];
+  next?: {
+    cursor: string;
+  };
+}
+
 export function createUnifiedUser(
   farcasterUser?: {
     fid: number;
