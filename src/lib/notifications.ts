@@ -1,7 +1,7 @@
 import {
   SendNotificationRequest,
   sendNotificationResponseSchema,
-} from "@farcaster/frame-sdk";
+} from "@farcaster/miniapp-sdk";
 import { db } from "./db";
 import { FrameNotificationDetails } from "@farcaster/frame-node";
 import { NotificationsBulkJobData } from "../types/jobs";

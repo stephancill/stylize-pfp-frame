@@ -1,7 +1,7 @@
 "use client";
 
 import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
-import sdk from "@farcaster/frame-sdk";
+import sdk from "@farcaster/miniapp-sdk";
 import * as Sentry from "@sentry/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import posthog from "posthog-js";

@@ -4,7 +4,6 @@ import { type User as NeynarUser } from "@neynar/nodejs-sdk/build/api";
 import { getUserDataKey } from "./keys";
 import { redisCache } from "./redis";
 
-// Single Neynar client instance
 const neynarClient = new NeynarAPIClient(
   new Configuration({
     apiKey: process.env.NEYNAR_API_KEY!,

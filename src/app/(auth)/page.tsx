@@ -10,7 +10,7 @@ import themes from "@/lib/themes";
 import { useImageSelection } from "@/providers/ImageSelectionProvider";
 import { useMiniAppContext } from "@/providers/MiniAppContextProvider";
 import { createUnifiedUser } from "@/types/user";
-import { sdk } from "@farcaster/frame-sdk";
+import { sdk } from "@farcaster/miniapp-sdk";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { BaseError } from "viem";
 import { useAccount } from "wagmi";
+import Link from "next/link";
 
 export default function Page() {
   const { context, isLoading: isUserLoading } = useMiniAppContext();
@@ -256,9 +257,17 @@ export default function Page() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-8">
-        Create
-      </h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100">
+          Create
+        </h1>
+        <Link
+          href="/recents"
+          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+        >
+          View Recents
+        </Link>
+      </div>
 
       {/* Authentication Required Message */}
       {!hasValidAuth && (
