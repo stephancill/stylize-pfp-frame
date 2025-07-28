@@ -11,6 +11,6 @@ export const config = createConfig({
   ],
   chains: [base],
   transports: {
-    [base.id]: http("https://mainnet-preconf.base.org"),
+    [base.id]: http(),
   },
 });

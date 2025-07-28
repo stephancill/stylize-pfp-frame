@@ -3,5 +3,5 @@ import { base } from "viem/chains";
 
 export const publicClient = createPublicClient({
   chain: base,
-  transport: http("https://mainnet-preconf.base.org"),
+  transport: http(),
 });
