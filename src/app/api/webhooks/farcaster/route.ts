@@ -50,36 +50,18 @@ export async function POST(request: NextRequest) {
     case "frame_added":
       if (event.notificationDetails) {
         await setUserNotificationDetails(fid, event.notificationDetails);
-        await sendFrameNotification({
-          token: event.notificationDetails.token,
-          url: event.notificationDetails.url,
-          title: "Welcome to Frame",
-          body: "This frame has been added.",
-          targetUrl: process.env.APP_URL,
-        });
       } else {
         await deleteUserNotificationDetails(fid);
       }
-
       break;
     case "frame_removed":
       await deleteUserNotificationDetails(fid);
-
       break;
     case "notifications_enabled":
       await setUserNotificationDetails(fid, event.notificationDetails);
-      await sendFrameNotification({
-        token: event.notificationDetails.token,
-        url: event.notificationDetails.url,
-        title: "Notifications enabled",
-        body: "Notifications have been enabled.",
-        targetUrl: process.env.APP_URL,
-      });
-
       break;
     case "notifications_disabled":
       await deleteUserNotificationDetails(fid);
-
       break;
   }
 
