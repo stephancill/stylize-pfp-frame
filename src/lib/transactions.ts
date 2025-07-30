@@ -69,7 +69,7 @@ export async function verifyPaymentTransaction({
     // Check royalties
     const quote = await db
       .selectFrom("generatedImages")
-      .selectAll()
+      .select(["promptText", "referringImageId"])
       .where("quoteId", "=", quoteId)
       .executeTakeFirstOrThrow();
 
@@ -135,7 +135,7 @@ export async function calculateRoyalties({
   if (referringImageId) {
     const referringImage = await db
       .selectFrom("generatedImages")
-      .selectAll()
+      .select(["userId"])
       .where("id", "=", referringImageId)
       .where("status", "=", "completed")
       .executeTakeFirstOrThrow();
@@ -153,7 +153,7 @@ export async function calculateRoyalties({
   // Calculate prompt author royalties
   const promptOccurrence = await db
     .selectFrom("generatedImages")
-    .selectAll()
+    .select(["userId"])
     .where("promptText", "=", prompt)
     .where("status", "=", "completed")
     .orderBy("createdAt", "asc")

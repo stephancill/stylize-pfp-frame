@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
       const generationRequest = await db
         .selectFrom("generatedImages")
-        .selectAll()
+        .select(["userId", "promptText", "userPfpUrl", "quoteId", "status"])
         .where("quoteId", "=", quoteId)
         .executeTakeFirst();
 
