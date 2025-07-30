@@ -19,14 +19,44 @@ import { NodePostgresAdapter } from "@lucia-auth/adapter-postgresql";
 
 const { Pool } = pg;
 
-const pool = new Pool({
-  max: 20,
-  connectionString: process.env.DATABASE_URL,
-});
+// Global pool variable for singleton pattern
+let globalPool: pg.Pool | undefined;
+
+// Create pool with serverless-optimized configuration
+const createPool = (): pg.Pool => {
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not set");
+  }
+
+  return new Pool({
+    connectionString,
+    max: 1, // Only 1 connection per function (serverless-optimized)
+    min: 0, // No minimum connections
+    idleTimeoutMillis: 120000, // 2 minutes - close before PgBouncer timeout
+    allowExitOnIdle: true, // Let process exit when idle
+    maxUses: 100, // Rotate connections frequently
+  });
+};
+
+// Singleton pool getter with error recovery
+const getPool = (): pg.Pool => {
+  if (!globalPool) {
+    globalPool = createPool();
+
+    // Add error handling to reset pool on connection errors
+    globalPool.on("error", (err: Error) => {
+      console.error("Database pool error:", err);
+      globalPool = undefined; // Reset to force recreation
+    });
+  }
+
+  return globalPool;
+};
 
 export const getDbClient = (
-  connectionString: string | undefined = process.env.DATABASE_URL,
-  pool: pg.Pool | undefined = undefined
+  connectionString: string | undefined = process.env.DATABASE_URL
 ) => {
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set");
@@ -34,12 +64,7 @@ export const getDbClient = (
 
   return new Kysely<Tables>({
     dialect: new PostgresDialect({
-      pool:
-        pool ??
-        new Pool({
-          max: 20,
-          connectionString,
-        }),
+      pool: getPool(), // Always use the singleton pool
       cursor: Cursor,
     }),
     plugins: [new CamelCasePlugin()],
@@ -54,7 +79,8 @@ export const getAuthAdapter = (
     throw new Error("DATABASE_URL is not set");
   }
 
-  const adapter = new NodePostgresAdapter(pool, {
+  const adapter = new NodePostgresAdapter(getPool(), {
+    // Use singleton pool
     user: "users",
     session: "user_session",
   });
@@ -62,6 +88,7 @@ export const getAuthAdapter = (
   return adapter;
 };
 
+// Both database instances now use the same singleton pool
 export const db = getDbClient();
 export const luciaDb = getDbClient();
 
