@@ -1,10 +1,10 @@
 import { createConfig, http } from "wagmi";
 import { base } from "wagmi/chains";
-import { baseAccountConnector } from "@base-org/account";
+import { baseAccount } from "@wagmi/connectors";
 
 export const config = createConfig({
   connectors: [
-    baseAccountConnector({
+    baseAccount({
       appName: "Stylize Me",
       appLogoUrl: "https://stylize.steer.fun/splash.png",
     }),
